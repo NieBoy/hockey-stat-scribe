@@ -11,7 +11,11 @@ import GameDetail from "./pages/GameDetail";
 import TrackStats from "./pages/TrackStats";
 import Stats from "./pages/Stats";
 import Teams from "./pages/Teams";
+import TeamCreate from "./pages/TeamCreate";
+import TeamDetail from "./pages/TeamDetail";
+import TeamLineup from "./pages/TeamLineup";
 import Profile from "./pages/Profile";
+import Invitations from "./pages/Invitations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,7 +34,11 @@ const App = () => (
           <Route path="/games/:id/track" element={<TrackStats />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/teams/new" element={<TeamCreate />} />
+          <Route path="/teams/:id" element={<TeamDetail />} />
+          <Route path="/teams/:id/lineup" element={<TeamLineup />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/invitations" element={<Invitations />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

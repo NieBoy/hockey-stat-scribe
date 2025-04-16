@@ -10,7 +10,8 @@ import {
   Home,
   Users,
   CalendarDays,
-  Building
+  Building,
+  Mail
 } from "lucide-react";
 import { currentUser } from "@/lib/mock-data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -58,6 +59,10 @@ export default function Navbar() {
           <Link to="/stats" className="flex items-center gap-2 text-sm font-medium">
             <BarChart3 className="h-4 w-4" />
             Stats
+          </Link>
+          <Link to="/invitations" className="flex items-center gap-2 text-sm font-medium">
+            <Mail className="h-4 w-4" />
+            Invitations
           </Link>
         </div>
 

@@ -1,4 +1,3 @@
-
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
 
@@ -19,6 +18,8 @@ export interface User {
   children?: User[]; // For parents to link to player accounts
   stats?: PlayerStat[];
   isAdmin?: boolean;  // Quick check if user has admin role
+  position?: Position;
+  lineNumber?: number;
 }
 
 // Team Types
@@ -31,6 +32,35 @@ export interface Team {
   coaches: User[];
   parents: User[];  // Parents associated with the team
   games?: Game[];
+  lines?: Lines;
+}
+
+// Hockey position types
+export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G' | null;
+
+export interface PlayerPosition {
+  playerId: string;
+  position: Position;
+  lineNumber: number;
+}
+
+export interface Lines {
+  forwards: ForwardLine[];
+  defense: DefenseLine[];
+  goalies: User[];
+}
+
+export interface ForwardLine {
+  lineNumber: number;
+  leftWing: User | null;
+  center: User | null;
+  rightWing: User | null;
+}
+
+export interface DefenseLine {
+  lineNumber: number;
+  leftDefense: User | null;
+  rightDefense: User | null;
 }
 
 // Game Types
@@ -99,4 +129,5 @@ export interface Invitation {
   invitedBy: string;
   status: 'pending' | 'accepted' | 'declined';
   createdAt: Date;
+  expiresAt?: Date;
 }
