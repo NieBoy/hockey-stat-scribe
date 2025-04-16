@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Team, User, Position, ForwardLine, DefenseLine, Lines } from "@/types";
@@ -21,37 +20,29 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
   
   const [unassignedPlayers, setUnassignedPlayers] = useState<User[]>([]);
 
-  // Initialize with team data
   useEffect(() => {
-    // If team already has lines defined, use them
     if (team.lines) {
       setLines(team.lines);
       
-      // Find unassigned players
       const assignedPlayerIds = new Set<string>();
       
-      // Add all players from forward lines
       team.lines.forwards.forEach(line => {
         if (line.leftWing) assignedPlayerIds.add(line.leftWing.id);
         if (line.center) assignedPlayerIds.add(line.center.id);
         if (line.rightWing) assignedPlayerIds.add(line.rightWing.id);
       });
       
-      // Add all players from defense lines
       team.lines.defense.forEach(line => {
         if (line.leftDefense) assignedPlayerIds.add(line.leftDefense.id);
         if (line.rightDefense) assignedPlayerIds.add(line.rightDefense.id);
       });
       
-      // Add all goalies
       team.lines.goalies.forEach(goalie => {
         assignedPlayerIds.add(goalie.id);
       });
       
-      // Set unassigned players
       setUnassignedPlayers(team.players.filter(player => !assignedPlayerIds.has(player.id)));
     } else {
-      // If no lines defined yet, all players are unassigned
       setUnassignedPlayers(team.players);
     }
   }, [team]);
@@ -59,49 +50,36 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
     
-    // Dropped outside a droppable area
     if (!destination) return;
     
-    // Handle different drag scenarios
     if (source.droppableId === 'unassigned' && destination.droppableId !== 'unassigned') {
-      // Moving from unassigned to a position
       const [destType, destLine, destPosition] = destination.droppableId.split('-');
       const playerIndex = source.index;
       const player = unassignedPlayers[playerIndex];
       
-      // Remove from unassigned
       const newUnassignedPlayers = [...unassignedPlayers];
       newUnassignedPlayers.splice(playerIndex, 1);
       setUnassignedPlayers(newUnassignedPlayers);
       
-      // Add to position
       addPlayerToPosition(player, destType, parseInt(destLine), destPosition as Position);
     } 
     else if (source.droppableId !== 'unassigned' && destination.droppableId === 'unassigned') {
-      // Moving from a position to unassigned
       const [sourceType, sourceLine, sourcePosition] = source.droppableId.split('-');
       const player = getPlayerFromPosition(sourceType, parseInt(sourceLine), sourcePosition as Position);
       
       if (player) {
-        // Remove from position
         removePlayerFromPosition(sourceType, parseInt(sourceLine), sourcePosition as Position);
-        
-        // Add to unassigned
         setUnassignedPlayers([...unassignedPlayers, player]);
       }
     }
     else if (source.droppableId !== 'unassigned' && destination.droppableId !== 'unassigned' && 
              source.droppableId !== destination.droppableId) {
-      // Moving between positions
       const [sourceType, sourceLine, sourcePosition] = source.droppableId.split('-');
       const [destType, destLine, destPosition] = destination.droppableId.split('-');
       const player = getPlayerFromPosition(sourceType, parseInt(sourceLine), sourcePosition as Position);
       
       if (player) {
-        // Remove from source position
         removePlayerFromPosition(sourceType, parseInt(sourceLine), sourcePosition as Position);
-        
-        // Add to destination position
         addPlayerToPosition(player, destType, parseInt(destLine), destPosition as Position);
       }
     }
@@ -184,7 +162,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
     setLines(prevLines => {
       const newLines = { ...prevLines };
       
-      // For forwards
       if (type === 'forward') {
         newLines.forwards = newLines.forwards.map(line => {
           if (line.lineNumber === lineNumber) {
@@ -195,7 +172,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
           return line;
         });
       } 
-      // For defense
       else if (type === 'defense') {
         newLines.defense = newLines.defense.map(line => {
           if (line.lineNumber === lineNumber) {
@@ -205,7 +181,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
           return line;
         });
       }
-      // For goalies
       else if (type === 'goalie' && position === 'G') {
         newLines.goalies.push(player);
       }
@@ -283,7 +258,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Unassigned players section */}
           <div className="lg:col-span-1">
             <Card>
               <CardHeader className="pb-3">
@@ -319,16 +293,9 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
             </Card>
           </div>
 
-          {/* Hockey rink section */}
           <div className="lg:col-span-4">
             <div className="bg-blue-50 border-4 border-blue-200 rounded-lg p-4 relative min-h-[600px]">
-              {/* Ice rink styling */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                <div className="w-48 h-48 rounded-full border-4 border-red-600"></div>
-              </div>
-              
               <div className="grid gap-y-8">
-                {/* Forward lines */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold">Forward Lines</h3>
@@ -339,7 +306,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                   
                   {lines.forwards.map((line, lineIdx) => (
                     <div key={line.lineNumber} className="grid grid-cols-3 gap-4">
-                      {/* Left Wing */}
                       <div>
                         <div className="text-xs font-medium mb-1 text-center">
                           Left Wing (Line {line.lineNumber})
@@ -358,7 +324,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                         </Droppable>
                       </div>
                       
-                      {/* Center */}
                       <div>
                         <div className="text-xs font-medium mb-1 text-center">
                           Center (Line {line.lineNumber})
@@ -377,7 +342,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                         </Droppable>
                       </div>
                       
-                      {/* Right Wing */}
                       <div>
                         <div className="text-xs font-medium mb-1 text-center">
                           Right Wing (Line {line.lineNumber})
@@ -399,7 +363,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                   ))}
                 </div>
                 
-                {/* Defense lines */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold">Defense Pairs</h3>
@@ -410,7 +373,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                   
                   {lines.defense.map((line, lineIdx) => (
                     <div key={line.lineNumber} className="grid grid-cols-2 gap-4">
-                      {/* Left Defense */}
                       <div>
                         <div className="text-xs font-medium mb-1 text-center">
                           Left Defense (Pair {line.lineNumber})
@@ -429,7 +391,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                         </Droppable>
                       </div>
                       
-                      {/* Right Defense */}
                       <div>
                         <div className="text-xs font-medium mb-1 text-center">
                           Right Defense (Pair {line.lineNumber})
@@ -451,7 +412,6 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
                   ))}
                 </div>
                 
-                {/* Goalies */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold">Goalies</h3>
