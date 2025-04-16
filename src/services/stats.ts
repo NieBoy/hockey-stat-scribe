@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { PlayerStat } from "@/types";
+import { PlayerStat, StatType } from "@/types";
 
 export const getPlayerStats = async (): Promise<PlayerStat[]> => {
   const { data, error } = await supabase
@@ -17,7 +17,7 @@ export const getPlayerStats = async (): Promise<PlayerStat[]> => {
   
   return data.map(stat => ({
     playerId: stat.player_id,
-    statType: stat.stat_type as any,
+    statType: stat.stat_type as StatType,
     value: stat.value,
     gamesPlayed: stat.games_played
   }));
@@ -39,7 +39,7 @@ export const getStatsByPlayerId = async (playerId: string): Promise<PlayerStat[]
   
   return data.map(stat => ({
     playerId: stat.player_id,
-    statType: stat.stat_type as any,
+    statType: stat.stat_type as StatType,
     value: stat.value,
     gamesPlayed: stat.games_played
   }));

@@ -1,20 +1,37 @@
 
+import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { mockTeams } from "@/lib/mock-data";
 import { ChevronLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import NewGameForm from "@/components/games/NewGameForm";
 import { GameFormState } from "@/types";
+import { createGame } from "@/services/games";
+import { getTeams } from "@/services/teams";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function NewGame() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  
+  const { data: teams, isLoading, error } = useQuery({
+    queryKey: ['teams'],
+    queryFn: getTeams
+  });
 
-  const handleCreateGame = (data: GameFormState) => {
-    console.log("Creating new game with data:", data);
-    // Here we would typically submit this data to a backend
-    // For now we'll just redirect to the games list
-    navigate("/games");
+  const handleCreateGame = async (data: GameFormState) => {
+    try {
+      setLoading(true);
+      await createGame(data);
+      toast.success("Game created successfully!");
+      navigate("/games");
+    } catch (error) {
+      console.error("Error creating game:", error);
+      toast.error("Failed to create game");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,7 +49,18 @@ export default function NewGame() {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <NewGameForm onSubmit={handleCreateGame} teams={mockTeams} />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500 mb-2">Error loading teams</p>
+            <Button onClick={() => navigate("/teams/new")}>Create Team First</Button>
+          </div>
+        ) : (
+          <NewGameForm onSubmit={handleCreateGame} teams={teams || []} isSubmitting={loading} />
+        )}
       </div>
     </MainLayout>
   );

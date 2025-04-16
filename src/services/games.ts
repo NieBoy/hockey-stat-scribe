@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { Game, GameFormState, GameStat, StatTracker } from "@/types";
+import { Game, GameFormState, GameStat, StatTracker, UserRole, StatType } from "@/types";
 
 export const getGames = async (): Promise<Game[]> => {
   const { data, error } = await supabase
@@ -70,9 +70,9 @@ export const getGames = async (): Promise<Game[]> => {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: ['player'] // Default, might need to fetch actual roles
+            role: ['player'] as UserRole[] // Default, might need to fetch actual roles
           },
-          statTypes: statTypes as any[]
+          statTypes: statTypes as StatType[]
         });
       }
     }
@@ -172,9 +172,9 @@ export const getGameById = async (id: string): Promise<Game | null> => {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: ['player'] // Default, might need to fetch actual roles
+          role: ['player'] as UserRole[] // Default, might need to fetch actual roles
         },
-        statTypes: statTypes as any[]
+        statTypes: statTypes as StatType[]
       });
     }
   }
@@ -221,7 +221,7 @@ const getGameTeam = async (teamId: string) => {
     id: p.users.id,
     name: p.users.name,
     email: p.users.email,
-    role: ['player'],
+    role: ['player'] as UserRole[],
     position: p.position as any,
     lineNumber: p.line_number
   })) || [];
@@ -230,7 +230,7 @@ const getGameTeam = async (teamId: string) => {
     id: c.users.id,
     name: c.users.name,
     email: c.users.email,
-    role: ['coach']
+    role: ['coach'] as UserRole[]
   })) || [];
   
   return {

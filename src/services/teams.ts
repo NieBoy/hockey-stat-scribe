@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { Team, User, Lines } from "@/types";
+import { Team, User, Lines, UserRole, Position } from "@/types";
 
 export const getTeams = async (): Promise<Team[]> => {
   const { data, error } = await supabase
@@ -57,21 +57,21 @@ export const getTeams = async (): Promise<Team[]> => {
         id: p.users.id,
         name: p.users.name,
         email: p.users.email,
-        role: ['player'],
-        position: p.position as any,
+        role: ['player'] as UserRole[],
+        position: p.position as Position,
         lineNumber: p.line_number
       })) || [],
       coaches: coachesResult.data?.map(c => ({
         id: c.users.id,
         name: c.users.name,
         email: c.users.email,
-        role: ['coach']
+        role: ['coach'] as UserRole[]
       })) || [],
       parents: parentsResult.data?.map(p => ({
         id: p.users.id,
         name: p.users.name,
         email: p.users.email,
-        role: ['parent']
+        role: ['parent'] as UserRole[]
       })) || []
     });
   }
@@ -135,21 +135,21 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       id: p.users.id,
       name: p.users.name,
       email: p.users.email,
-      role: ['player'],
-      position: p.position as any,
+      role: ['player'] as UserRole[],
+      position: p.position as Position,
       lineNumber: p.line_number
     })) || [],
     coaches: coachesResult.data?.map(c => ({
       id: c.users.id,
       name: c.users.name,
       email: c.users.email,
-      role: ['coach']
+      role: ['coach'] as UserRole[]
     })) || [],
     parents: parentsResult.data?.map(p => ({
       id: p.users.id,
       name: p.users.name,
       email: p.users.email,
-      role: ['parent']
+      role: ['parent'] as UserRole[]
     })) || []
   };
 };

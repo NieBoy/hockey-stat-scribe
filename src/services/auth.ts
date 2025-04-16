@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { User } from "@/types";
+import { User, UserRole } from "@/types";
 
 export const getCurrentUser = async (): Promise<User | null> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,13 +32,13 @@ export const getCurrentUser = async (): Promise<User | null> => {
     .eq('user_id', data.id);
     
   // Build role array
-  const roles = data.user_roles?.map(r => r.role) || [];
+  const roles = data.user_roles?.map(r => r.role as UserRole) || [];
   
   return {
     id: data.id,
     name: data.name,
     email: data.email,
-    role: roles as any[],
+    role: roles,
     teams: teamMembers?.map(tm => ({
       id: tm.teams.id,
       name: tm.teams.name,
