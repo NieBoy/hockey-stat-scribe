@@ -27,7 +27,7 @@ export default function Games() {
             View and manage scheduled hockey games.
           </p>
         </div>
-        {currentUser.role === "coach" && (
+        {currentUser.role.includes('coach') && (
           <Button asChild className="gap-2">
             <Link to="/games/new">
               <Plus className="h-4 w-4" /> New Game
@@ -68,7 +68,7 @@ export default function Games() {
               ? "Try changing your filter to see more games." 
               : "Create your first game to get started."}
           </p>
-          {currentUser.role === "coach" && filter === "all" && (
+          {currentUser.role.includes('coach') && filter === "all" && (
             <Button className="mt-4" asChild>
               <Link to="/games/new">
                 <Plus className="mr-2 h-4 w-4" /> Create New Game

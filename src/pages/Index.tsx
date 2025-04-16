@@ -21,7 +21,7 @@ export default function Index() {
           <Button size="lg" asChild>
             <Link to="/games">View Games</Link>
           </Button>
-          {currentUser.role === "coach" && (
+          {currentUser.role.includes('coach') && (
             <Button size="lg" variant="outline" asChild>
               <Link to="/games/new">Schedule Game</Link>
             </Button>

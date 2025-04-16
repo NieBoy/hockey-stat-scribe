@@ -67,7 +67,7 @@ export default function Navbar() {
             <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
               {hasMultipleRoles 
                 ? `${currentUser.role[0].charAt(0).toUpperCase() + currentUser.role[0].slice(1)}${currentUser.isAdmin ? '+' : ''}` 
-                : currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+                : currentUser.role[0].charAt(0).toUpperCase() + currentUser.role[0].slice(1)}
             </span>
           </div>
           <Button variant="ghost" size="icon" asChild>

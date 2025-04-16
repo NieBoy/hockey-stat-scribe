@@ -16,7 +16,7 @@ export default function Teams() {
             View and manage hockey teams.
           </p>
         </div>
-        {currentUser.role === "coach" && (
+        {currentUser.role.includes('coach') && (
           <Button asChild className="gap-2">
             <Link to="/teams/new">
               <Plus className="h-4 w-4" /> New Team
@@ -70,7 +70,7 @@ export default function Teams() {
           <p className="mt-1 text-muted-foreground">
             Create your first team to get started
           </p>
-          {currentUser.role === "coach" && (
+          {currentUser.role.includes('coach') && (
             <Button className="mt-4">
               <Plus className="mr-2 h-4 w-4" /> Create New Team
             </Button>
