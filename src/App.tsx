@@ -11,6 +11,7 @@ import GameDetail from "./pages/GameDetail";
 import TrackStats from "./pages/TrackStats";
 import Stats from "./pages/Stats";
 import Teams from "./pages/Teams";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/games/:id/track" element={<TrackStats />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
