@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
-import { mockTeams, mockOrganizations } from "@/lib/mock-data";
+import { mockTeams, mockOrganizations, mockUsers } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,15 +13,27 @@ import {
   PanelLeftClose,
   Plus,
   ArrowLeft,
-  LineChart
+  LineChart,
+  X
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function TeamDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("players");
+  const [addPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
+  const [newPlayer, setNewPlayer] = useState({
+    name: "",
+    email: "",
+    position: ""
+  });
   
   const team = mockTeams.find(team => team.id === id);
   const organization = mockOrganizations.find(org => org.id === team?.organizationId);
@@ -43,6 +56,30 @@ export default function TeamDetail() {
       .map(n => n[0])
       .join('')
       .toUpperCase();
+  };
+  
+  const handleAddPlayer = () => {
+    // In a real app, this would be an API call
+    if (newPlayer.name && newPlayer.email) {
+      // Create a new player and add to team
+      const newPlayerId = `player-${Date.now()}`;
+      const playerToAdd = {
+        id: newPlayerId,
+        name: newPlayer.name,
+        email: newPlayer.email,
+        position: newPlayer.position,
+        role: ["player"],
+        teams: [{ id: team.id, name: team.name }]
+      };
+      
+      // In a real app, we would update the backend
+      // For now, just show a success message
+      toast.success(`Player ${newPlayer.name} added to team!`);
+      setAddPlayerDialogOpen(false);
+      setNewPlayer({ name: "", email: "", position: "" });
+    } else {
+      toast.error("Please fill in all required fields");
+    }
   };
 
   return (
@@ -79,7 +116,7 @@ export default function TeamDetail() {
                 Lineup Editor
               </Link>
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setAddPlayerDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               Add Player
             </Button>
@@ -148,7 +185,7 @@ export default function TeamDetail() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     This team doesn't have any players yet.
                   </p>
-                  <Button className="mt-4">
+                  <Button className="mt-4" onClick={() => setAddPlayerDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Player
                   </Button>
                 </CardContent>
@@ -215,6 +252,63 @@ export default function TeamDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Player Dialog */}
+      <Dialog open={addPlayerDialogOpen} onOpenChange={setAddPlayerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Player to {team.name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-name" className="text-right">Name</Label>
+              <Input 
+                id="player-name" 
+                value={newPlayer.name}
+                onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})}
+                className="col-span-3" 
+                placeholder="Player name"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-email" className="text-right">Email</Label>
+              <Input 
+                id="player-email" 
+                value={newPlayer.email}
+                onChange={(e) => setNewPlayer({...newPlayer, email: e.target.value})}
+                className="col-span-3" 
+                type="email"
+                placeholder="player@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-position" className="text-right">Position</Label>
+              <Select 
+                value={newPlayer.position} 
+                onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a position" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Center">Center</SelectItem>
+                  <SelectItem value="Left Wing">Left Wing</SelectItem>
+                  <SelectItem value="Right Wing">Right Wing</SelectItem>
+                  <SelectItem value="Left Defense">Left Defense</SelectItem>
+                  <SelectItem value="Right Defense">Right Defense</SelectItem>
+                  <SelectItem value="Goalie">Goalie</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" type="button">Cancel</Button>
+            </DialogClose>
+            <Button type="button" onClick={handleAddPlayer}>Add Player</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
