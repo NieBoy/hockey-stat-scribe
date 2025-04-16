@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -107,7 +106,14 @@ export default function TeamDetail() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle className="text-base font-medium">{player.name}</CardTitle>
+                          <CardTitle className="text-base font-medium">
+                            <Link 
+                              to={`/players/${player.id}`} 
+                              className="hover:underline"
+                            >
+                              {player.name}
+                            </Link>
+                          </CardTitle>
                           {player.position && (
                             <div className="text-xs text-muted-foreground">
                               Position: {player.position}
@@ -163,7 +169,14 @@ export default function TeamDetail() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle className="text-base font-medium">{coach.name}</CardTitle>
+                          <CardTitle className="text-base font-medium">
+                            <Link 
+                              to={`/players/${coach.id}`} 
+                              className="hover:underline"
+                            >
+                              {coach.name}
+                            </Link>
+                          </CardTitle>
                         </div>
                       </div>
                     </CardHeader>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Save } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface TeamLineupEditorProps {
   team: Team;
@@ -235,7 +236,12 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
             className="bg-white border rounded-md p-3 mb-2 shadow-sm"
           >
             <div className="flex justify-between items-center">
-              <span className="font-medium">{player.name}</span>
+              <Link 
+                to={`/players/${player.id}`} 
+                className="font-medium hover:underline"
+              >
+                {player.name}
+              </Link>
               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                 {typeof player.position === 'string' ? player.position : 'N/A'}
               </span>

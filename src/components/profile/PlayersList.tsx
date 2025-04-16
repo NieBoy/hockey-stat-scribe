@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { User } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -48,7 +47,14 @@ export default function PlayersList({ players, isParent = false, isCoach = false
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle>{player.name}</CardTitle>
+                    <CardTitle>
+                      <Link 
+                        to={`/players/${player.id}`} 
+                        className="hover:underline"
+                      >
+                        {player.name}
+                      </Link>
+                    </CardTitle>
                     {player.email && (
                       <CardDescription>
                         {player.email}
