@@ -1,18 +1,21 @@
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Plus, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockTeams, currentUser } from "@/lib/mock-data";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
-import { useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { getTeams, addPlayerToTeam } from "@/services/teams";
 
 export default function Teams() {
+  const { user } = useAuth();
   const [addPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [newPlayer, setNewPlayer] = useState({
@@ -21,8 +24,13 @@ export default function Teams() {
     position: ""
   });
 
-  const selectedTeam = selectedTeamId 
-    ? mockTeams.find(team => team.id === selectedTeamId)
+  const { data: teams, isLoading, error, refetch } = useQuery({
+    queryKey: ['teams'],
+    queryFn: getTeams
+  });
+
+  const selectedTeam = selectedTeamId && teams
+    ? teams.find(team => team.id === selectedTeamId)
     : null;
 
   const handleAddPlayer = (teamId: string) => {
@@ -30,18 +38,50 @@ export default function Teams() {
     setAddPlayerDialogOpen(true);
   };
 
-  const submitNewPlayer = () => {
+  const submitNewPlayer = async () => {
     if (!selectedTeam) return;
     
     if (newPlayer.name && newPlayer.email) {
-      // In a real app, this would be an API call
-      toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
-      setAddPlayerDialogOpen(false);
-      setNewPlayer({ name: "", email: "", position: "" });
+      try {
+        await addPlayerToTeam(selectedTeam.id, {
+          name: newPlayer.name,
+          email: newPlayer.email,
+          position: newPlayer.position
+        });
+        
+        toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
+        setAddPlayerDialogOpen(false);
+        setNewPlayer({ name: "", email: "", position: "" });
+        refetch(); // Refresh teams data
+      } catch (error) {
+        console.error("Error adding player:", error);
+        toast.error("Failed to add player");
+      }
     } else {
       toast.error("Please fill in all required fields");
     }
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12 border rounded-lg bg-muted/20">
+          <p className="text-red-500">Error loading teams: {(error as Error).message}</p>
+          <Button onClick={() => refetch()} className="mt-4">Retry</Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -52,7 +92,7 @@ export default function Teams() {
             View and manage hockey teams.
           </p>
         </div>
-        {currentUser.role.includes('coach') && (
+        {user?.role.includes('coach') && (
           <Button asChild className="gap-2">
             <Link to="/teams/new">
               <Plus className="h-4 w-4" /> New Team
@@ -61,9 +101,9 @@ export default function Teams() {
         )}
       </div>
 
-      {mockTeams.length > 0 ? (
+      {teams && teams.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockTeams.map((team) => (
+          {teams.map((team) => (
             <Card key={team.id} className="overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle>{team.name}</CardTitle>
@@ -116,9 +156,11 @@ export default function Teams() {
           <p className="mt-1 text-muted-foreground">
             Create your first team to get started
           </p>
-          {currentUser.role.includes('coach') && (
-            <Button className="mt-4">
-              <Plus className="mr-2 h-4 w-4" /> Create New Team
+          {user?.role.includes('coach') && (
+            <Button className="mt-4" asChild>
+              <Link to="/teams/new">
+                <Plus className="mr-2 h-4 w-4" /> Create New Team
+              </Link>
             </Button>
           )}
         </div>
