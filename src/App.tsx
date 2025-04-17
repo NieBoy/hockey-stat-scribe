@@ -22,6 +22,7 @@ import GameTracking from "@/pages/GameTracking";
 import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import StatTrackerAssignment from "@/pages/StatTrackerAssignment";
 
 // Create a client
 const queryClient = new QueryClient();

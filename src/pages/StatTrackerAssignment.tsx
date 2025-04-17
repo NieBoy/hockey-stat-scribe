@@ -33,7 +33,15 @@ export default function StatTrackerAssignment() {
           .select('*');
 
         if (userError) throw userError;
-        setUsers(userData);
+        // Map Supabase user data to match our User type
+        const mappedUsers = userData.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: ['player'], // Default role for users
+          profileImage: user.avatar_url
+        }));
+        setUsers(mappedUsers);
       } catch (error) {
         toast({
           title: 'Error',
