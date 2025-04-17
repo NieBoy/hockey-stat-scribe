@@ -24,14 +24,14 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { mockOrganizations, currentUser } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { createTeam } from "@/services/teams";
 import { useAuth } from "@/hooks/useAuth";
 
+// Make organizationId optional in the schema
 const teamSchema = z.object({
   name: z.string().min(3, { message: "Team name must be at least 3 characters" }),
-  organizationId: z.string().min(1, { message: "Please select an organization" }),
+  organizationId: z.string().optional(),
 });
 
 type TeamFormValues = z.infer<typeof teamSchema>;
@@ -53,10 +53,16 @@ export default function TeamCreate() {
   const onSubmit = async (data: TeamFormValues) => {
     setIsSubmitting(true);
     try {
-      // In a real app, we would save to database here
-      await createTeam(data);
+      const teamData = {
+        name: data.name,
+        // Use a default value for organizationId if not provided
+        organizationId: data.organizationId || "default"
+      };
       
-      // Invalidate teams cache to force a refresh
+      // In a real app, we would save to database here
+      await createTeam(teamData);
+      
+      // Force refresh the teams data
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       
       toast.success("Team created successfully", {
@@ -83,7 +89,7 @@ export default function TeamCreate() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">Create New Team</h1>
           <p className="text-muted-foreground">
-            Set up a new hockey team in your organization
+            Set up a new hockey team
           </p>
         </div>
 
@@ -109,25 +115,25 @@ export default function TeamCreate() {
                 name="organizationId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Organization</FormLabel>
+                    <FormLabel>Organization (Optional)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select organization" />
+                          <SelectValue placeholder="Select organization (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="default">Default Organization</SelectItem>
                         {(user?.organizations || []).map((org) => (
                           <SelectItem key={org.id} value={org.id}>
                             {org.name}
                           </SelectItem>
                         ))}
-                        {/* Fallback if no organizations */}
-                        {(!user?.organizations || user.organizations.length === 0) && (
-                          <SelectItem value="default">Default Organization</SelectItem>
-                        )}
                       </SelectContent>
                     </Select>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      You can create a team without selecting an organization
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

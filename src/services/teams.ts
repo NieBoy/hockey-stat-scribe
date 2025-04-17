@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { Team, User, Lines, UserRole, Position } from "@/types";
 
 export const getTeams = async (): Promise<Team[]> => {
+  console.log("Fetching teams...");
   const { data, error } = await supabase
     .from('teams')
     .select(`
@@ -10,7 +11,12 @@ export const getTeams = async (): Promise<Team[]> => {
       organization_id
     `);
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching teams:", error);
+    throw error;
+  }
+  
+  console.log("Teams data from DB:", data);
   
   // Need to fetch players and coaches separately
   const teams: Team[] = [];
@@ -25,7 +31,8 @@ export const getTeams = async (): Promise<Team[]> => {
         line_number,
         users:user_id(id, name, email)
       `)
-      .eq('team_id', team.id);
+      .eq('team_id', team.id)
+      .eq('role', 'player');
       
     const coachesResult = await supabase
       .from('team_members')
@@ -78,6 +85,7 @@ export const getTeams = async (): Promise<Team[]> => {
     });
   }
   
+  console.log("Processed teams with members:", teams);
   return teams;
 };
 
@@ -158,25 +166,61 @@ export const createTeam = async (teamData: {
   name: string;
   organizationId: string;
 }): Promise<Team | null> => {
-  const { data, error } = await supabase
-    .from('teams')
-    .insert({
-      name: teamData.name,
-      organization_id: teamData.organizationId
-    })
-    .select()
-    .single();
+  console.log("Creating team:", teamData);
 
-  if (error) throw error;
-  
-  return {
-    id: data.id,
-    name: data.name,
-    organizationId: data.organization_id,
-    players: [],
-    coaches: [],
-    parents: []
-  };
+  // Make sure the team name is present
+  if (!teamData.name) {
+    throw new Error("Team name is required");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('teams')
+      .insert({
+        name: teamData.name,
+        organization_id: teamData.organizationId || 'default'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating team:", error);
+      throw error;
+    }
+    
+    console.log("Team created successfully:", data);
+    
+    // Automatically add the current user as a coach for the team
+    const { data: authData } = await supabase.auth.getSession();
+    if (authData.session?.user.id) {
+      const userId = authData.session.user.id;
+      console.log("Adding current user as coach:", userId);
+      
+      const { error: teamMemberError } = await supabase
+        .from('team_members')
+        .insert({
+          team_id: data.id,
+          user_id: userId,
+          role: 'coach'
+        });
+        
+      if (teamMemberError) {
+        console.error("Error adding coach to team:", teamMemberError);
+      }
+    }
+    
+    return {
+      id: data.id,
+      name: data.name,
+      organizationId: data.organization_id,
+      players: [],
+      coaches: [],
+      parents: []
+    };
+  } catch (error) {
+    console.error("Error in createTeam:", error);
+    throw error;
+  }
 };
 
 export const addPlayerToTeam = async (

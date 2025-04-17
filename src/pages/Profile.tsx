@@ -12,18 +12,37 @@ import PlayersList from "@/components/profile/PlayersList";
 import RoleManager from "@/components/profile/RoleManager";
 import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/services/teams";
+import { useState, useEffect } from "react";
 
 export default function Profile() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("settings");
 
-  const { data: teams = [], isLoading: teamsLoading } = useQuery({
+  const { data: teams = [], isLoading: teamsLoading, error: teamsError } = useQuery({
     queryKey: ['teams'],
     queryFn: getTeams,
-    enabled: !!user
+    enabled: !!user,
+    // Force refetch when the component mounts
+    refetchOnMount: true
   });
 
+  useEffect(() => {
+    console.log("Profile loaded with user:", user);
+    console.log("Teams loaded:", teams);
+    
+    if (teamsError) {
+      console.error("Error fetching teams:", teamsError);
+    }
+  }, [user, teams, teamsError]);
+
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
   }
 
   const isAdmin = user.role.includes('admin');
@@ -33,16 +52,36 @@ export default function Profile() {
 
   // Get teams for the current user
   const userTeams = teams.filter(team => {
+    console.log("Filtering team:", team.id, team.name);
+    
     // Admin can see all teams
     if (isAdmin) return true;
+    
     // Coach can see teams they coach
-    if (isCoach) return team.coaches.some(coach => coach.id === user.id);
+    if (isCoach) {
+      const isCoaching = team.coaches.some(coach => coach.id === user.id);
+      console.log("Is coaching this team:", isCoaching);
+      return isCoaching;
+    }
+    
     // Player can see teams they play in
-    if (isPlayer) return team.players.some(player => player.id === user.id);
+    if (isPlayer) {
+      const isPlaying = team.players.some(player => player.id === user.id);
+      console.log("Is player in this team:", isPlaying);
+      return isPlaying;
+    }
+    
     // Parent can see teams their children play in
-    if (isParent) return team.parents.some(parent => parent.id === user.id);
+    if (isParent) {
+      const isParentInTeam = team.parents.some(parent => parent.id === user.id);
+      console.log("Is parent in this team:", isParentInTeam);
+      return isParentInTeam;
+    }
+    
     return false;
   });
+
+  console.log("Filtered user teams:", userTeams);
 
   return (
     <MainLayout>
@@ -62,7 +101,7 @@ export default function Profile() {
           </Button>
         </div>
 
-        <Tabs defaultValue="settings">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
@@ -89,6 +128,18 @@ export default function Profile() {
               {teamsLoading ? (
                 <div className="flex items-center justify-center h-48">
                   <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : teamsError ? (
+                <div className="p-4 rounded-md bg-destructive/10 text-destructive dark:bg-destructive/20">
+                  <p>Error loading teams: {(teamsError as Error).message}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
                 </div>
               ) : (
                 <TeamsList teams={userTeams} isAdmin={isAdmin} />
