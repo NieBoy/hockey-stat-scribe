@@ -20,3 +20,6 @@ export {
   sendTeamInvitations as sendInvitationsToTeamMembers,
   acceptInvitation
 } from './invitationService';
+
+// Re-export deleteTeamMember
+export { deleteTeamMember } from './memberDeletionService';
