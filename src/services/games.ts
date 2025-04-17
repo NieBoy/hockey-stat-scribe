@@ -11,30 +11,50 @@ export const getGames = async (): Promise<Game[]> => {
         home_team:teams!home_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         ),
         away_team:teams!away_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         )
       `);
 
     if (error) throw error;
     
     // Transform the database response to match our Game type
-    const transformedData = data?.map(game => ({
-      id: game.id,
-      date: new Date(game.date),
-      homeTeam: game.home_team as Team,
-      awayTeam: game.away_team as Team, 
-      location: game.location,
-      statTrackers: [], // Default empty array
-      periods: game.periods,
-      currentPeriod: game.current_period,
-      isActive: game.is_active,
-      stats: [] // Default empty array
-    })) || [];
+    const transformedData = data?.map(game => {
+      // Transform the home team data to match our Team type
+      const homeTeam: Team = {
+        id: game.home_team.id,
+        name: game.home_team.name,
+        players: game.home_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: game.home_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: game.home_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
+      // Transform the away team data to match our Team type
+      const awayTeam: Team = {
+        id: game.away_team.id,
+        name: game.away_team.name,
+        players: game.away_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: game.away_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: game.away_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
+      return {
+        id: game.id,
+        date: new Date(game.date),
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        location: game.location,
+        statTrackers: [], // Default empty array
+        periods: game.periods,
+        currentPeriod: game.current_period,
+        isActive: game.is_active,
+        stats: [] // Default empty array
+      };
+    }) || [];
     
     return transformedData;
   } catch (error) {
@@ -52,12 +72,12 @@ export const getGameById = async (id: string): Promise<Game | null> => {
         home_team:teams!home_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         ),
         away_team:teams!away_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         )
       `)
       .eq('id', id)
@@ -67,11 +87,29 @@ export const getGameById = async (id: string): Promise<Game | null> => {
     
     // Transform to match Game type
     if (data) {
+      // Transform the home team data to match our Team type
+      const homeTeam: Team = {
+        id: data.home_team.id,
+        name: data.home_team.name,
+        players: data.home_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: data.home_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: data.home_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
+      // Transform the away team data to match our Team type
+      const awayTeam: Team = {
+        id: data.away_team.id,
+        name: data.away_team.name,
+        players: data.away_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: data.away_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: data.away_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
       const game: Game = {
         id: data.id,
         date: new Date(data.date),
-        homeTeam: data.home_team as Team,
-        awayTeam: data.away_team as Team,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
         location: data.location,
         statTrackers: [], // Default empty array
         periods: data.periods,
@@ -113,12 +151,12 @@ export const createGame = async (gameData: {
         home_team:teams!home_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         ),
         away_team:teams!away_team_id(
           id,
           name,
-          players:team_members(*)
+          team_members(*)
         )
       `)
       .single();
@@ -130,11 +168,29 @@ export const createGame = async (gameData: {
 
     // Transform to match Game type
     if (data) {
+      // Transform the home team data to match our Team type
+      const homeTeam: Team = {
+        id: data.home_team.id,
+        name: data.home_team.name,
+        players: data.home_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: data.home_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: data.home_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
+      // Transform the away team data to match our Team type
+      const awayTeam: Team = {
+        id: data.away_team.id,
+        name: data.away_team.name,
+        players: data.away_team.team_members?.filter(m => m.role === 'player') || [],
+        coaches: data.away_team.team_members?.filter(m => m.role === 'coach') || [],
+        parents: data.away_team.team_members?.filter(m => m.role === 'parent') || []
+      };
+      
       const game: Game = {
         id: data.id,
         date: new Date(data.date),
-        homeTeam: data.home_team as Team,
-        awayTeam: data.away_team as Team,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
         location: data.location,
         statTrackers: [], // Default empty array
         periods: data.periods,
