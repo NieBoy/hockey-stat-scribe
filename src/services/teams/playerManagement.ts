@@ -21,8 +21,7 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // First, create a new user in the auth schema through a signup if email is provided
-    // Otherwise, create a record directly in the public.users table
+    // Use our new SQL function to create a user (or get existing user ID)
     let userId: string;
     
     if (playerData.email) {
@@ -37,44 +36,33 @@ export const addPlayerToTeam = async (
         userId = existingUsers.id;
         console.log(`User with email ${playerData.email} already exists with ID ${userId}`);
       } else {
-        // Create a new user record directly in the users table
-        // Generate a random UUID for the user
-        userId = crypto.randomUUID();
+        // Use our SQL function to create a new user with the provided email
+        const { data, error } = await supabase.rpc(
+          'create_player_user',
+          { player_name: playerData.name, player_email: playerData.email }
+        );
         
-        // Insert the user
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: userId,
-            name: playerData.name,
-            email: playerData.email
-          });
-        
-        if (userError) {
-          console.error("Error creating user:", userError);
-          throw userError;
+        if (error) {
+          console.error("Error creating user:", error);
+          throw error;
         }
         
+        userId = data;
         console.log("Created new user with email:", userId);
       }
     } else {
-      // No email provided, create a user with a placeholder email
-      userId = crypto.randomUUID();
-      const placeholderEmail = `player_${userId.split('-')[0]}@example.com`;
+      // No email provided, use our SQL function to create a user with a placeholder email
+      const { data, error } = await supabase.rpc(
+        'create_player_user',
+        { player_name: playerData.name }
+      );
       
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          name: playerData.name,
-          email: placeholderEmail
-        });
-      
-      if (userError) {
-        console.error("Error creating user with placeholder email:", userError);
-        throw userError;
+      if (error) {
+        console.error("Error creating user with placeholder email:", error);
+        throw error;
       }
       
+      userId = data;
       console.log("Created new user with placeholder email:", userId);
     }
     

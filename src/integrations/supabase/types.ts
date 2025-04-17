@@ -286,6 +286,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_player_user: {
+        Args: { player_name: string; player_email?: string }
+        Returns: string
+      }
       create_user_bypass_rls: {
         Args: { user_id: string; user_name: string; user_email: string }
         Returns: Json
