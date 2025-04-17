@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { fetchGameWithTeams } from '@/services/games/queries';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 
 const statTypes = ['goals', 'assists', 'penalties', 'shots', 'saves'] as const;
 
@@ -38,9 +38,10 @@ export default function StatTrackerAssignment() {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: ['player'], // Default role for users
+          role: ['player' as UserRole], // Cast the string to UserRole type
           profileImage: user.avatar_url
         }));
+        
         setUsers(mappedUsers);
       } catch (error) {
         toast({
