@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { User, Position, PlayerStat, StatType } from "@/types";
+import { User, Position, PlayerStat, StatType, UserRole } from "@/types";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +19,7 @@ export default function PlayerStats() {
     async function fetchPlayerAndStats() {
       setLoading(true);
       try {
-        // Fetch player details
+        // Fetch player details without the problematic join
         const { data: playerData, error: playerError } = await supabase
           .from('team_members')
           .select(`
@@ -28,7 +28,8 @@ export default function PlayerStats() {
             email,
             role,
             position,
-            line_number
+            line_number,
+            team_id
           `)
           .eq('id', id)
           .single();
@@ -58,7 +59,7 @@ export default function PlayerStats() {
           id: playerData.id,
           name: playerData.name || 'Unknown Player',
           email: playerData.email || undefined,
-          role: [playerData.role || 'player'],
+          role: [playerData.role as UserRole || 'player'], // Cast to UserRole
           position: playerData.position as Position,
           lineNumber: playerData.line_number,
           number: playerData.line_number ? String(playerData.line_number) : undefined,
@@ -123,12 +124,12 @@ export default function PlayerStats() {
         <div className="flex justify-between items-center">
           <div>
             <Button variant="outline" asChild className="mb-2">
-              <Link to={`/players/${player.id}`}>
+              <Link to={`/players/${player?.id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Player
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold">{player.name}'s Stats</h1>
+            <h1 className="text-2xl font-bold">{player?.name}'s Stats</h1>
           </div>
         </div>
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, LineChart, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
-import { User, Position } from "@/types";
+import { User, Position, UserRole } from "@/types";
 import ParentPlayerManager from "@/components/teams/ParentPlayerManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -25,7 +25,7 @@ export default function PlayerDetail() {
       try {
         console.log("Fetching player details for ID:", id);
         
-        // Fetch player from team_members
+        // Fetch player from team_members without the teams join which was causing the error
         const { data: playerData, error: playerError } = await supabase
           .from('team_members')
           .select(`
@@ -36,11 +36,7 @@ export default function PlayerDetail() {
             role,
             position,
             line_number,
-            team_id,
-            teams:team_id (
-              id,
-              name
-            )
+            team_id
           `)
           .eq('id', id)
           .single();
@@ -52,18 +48,32 @@ export default function PlayerDetail() {
           return;
         }
         
+        // Now fetch the team name separately
+        let teamName = "";
+        if (playerData.team_id) {
+          const { data: teamData, error: teamError } = await supabase
+            .from('teams')
+            .select('name')
+            .eq('id', playerData.team_id)
+            .single();
+            
+          if (!teamError && teamData) {
+            teamName = teamData.name;
+          }
+        }
+        
         // Transform to User type
         const playerDetails: User = {
           id: playerData.id,
           name: playerData.name || 'Unknown Player',
           email: playerData.email || undefined,
-          role: [playerData.role || 'player'],
+          role: [playerData.role as UserRole || 'player'], // Cast to UserRole
           position: playerData.position as Position,
           lineNumber: playerData.line_number,
           number: playerData.line_number ? String(playerData.line_number) : undefined,
-          teams: playerData.teams ? [{ 
-            id: playerData.teams.id, 
-            name: playerData.teams.name,
+          teams: teamName ? [{ 
+            id: playerData.team_id, 
+            name: teamName,
             players: [],
             coaches: [],
             parents: []
@@ -139,27 +149,27 @@ export default function PlayerDetail() {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
                 <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                  {getUserInitials(player.name)}
+                  {getUserInitials(player?.name || "")}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-2xl">{player.name}</CardTitle>
+                <CardTitle className="text-2xl">{player?.name}</CardTitle>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  {player.number && <span>#{player.number}</span>}
-                  {player.position && (
+                  {player?.number && <span>#{player.number}</span>}
+                  {player?.position && (
                     <>
                       {player.number && <span>•</span>}
                       <span>{player.position}</span>
                     </>
                   )}
-                  {player.teams && player.teams.length > 0 && (
+                  {player?.teams && player.teams.length > 0 && (
                     <>
                       <span>•</span>
                       <span>{player.teams[0].name}</span>
                     </>
                   )}
                 </div>
-                {player.email && (
+                {player?.email && (
                   <div className="text-sm text-muted-foreground mt-1">
                     {player.email}
                   </div>
@@ -184,16 +194,16 @@ export default function PlayerDetail() {
                     <CardContent className="space-y-2">
                       <div>
                         <span className="font-semibold">Position: </span>
-                        <span>{player.position || "Not assigned"}</span>
+                        <span>{player?.position || "Not assigned"}</span>
                       </div>
                       <div>
                         <span className="font-semibold">Number: </span>
-                        <span>{player.number || "Not assigned"}</span>
+                        <span>{player?.number || "Not assigned"}</span>
                       </div>
                       <div>
                         <span className="font-semibold">Team: </span>
                         <span>
-                          {player.teams && player.teams.length > 0
+                          {player?.teams && player.teams.length > 0
                             ? player.teams[0].name
                             : "Not assigned"}
                         </span>
@@ -210,7 +220,7 @@ export default function PlayerDetail() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-center h-32">
-                      <Link to={`/players/${player.id}/stats`}>
+                      <Link to={`/players/${player?.id}/stats`}>
                         <Button className="gap-2">
                           <LineChart className="h-4 w-4" />
                           View Full Stats
@@ -235,7 +245,7 @@ export default function PlayerDetail() {
                   </Button>
                 </div>
                 
-                {showAddParent && (
+                {showAddParent && player && (
                   <div className="mb-4">
                     <ParentPlayerManager 
                       player={player} 
@@ -250,4 +260,12 @@ export default function PlayerDetail() {
       </div>
     </MainLayout>
   );
+
+  function getUserInitials(name: string) {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  }
 }
