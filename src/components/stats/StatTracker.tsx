@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Game, StatType, GameStat } from "@/types";
 import PeriodSelector from "./PeriodSelector";
-import StatTypeSection from "./StatTypeSection";
+import TeamStats from "./TeamStats";
 
 interface StatTrackerProps {
   game: Game;
@@ -19,7 +19,6 @@ export default function StatTracker({
   existingStats = [] 
 }: StatTrackerProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
-  const [stats, setStats] = useState<GameStat[]>(existingStats);
 
   const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
 
@@ -33,7 +32,7 @@ export default function StatTracker({
     return "Unknown Team";
   };
 
-  const recordStat = (playerId: string, statType: StatType, value: number = 1) => {
+  const handleStatRecorded = (playerId: string, statType: StatType, value: number = 1) => {
     const newStat: Omit<GameStat, 'id' | 'timestamp'> = {
       gameId: game.id,
       playerId,
@@ -60,17 +59,14 @@ export default function StatTracker({
             selectedPeriod={selectedPeriod} 
             onPeriodChange={setSelectedPeriod} 
           />
-          {statTypes.map((statType) => (
-            <StatTypeSection
-              key={statType}
-              statType={statType}
-              players={allPlayers}
-              stats={stats.filter(s => s.statType === statType && s.period === selectedPeriod)}
-              getTeamName={getTeamName}
-              onStatRecorded={(playerId, value) => recordStat(playerId, statType, value)}
-              showWonLost={statType === 'faceoffs'}
-            />
-          ))}
+          <TeamStats
+            players={allPlayers}
+            statTypes={statTypes}
+            stats={existingStats}
+            period={selectedPeriod}
+            getTeamName={getTeamName}
+            onStatRecorded={handleStatRecorded}
+          />
         </div>
       </CardContent>
       <CardFooter>
