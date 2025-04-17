@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, UserRole } from "@/types";
 
@@ -28,7 +27,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
       .from('team_members')
       .select(`
         team_id,
-        teams (id, name)
+        teams:team_id (id, name)
       `)
       .eq('user_id', data.id);
       
@@ -36,14 +35,27 @@ export const getCurrentUser = async (): Promise<User | null> => {
     const userRoles = roles?.map(r => r.role as UserRole) || [];
     
     // Build teams array safely with proper null checks
-    const teams = teamMembers?.map(tm => ({
-      id: tm.teams?.id || '',
-      name: tm.teams?.name || '',
-      organizationId: '',
-      players: [],
-      coaches: [],
-      parents: []
-    })) || [];
+    const teams = teamMembers?.map(tm => {
+      if (!tm.teams) {
+        return {
+          id: tm.team_id || '',
+          name: 'Unknown Team',
+          organizationId: '',
+          players: [],
+          coaches: [],
+          parents: []
+        };
+      }
+      
+      return {
+        id: tm.teams.id || tm.team_id || '',
+        name: tm.teams.name || 'Unknown Team',
+        organizationId: '',
+        players: [],
+        coaches: [],
+        parents: []
+      };
+    }) || [];
     
     return {
       id: data.id,

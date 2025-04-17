@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { GameFormState, Team } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,9 @@ const gameSchema = z.object({
   date: z.date(),
   homeTeam: z.string().min(1, "Home team is required"),
   awayTeam: z.string().min(1, "Away team is required").refine(
-    (value, ctx) => value !== ctx.data.homeTeam, 
+    (value, ctx) => {
+      return value !== ctx.data.homeTeam;
+    }, 
     { message: "Away team must be different from home team" }
   ),
   location: z.string().min(1, "Location is required"),

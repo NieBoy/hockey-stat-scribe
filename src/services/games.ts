@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { Game, GameFormState, GameStat, StatTracker, UserRole, StatType } from "@/types";
 
@@ -44,39 +43,40 @@ export const getGames = async (): Promise<Game[]> => {
           id,
           game_id,
           user_id,
-          stat_type,
-          users (id, name, email)
+          stat_type
         `)
         .eq('game_id', game.id);
         
-      // Group stat trackers by user
-      const trackersByUser = new Map<string, string[]>();
-      
-      for (const tracker of statTrackers || []) {
-        if (!tracker.users) continue;
-        
-        const userId = tracker.users.id;
-        if (trackersByUser.has(userId)) {
-          trackersByUser.get(userId)!.push(tracker.stat_type);
-        } else {
-          trackersByUser.set(userId, [tracker.stat_type]);
-        }
-      }
-      
+      // For each stat tracker, get the user details separately
       const formattedTrackers: StatTracker[] = [];
       
-      for (const [userId, statTypes] of trackersByUser.entries()) {
-        const user = statTrackers?.find(t => t.users?.id === userId)?.users;
-        if (user) {
-          formattedTrackers.push({
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: ['player'] as UserRole[]
-            },
-            statTypes: statTypes as StatType[]
-          });
+      if (statTrackers) {
+        for (const tracker of statTrackers) {
+          // Get user details
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('id', tracker.user_id)
+            .single();
+            
+          if (userData) {
+            // Find existing tracker or create new one
+            let existingTracker = formattedTrackers.find(t => t.user.id === userData.id);
+            
+            if (existingTracker) {
+              existingTracker.statTypes.push(tracker.stat_type as StatType);
+            } else {
+              formattedTrackers.push({
+                user: {
+                  id: userData.id,
+                  name: userData.name || '',
+                  email: userData.email,
+                  role: ['player'] as UserRole[]
+                },
+                statTypes: [tracker.stat_type as StatType]
+              });
+            }
+          }
         }
       }
       
@@ -90,17 +90,17 @@ export const getGames = async (): Promise<Game[]> => {
         id: game.id,
         date: new Date(game.date),
         homeTeam: {
-          id: homeTeam.id,
-          name: homeTeam.name,
-          organizationId: homeTeam.organization_id,
+          id: homeTeam?.id || game.home_team_id,
+          name: homeTeam?.name || 'Unknown Team',
+          organizationId: homeTeam?.organization_id || '',
           players: [],
           coaches: [],
           parents: []
         },
         awayTeam: {
-          id: awayTeam.id,
-          name: awayTeam.name,
-          organizationId: awayTeam.organization_id,
+          id: awayTeam?.id || game.away_team_id,
+          name: awayTeam?.name || 'Unknown Team',
+          organizationId: awayTeam?.organization_id || '',
           players: [],
           coaches: [],
           parents: []
@@ -153,39 +153,40 @@ export const getGameById = async (id: string): Promise<Game | null> => {
         id,
         game_id,
         user_id,
-        stat_type,
-        users (id, name, email)
+        stat_type
       `)
       .eq('game_id', game.id);
       
-    // Group stat trackers by user
-    const trackersByUser = new Map<string, string[]>();
-    
-    for (const tracker of statTrackers || []) {
-      if (!tracker.users) continue;
-      
-      const userId = tracker.users.id;
-      if (trackersByUser.has(userId)) {
-        trackersByUser.get(userId)!.push(tracker.stat_type);
-      } else {
-        trackersByUser.set(userId, [tracker.stat_type]);
-      }
-    }
-    
+    // For each stat tracker, get the user details separately
     const formattedTrackers: StatTracker[] = [];
     
-    for (const [userId, statTypes] of trackersByUser.entries()) {
-      const user = statTrackers?.find(t => t.users?.id === userId)?.users;
-      if (user) {
-        formattedTrackers.push({
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: ['player'] as UserRole[]
-          },
-          statTypes: statTypes as StatType[]
-        });
+    if (statTrackers) {
+      for (const tracker of statTrackers) {
+        // Get user details
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .eq('id', tracker.user_id)
+          .single();
+          
+        if (userData) {
+          // Find existing tracker or create new one
+          let existingTracker = formattedTrackers.find(t => t.user.id === userData.id);
+          
+          if (existingTracker) {
+            existingTracker.statTypes.push(tracker.stat_type as StatType);
+          } else {
+            formattedTrackers.push({
+              user: {
+                id: userData.id,
+                name: userData.name || '',
+                email: userData.email,
+                role: ['player'] as UserRole[]
+              },
+              statTypes: [tracker.stat_type as StatType]
+            });
+          }
+        }
       }
     }
     
