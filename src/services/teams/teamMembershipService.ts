@@ -4,56 +4,47 @@ import { User, Position } from "@/types";
 
 /**
  * Adds a team member to a team
+ * This new implementation doesn't require a user account
  */
 export const addTeamMember = async (
   teamId: string, 
-  userId: string, 
-  role: string = 'player',
-  position?: string,
-  lineNumber?: number | null
-): Promise<boolean> => {
+  memberData: {
+    name: string,
+    email?: string,
+    role?: string,
+    position?: string,
+    lineNumber?: number | null,
+    userId?: string | null
+  }
+): Promise<string> => {
   try {
-    console.log(`Adding team member: userId=${userId}, role=${role}, to teamId=${teamId}`);
+    console.log(`Adding team member: ${memberData.name}, role=${memberData.role || 'player'}, to teamId=${teamId}`);
     
-    // Check if the team member already exists to avoid duplicate entries
-    const { data: existingMember, error: checkError } = await supabase
-      .from('team_members')
-      .select('id')
-      .eq('team_id', teamId)
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Generate a unique ID for the team member entry
+    const memberId = crypto.randomUUID();
     
-    if (checkError) {
-      console.error("Error checking for existing team member:", checkError);
-    }
-    
-    if (existingMember) {
-      console.log(`User ${userId} is already a member of team ${teamId}`);
-      return true;
-    }
-    
-    // Add the team member with better error handling
+    // Add the team member directly without requiring a user account
     const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({
+        id: memberId,
         team_id: teamId,
-        user_id: userId,
-        role: role,
-        position: position || null,
-        line_number: lineNumber
+        user_id: memberData.userId || null, // This will be null for players without accounts
+        role: memberData.role || 'player',
+        position: memberData.position || null,
+        line_number: memberData.lineNumber,
+        name: memberData.name,
+        email: memberData.email || null
       })
       .select();
       
     if (teamMemberError) {
-      // Log the details and throw a more specific error
       console.error("Error adding team member:", teamMemberError);
       
       if (teamMemberError.code === '23503') {
         // Foreign key violation
-        if (teamMemberError.message.includes('team_members_user_id_fkey')) {
-          throw new Error(`Cannot add player to team: User ID ${userId} does not exist in the system`);
-        } else if (teamMemberError.message.includes('team_members_team_id_fkey')) {
-          throw new Error(`Cannot add player to team: Team ID ${teamId} does not exist`);
+        if (teamMemberError.message.includes('team_members_team_id_fkey')) {
+          throw new Error(`Cannot add member to team: Team ID ${teamId} does not exist`);
         }
       } else if (teamMemberError.message.includes('violates row-level security policy')) {
         throw new Error(`Row level security prevented adding team member. Please check permissions.`);
@@ -62,8 +53,8 @@ export const addTeamMember = async (
       throw new Error(`Failed to add team member: ${teamMemberError.message}`);
     }
     
-    console.log(`Successfully added ${role} to team ${teamId}`);
-    return true;
+    console.log(`Successfully added ${memberData.role || 'player'} to team ${teamId}`);
+    return memberId;
   } catch (error) {
     console.error("Error in addTeamMember:", error);
     throw error;
@@ -75,10 +66,12 @@ export const addTeamMember = async (
  */
 export const updateTeamMemberInfo = async (
   teamId: string,
-  userId: string,
+  memberId: string,
   memberData: {
     position?: string;
     number?: string;
+    name?: string;
+    email?: string;
   }
 ): Promise<boolean> => {
   try {
@@ -92,6 +85,14 @@ export const updateTeamMemberInfo = async (
       updateData.line_number = memberData.number ? parseInt(memberData.number, 10) : null;
     }
     
+    if (memberData.name !== undefined) {
+      updateData.name = memberData.name;
+    }
+    
+    if (memberData.email !== undefined) {
+      updateData.email = memberData.email;
+    }
+    
     if (Object.keys(updateData).length === 0) {
       return true;
     }
@@ -100,7 +101,7 @@ export const updateTeamMemberInfo = async (
       .from('team_members')
       .update(updateData)
       .eq('team_id', teamId)
-      .eq('user_id', userId);
+      .eq('id', memberId);
       
     if (teamMemberError) {
       console.error("Error updating team member:", teamMemberError);
@@ -124,6 +125,8 @@ export const getTeamMembers = async (teamId: string): Promise<any[]> => {
       .select(`
         id,
         user_id,
+        name,
+        email,
         role,
         position,
         line_number
@@ -146,13 +149,13 @@ export const getTeamMembers = async (teamId: string): Promise<any[]> => {
 /**
  * Removes a team member from a team
  */
-export const removeTeamMember = async (teamId: string, userId: string): Promise<boolean> => {
+export const removeTeamMember = async (teamId: string, memberId: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('team_members')
       .delete()
       .eq('team_id', teamId)
-      .eq('user_id', userId);
+      .eq('id', memberId);
       
     if (error) {
       console.error("Error removing team member:", error);

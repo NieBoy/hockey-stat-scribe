@@ -29,11 +29,6 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
         return false;
       }
       
-      if (!playerData.number) {
-        toast.error("Player number is required");
-        return false;
-      }
-      
       console.log(`Adding player to team ${teamId}:`, playerData);
       
       await addPlayerToTeam(teamId, {
