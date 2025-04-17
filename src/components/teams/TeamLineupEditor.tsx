@@ -40,7 +40,7 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
     
     if (!player) return;
     
-    if (playerId === '') {
+    if (playerId === 'none') {
       // Handle removing a player (empty selection)
       if (lineType === 'forwards') {
         const line = newLines.forwards[lineIndex];
@@ -177,14 +177,14 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
                   <div>
                     <p className="text-sm font-medium mb-1">Left Wing</p>
                     <Select 
-                      value={line.leftWing?.id || ''} 
+                      value={line.leftWing?.id || 'none'} 
                       onValueChange={(value) => handlePlayerSelect('forwards', index, 'LW', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availablePlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
@@ -201,14 +201,14 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
                   <div>
                     <p className="text-sm font-medium mb-1">Center</p>
                     <Select 
-                      value={line.center?.id || ''} 
+                      value={line.center?.id || 'none'} 
                       onValueChange={(value) => handlePlayerSelect('forwards', index, 'C', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availablePlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
@@ -225,14 +225,14 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
                   <div>
                     <p className="text-sm font-medium mb-1">Right Wing</p>
                     <Select 
-                      value={line.rightWing?.id || ''} 
+                      value={line.rightWing?.id || 'none'} 
                       onValueChange={(value) => handlePlayerSelect('forwards', index, 'RW', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availablePlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
@@ -273,14 +273,14 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
                   <div>
                     <p className="text-sm font-medium mb-1">Left Defense</p>
                     <Select 
-                      value={line.leftDefense?.id || ''} 
+                      value={line.leftDefense?.id || 'none'} 
                       onValueChange={(value) => handlePlayerSelect('defense', index, 'LD', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availablePlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
@@ -297,14 +297,14 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
                   <div>
                     <p className="text-sm font-medium mb-1">Right Defense</p>
                     <Select 
-                      value={line.rightDefense?.id || ''} 
+                      value={line.rightDefense?.id || 'none'} 
                       onValueChange={(value) => handlePlayerSelect('defense', index, 'RD', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availablePlayers.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
