@@ -9,6 +9,7 @@ import UserSettings from "@/components/profile/UserSettings";
 import TeamsList from "@/components/profile/TeamsList";
 import OrganizationsList from "@/components/profile/OrganizationsList";
 import PlayersList from "@/components/profile/PlayersList";
+import RoleManager from "@/components/profile/RoleManager";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -38,14 +39,15 @@ export default function Profile() {
         <Tabs defaultValue="settings">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
             <TabsTrigger value="teams">Teams</TabsTrigger>
             <TabsTrigger value="players">Players</TabsTrigger>
-            {user.isAdmin && (
-              <TabsTrigger value="organizations">Organizations</TabsTrigger>
-            )}
           </TabsList>
           <TabsContent value="settings" className="py-6">
             <UserSettings user={user} />
+          </TabsContent>
+          <TabsContent value="roles" className="py-6">
+            <RoleManager />
           </TabsContent>
           <TabsContent value="teams" className="py-6">
             <TeamsList teams={user.teams || []} />
