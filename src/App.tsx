@@ -22,6 +22,10 @@ import { Toaster } from "@/components/ui/toaster"
 import GameTracking from "@/pages/GameTracking";
 import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Create a client
+const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -95,10 +99,12 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppRoutes />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }
