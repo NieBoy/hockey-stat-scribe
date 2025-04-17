@@ -4,8 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
-import { getTeamById } from "@/services/teams";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { useTeams } from "@/hooks/useTeams";
 import TeamHeader from "@/components/teams/TeamHeader";
@@ -26,21 +24,13 @@ export default function TeamDetail() {
     handleAddPlayer,
     submitNewPlayer,
     selectedTeam,
-    handleRemovePlayer
-  } = useTeams();
-
-  const { 
-    data: team, 
-    isLoading, 
-    error 
-  } = useQuery({
-    queryKey: ['team', id],
-    queryFn: () => getTeamById(id),
-    enabled: !!id,
-    staleTime: 10000,
-  });
+    handleRemovePlayer,
+    team,
+    isLoadingTeam,
+    teamError
+  } = useTeams(id);
   
-  if (isLoading) {
+  if (isLoadingTeam) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-48">
@@ -50,12 +40,12 @@ export default function TeamDetail() {
     );
   }
 
-  if (error) {
+  if (teamError) {
     return (
       <MainLayout>
         <div className="space-y-6">
           <h1 className="text-3xl font-bold tracking-tight mb-1">Error Loading Team</h1>
-          <p className="text-red-500">{(error as Error).message}</p>
+          <p className="text-red-500">{(teamError as Error).message}</p>
           <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
         </div>
       </MainLayout>
