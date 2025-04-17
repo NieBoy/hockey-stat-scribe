@@ -20,7 +20,6 @@ export interface Team {
   id: string;
   name: string;
   logo?: string;
-  organizationId: string; // Keep for compatibility with existing code
   players: User[];
   coaches: User[];
   parents: User[];  // Parents associated with the team

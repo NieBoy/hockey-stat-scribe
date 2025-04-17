@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import { createTeam } from "@/services/teams";
 import { useAuth } from "@/hooks/useAuth";
 
-// Remove organizationId from schema
 const teamSchema = z.object({
   name: z.string().min(3, { message: "Team name must be at least 3 characters" }),
 });
@@ -45,9 +44,7 @@ export default function TeamCreate() {
     setIsSubmitting(true);
     try {
       const teamData = {
-        name: data.name,
-        // Generate a UUID for organizationId instead of using "default"
-        organizationId: crypto.randomUUID()
+        name: data.name
       };
       
       // In a real app, we would save to database here

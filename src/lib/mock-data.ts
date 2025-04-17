@@ -1,20 +1,5 @@
 
-import { Game, Team, User, StatTracker, GameStat, PlayerStat, Organization, UserRole } from '@/types';
-
-export const mockOrganizations: Organization[] = [
-  {
-    id: '1',
-    name: 'Northside Hockey Association',
-    teams: [],
-    admins: []
-  },
-  {
-    id: '2',
-    name: 'Southside Hockey League',
-    teams: [],
-    admins: []
-  }
-];
+import { Game, Team, User, StatTracker, GameStat, PlayerStat, UserRole } from '@/types';
 
 export const mockUsers: User[] = [
   {
@@ -22,8 +7,7 @@ export const mockUsers: User[] = [
     name: 'Coach Smith',
     email: 'coach@example.com',
     role: ['coach', 'admin'],
-    isAdmin: true,
-    organizations: [mockOrganizations[0]]
+    isAdmin: true
   },
   {
     id: '2',
@@ -56,20 +40,14 @@ export const mockUsers: User[] = [
     name: 'Jane Smith',
     email: 'jane@example.com',
     role: ['admin'],
-    isAdmin: true,
-    organizations: [mockOrganizations[0], mockOrganizations[1]]
+    isAdmin: true
   }
 ];
-
-// Update mockOrganizations with admins reference
-mockOrganizations[0].admins = [mockUsers[0], mockUsers[5]];
-mockOrganizations[1].admins = [mockUsers[5]];
 
 export const mockTeams: Team[] = [
   {
     id: '1',
     name: 'Ice Hawks',
-    organizationId: '1',
     players: [mockUsers[1], mockUsers[2]],
     coaches: [mockUsers[0]],
     parents: [mockUsers[3]]
@@ -77,7 +55,6 @@ export const mockTeams: Team[] = [
   {
     id: '2',
     name: 'Polar Bears',
-    organizationId: '1',
     players: [
       {
         id: '5',
@@ -90,9 +67,6 @@ export const mockTeams: Team[] = [
     parents: [mockUsers[3]]
   }
 ];
-
-// Update organization with teams
-mockOrganizations[0].teams = mockTeams;
 
 export const mockStatTrackers: StatTracker[] = [
   {

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InviteUserForm from "@/components/invitations/InviteUserForm";
 import InvitationsList from "@/components/invitations/InvitationsList";
 import { Invitation } from "@/types";
-import { currentUser, mockOrganizations } from "@/lib/mock-data";
+import { currentUser, mockTeams } from "@/lib/mock-data";
 import { toast } from "sonner";
 
 // Mock invitations data
@@ -23,7 +23,6 @@ const mockSentInvitations: Invitation[] = [
     id: '2',
     email: 'newcoach@example.com',
     role: ['coach'],
-    organizationId: '1',
     invitedBy: '1',
     status: 'accepted',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
@@ -35,7 +34,7 @@ const mockReceivedInvitations: Invitation[] = [
     id: '3',
     email: currentUser.email,
     role: ['admin'],
-    organizationId: '2',
+    teamId: '2',
     invitedBy: '6',
     status: 'pending',
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
@@ -47,7 +46,8 @@ export default function Invitations() {
   const [receivedInvitations, setReceivedInvitations] = useState<Invitation[]>(mockReceivedInvitations);
   const [activeTab, setActiveTab] = useState("received");
   
-  const userOrganizations = currentUser.organizations || [];
+  // Get teams accessible to the current user
+  const userTeams = mockTeams;
 
   const handleAcceptInvitation = (id: string) => {
     setReceivedInvitations(invitations =>
@@ -56,7 +56,7 @@ export default function Invitations() {
       )
     );
     toast.success("Invitation accepted", {
-      description: "You have been added to the organization/team",
+      description: "You have been added to the team",
     });
   };
 
@@ -85,7 +85,6 @@ export default function Invitations() {
       id: Date.now().toString(),
       email: invitation.email || "",
       role: invitation.role || ["player"],
-      organizationId: invitation.organizationId,
       teamId: invitation.teamId,
       invitedBy: currentUser.id,
       status: "pending",
@@ -101,7 +100,7 @@ export default function Invitations() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">Invitations</h1>
           <p className="text-muted-foreground">
-            Manage invitations to your organizations and teams
+            Manage invitations to your teams
           </p>
         </div>
 
@@ -125,7 +124,7 @@ export default function Invitations() {
               <div>
                 <h2 className="text-xl font-semibold mb-4">Send New Invitation</h2>
                 <InviteUserForm 
-                  organizations={userOrganizations}
+                  teams={userTeams}
                   onInvite={handleInvite}
                 />
               </div>
