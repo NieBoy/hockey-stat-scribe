@@ -1,7 +1,4 @@
-
 import { supabase } from '@/lib/supabase';
-import { Game } from '@/types';
-import { GameDbResponse } from './types';
 
 export const fetchTeamMembers = async (teamId: string) => {
   const { data, error } = await supabase
@@ -72,4 +69,65 @@ export const createNewGame = async (
     
   if (error) throw error;
   return data as GameDbResponse;
+};
+
+export const startGame = async (gameId: string) => {
+  const { data, error } = await supabase
+    .from('games')
+    .update({
+      is_active: true,
+      current_period: 1
+    })
+    .eq('id', gameId)
+    .select(`
+      *,
+      home_team:teams!home_team_id(
+        id,
+        name
+      ),
+      away_team:teams!away_team_id(
+        id,
+        name
+      )
+    `)
+    .single();
+    
+  if (error) throw error;
+  return data;
+};
+
+export const endGame = async (gameId: string) => {
+  const { data, error } = await supabase
+    .from('games')
+    .update({
+      is_active: false
+    })
+    .eq('id', gameId)
+    .select(`
+      *,
+      home_team:teams!home_team_id(
+        id,
+        name
+      ),
+      away_team:teams!away_team_id(
+        id,
+        name
+      )
+    `)
+    .single();
+    
+  if (error) throw error;
+  return data;
+};
+
+export const updateGamePeriod = async (gameId: string, period: number) => {
+  const { data, error } = await supabase
+    .from('games')
+    .update({ current_period: period })
+    .eq('id', gameId)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
 };

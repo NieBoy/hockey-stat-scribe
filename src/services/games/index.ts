@@ -1,6 +1,5 @@
-
 import { Game } from '@/types';
-import { fetchGameWithTeams, fetchTeamMembers, createNewGame } from './queries';
+import { fetchGameWithTeams, fetchTeamMembers, createNewGame, queries } from './queries';
 import { transformTeamData } from './teamTransforms';
 import { GameDbResponse } from './types';
 
@@ -167,9 +166,40 @@ export const createGame = async (gameData: {
 
 export const startGame = async (id: string): Promise<Game | null> => {
   try {
-    // This will need to be implemented with actual Supabase calls
-    console.log("Starting game:", id);
-    return null;
+    const data = await queries.startGame(id);
+    if (!data) return null;
+    
+    // Get team members for both teams
+    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
+      queries.fetchTeamMembers(data.home_team.id),
+      queries.fetchTeamMembers(data.away_team.id)
+    ]);
+    
+    // Transform the team data
+    const homeTeam = transformTeamData(
+      data.home_team.id,
+      data.home_team.name,
+      homeTeamMembers
+    );
+    
+    const awayTeam = transformTeamData(
+      data.away_team.id,
+      data.away_team.name,
+      awayTeamMembers
+    );
+    
+    return {
+      id: data.id,
+      date: new Date(data.date),
+      homeTeam,
+      awayTeam,
+      location: data.location,
+      statTrackers: [],
+      periods: data.periods,
+      currentPeriod: data.current_period,
+      isActive: data.is_active,
+      stats: []
+    };
   } catch (error) {
     console.error("Error starting game:", error);
     return null;
@@ -178,9 +208,40 @@ export const startGame = async (id: string): Promise<Game | null> => {
 
 export const endGame = async (id: string): Promise<Game | null> => {
   try {
-    // This will need to be implemented with actual Supabase calls
-    console.log("Ending game:", id);
-    return null;
+    const data = await queries.endGame(id);
+    if (!data) return null;
+    
+    // Get team members for both teams
+    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
+      queries.fetchTeamMembers(data.home_team.id),
+      queries.fetchTeamMembers(data.away_team.id)
+    ]);
+    
+    // Transform the team data
+    const homeTeam = transformTeamData(
+      data.home_team.id,
+      data.home_team.name,
+      homeTeamMembers
+    );
+    
+    const awayTeam = transformTeamData(
+      data.away_team.id,
+      data.away_team.name,
+      awayTeamMembers
+    );
+    
+    return {
+      id: data.id,
+      date: new Date(data.date),
+      homeTeam,
+      awayTeam,
+      location: data.location,
+      statTrackers: [],
+      periods: data.periods,
+      currentPeriod: data.current_period,
+      isActive: data.is_active,
+      stats: []
+    };
   } catch (error) {
     console.error("Error ending game:", error);
     return null;
