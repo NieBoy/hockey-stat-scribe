@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import { useProfileData } from "@/hooks/useProfileData";
+import { useEffect } from "react";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -19,6 +20,12 @@ export default function Profile() {
     refetch,
     filterUserTeams 
   } = useProfileData(user);
+
+  // Add a debug log to see when the component renders and with what user data
+  useEffect(() => {
+    console.log("Profile component rendered with user:", user);
+    console.log("All available teams:", teams);
+  }, [user, teams]);
 
   if (!user) {
     return (
@@ -35,9 +42,9 @@ export default function Profile() {
   const isPlayer = user.role.includes('player');
   const isParent = user.role.includes('parent');
 
-  // Get teams for the current user
+  // Get teams for the current user - for admin users, this should be ALL teams
   const userTeams = filterUserTeams(user);
-  console.log("Filtered user teams:", userTeams);
+  console.log("Filtered user teams for display:", userTeams);
 
   return (
     <MainLayout>

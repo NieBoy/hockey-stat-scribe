@@ -75,37 +75,45 @@ export function useProfileData(user: User | null) {
 
   // Get teams for the current user
   const filterUserTeams = (user: User) => {
+    if (!user) return [];
+    
+    console.log("Filtering teams for user:", user.id, user.name, user.role);
+    console.log("Available teams:", teams.map(t => ({ id: t.id, name: t.name })));
+    
     const isAdmin = user.role.includes('admin');
     const isCoach = user.role.includes('coach');
     const isPlayer = user.role.includes('player');
     const isParent = user.role.includes('parent');
 
+    // Admin can see all teams - return them immediately
+    if (isAdmin) {
+      console.log("User is admin, returning all teams:", teams.length);
+      return teams;
+    }
+    
+    // For other roles, filter teams based on membership
     return teams.filter(team => {
-      console.log("Filtering team:", team.id, team.name);
-      console.log("Team coaches:", team.coaches?.map(c => c.id));
-      
-      // Admin can see all teams
-      if (isAdmin) return true;
+      console.log("Checking team:", team.name);
       
       // Coach can see teams they coach
       if (isCoach) {
         const isCoaching = team.coaches?.some(coach => coach.id === user.id);
-        console.log("Is coaching this team:", isCoaching, "user.id:", user.id);
-        return isCoaching;
+        console.log("Is coaching this team:", isCoaching);
+        if (isCoaching) return true;
       }
       
       // Player can see teams they play in
       if (isPlayer) {
         const isPlaying = team.players?.some(player => player.id === user.id);
-        console.log("Is player in this team:", isPlaying);
-        return isPlaying;
+        console.log("Is playing in this team:", isPlaying);
+        if (isPlaying) return true;
       }
       
       // Parent can see teams their children play in
       if (isParent) {
         const isParentInTeam = team.parents?.some(parent => parent.id === user.id);
         console.log("Is parent in this team:", isParentInTeam);
-        return isParentInTeam;
+        if (isParentInTeam) return true;
       }
       
       return false;

@@ -17,6 +17,11 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   
+  // Debug log to see what teams are passed in
+  useEffect(() => {
+    console.log("TeamsList received teams:", teams?.map(t => ({ id: t.id, name: t.name })));
+  }, [teams]);
+  
   // Auto refresh data on mount
   useEffect(() => {
     refreshTeams();
@@ -96,7 +101,7 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
             <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
             <h3 className="mt-4 text-lg font-medium">No teams found</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You are not associated with any teams yet.
+              {isAdmin ? 'No teams created yet.' : 'You are not associated with any teams yet.'}
             </p>
             <Button className="mt-4" asChild>
               <Link to="/teams/new">
