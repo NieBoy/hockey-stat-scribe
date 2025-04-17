@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 import { getOrCreatePlayerUser, updateUserInfo } from "./userService";
@@ -25,57 +24,50 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Get or create user with our improved security definer RPC function
-    console.log("Creating or fetching player user with updated function...");
+    // Create or get the user
+    console.log("Creating or fetching player user with redesigned approach...");
     const userId = await getOrCreatePlayerUser(playerData);
     
     if (!userId) {
       throw new Error("Failed to create or get user ID");
     }
     
-    console.log(`Received user ID ${userId}, verifying it exists...`);
+    console.log(`Received user ID ${userId}, adding as team member...`);
     
-    // Double-check that the user exists in the database before proceeding with team member addition
-    const { data: userExists, error: checkError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', userId)
-      .single();
+    // Add the team member - we'll simplify this flow and add error handling
+    try {
+      await addTeamMember(
+        teamId, 
+        userId, 
+        'player', 
+        playerData.position, 
+        playerData.number ? parseInt(playerData.number, 10) : null
+      );
       
-    if (checkError) {
-      console.error("Failed to verify user exists:", checkError);
-      throw new Error(`Could not verify user ID ${userId} exists in the database: ${checkError.message}`);
+      console.log(`Successfully added player ${playerData.name} to team ${teamId}`);
+      
+      // Fetch the user's info to return a complete user object
+      const { data: userData } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('id', userId)
+        .single();
+      
+      // Return a user object with the data we have
+      return {
+        id: userId,
+        name: userData?.name || playerData.name,
+        email: userData?.email || playerData.email || `player_${userId.substring(0, 8)}@example.com`,
+        role: ['player'],
+        position: playerData.position as Position,
+        number: playerData.number
+      };
+    } catch (addError: any) {
+      console.error("Error adding team member:", addError);
+      throw new Error(`Failed to add player as team member: ${addError.message || "Unknown error"}`);
     }
-    
-    if (!userExists) {
-      throw new Error(`User with ID ${userId} not found in database`);
-    }
-    
-    console.log(`User verified with ID ${userId}, now adding as team member`);
-    
-    // Add the team member with improved error handling
-    await addTeamMember(
-      teamId, 
-      userId, 
-      'player', 
-      playerData.position, 
-      playerData.number ? parseInt(playerData.number, 10) : null
-    );
-    
-    console.log(`Successfully added player ${playerData.name} to team ${teamId}`);
-    
-    // Return a user object with the data we have
-    return {
-      id: userId,
-      name: userExists.name || playerData.name,
-      email: userExists.email || playerData.email || `player_${userId.substring(0, 8)}@example.com`,
-      role: ['player'],
-      position: playerData.position as Position,
-      number: playerData.number
-    };
   } catch (error: any) {
     console.error("Error in addPlayerToTeam:", error);
-    // Provide more detailed error information for debugging
     throw new Error(`Failed to add player to team: ${error.message || "Unknown error"}`);
   }
 };

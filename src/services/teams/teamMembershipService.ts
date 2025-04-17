@@ -32,7 +32,7 @@ export const addTeamMember = async (
       return true;
     }
     
-    // Add the team member
+    // Add the team member with better error handling
     const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({
@@ -45,8 +45,19 @@ export const addTeamMember = async (
       .select();
       
     if (teamMemberError) {
+      // Log the details and throw a more specific error
       console.error("Error adding team member:", teamMemberError);
-      throw teamMemberError;
+      
+      if (teamMemberError.code === '23503') {
+        // Foreign key violation
+        if (teamMemberError.message.includes('team_members_user_id_fkey')) {
+          throw new Error(`Cannot add player to team: User ID ${userId} does not exist in the system`);
+        } else if (teamMemberError.message.includes('team_members_team_id_fkey')) {
+          throw new Error(`Cannot add player to team: Team ID ${teamId} does not exist`);
+        }
+      }
+      
+      throw new Error(`Failed to add team member: ${teamMemberError.message}`);
     }
     
     console.log(`Successfully added ${role} to team ${teamId}`);
