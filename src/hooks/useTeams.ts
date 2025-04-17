@@ -22,7 +22,9 @@ export function useTeams() {
     refetch 
   } = useQuery({
     queryKey: ['teams'],
-    queryFn: getTeams
+    queryFn: getTeams,
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   const selectedTeam = selectedTeamId && teams
@@ -39,6 +41,8 @@ export function useTeams() {
     
     if (newPlayer.name) {
       try {
+        console.log(`Adding player to team ${selectedTeam.id}:`, newPlayer);
+        
         await addPlayerToTeam(selectedTeam.id, {
           name: newPlayer.name,
           email: newPlayer.email || undefined, // Optional email
@@ -49,7 +53,10 @@ export function useTeams() {
         toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
         setAddPlayerDialogOpen(false);
         setNewPlayer({ name: "", email: "", position: "", number: "" });
-        refetch(); // Refresh teams data
+        
+        // Force a refetch to get the updated team data including the new player
+        console.log("Refetching teams data after adding player...");
+        refetch(); 
       } catch (error) {
         console.error("Error adding player:", error);
         toast.error("Failed to add player");
