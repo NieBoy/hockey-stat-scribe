@@ -23,7 +23,7 @@ export const addPlayerToTeam = async (
     }
 
     // Generate a new UUID for the user
-    let userId = crypto.randomUUID();
+    let userId = crypto.randomUUID() as `${string}-${string}-${string}-${string}-${string}`;
     
     // First check if a user with this email already exists (if email provided)
     if (playerData.email) {

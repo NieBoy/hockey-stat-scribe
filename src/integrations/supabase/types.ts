@@ -286,7 +286,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_user_bypass_rls: {
+        Args: { user_id: string; user_name: string; user_email: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
