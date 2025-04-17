@@ -11,18 +11,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { fetchGameStats, insertGameStat, deleteGameStat } from "@/services/stats/gameStatsService";
 import { useToast } from "@/hooks/use-toast";
+import { getGameById } from "@/services/games";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TrackStats() {
-  const { id } = useParams<{ id: string }>();
+  const { id = '' } = useParams<{ id: string }>();
   const [gameStats, setGameStats] = useState<GameStat[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Find the game in mock data or fetch from backend
-  const game = mockGames.find(g => g.id === id) || mockGames[0];
+  // Use React Query to fetch the game
+  const { data: game, isLoading: isGameLoading } = useQuery({
+    queryKey: ['games', id],
+    queryFn: () => getGameById(id),
+    enabled: !!id
+  });
   
   // Find which stat types this user is assigned to track
-  const userAssignment = user ? game.statTrackers.find(
+  const userAssignment = user && game ? game.statTrackers.find(
     tracker => tracker.user.id === user.id
   ) : undefined;
   
@@ -45,7 +51,7 @@ export default function TrackStats() {
       }
     };
     loadGameStats();
-  }, [id]);
+  }, [id, toast]);
 
   // Real-time stats subscription
   useEffect(() => {
@@ -94,13 +100,14 @@ export default function TrackStats() {
   // Handler for stat recording
   const handleStatRecorded = async (stat: Omit<GameStat, 'id' | 'timestamp'>) => {
     try {
-      const insertedStat = await insertGameStat(stat);
+      await insertGameStat(stat);
       // Note: The real-time listener will handle adding the stat to state
       toast({
         title: "Stat Recorded",
         description: "The stat has been successfully recorded."
       });
     } catch (error) {
+      console.error("Error recording stat:", error);
       toast({
         title: "Error",
         description: "Failed to record stat",
@@ -125,6 +132,29 @@ export default function TrackStats() {
       });
     }
   };
+
+  if (isGameLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!game) {
+    return (
+      <MainLayout>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Game not found</h2>
+          <Button asChild className="mt-4">
+            <Link to="/games">Return to Games</Link>
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

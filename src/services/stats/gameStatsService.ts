@@ -11,7 +11,8 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
       stat_type: stat.statType,
       period: stat.period,
       value: stat.value,
-      details: stat.details || ''
+      details: stat.details || '',
+      timestamp: new Date().toISOString()  // Add the current timestamp
     })
     .select()
     .single();

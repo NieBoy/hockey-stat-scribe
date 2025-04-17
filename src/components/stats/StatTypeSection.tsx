@@ -1,3 +1,4 @@
+
 import { StatType, User } from "@/types";
 import StatCard from "./StatCard";
 
@@ -7,6 +8,7 @@ interface StatTypeSectionProps {
   stats: { playerId: string; value: number }[];
   getTeamName: (playerId: string) => string;
   onStatRecorded: (playerId: string, value: number) => void;
+  showWonLost?: boolean;
 }
 
 export default function StatTypeSection({
@@ -15,6 +17,7 @@ export default function StatTypeSection({
   stats,
   getTeamName,
   onStatRecorded,
+  showWonLost = false,
 }: StatTypeSectionProps) {
   const getPlayerStats = (playerId: string) => {
     return stats.filter(s => s.playerId === playerId).reduce((acc, stat) => acc + stat.value, 0);
@@ -33,7 +36,7 @@ export default function StatTypeSection({
             statType={statType}
             currentValue={getPlayerStats(player.id)}
             onRecord={(value) => onStatRecorded(player.id, value)}
-            showWonLost={statType === 'faceoffs'}
+            showWonLost={showWonLost}
           />
         ))}
       </div>
