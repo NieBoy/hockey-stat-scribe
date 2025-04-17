@@ -28,51 +28,37 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Invitation, UserRole, Organization, Team } from "@/types";
+import { Invitation, UserRole, Team } from "@/types";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 
 const invitationSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   role: z.string({ required_error: "Please select a role" }),
-  organizationId: z.string().optional(),
   teamId: z.string().optional(),
 });
 
 type InvitationFormValues = z.infer<typeof invitationSchema>;
 
 interface InviteUserFormProps {
-  organizations: Organization[];
+  teams: Team[];
   onInvite: (invitation: Partial<Invitation>) => void;
 }
 
-export default function InviteUserForm({ organizations, onInvite }: InviteUserFormProps) {
-  const [selectedOrg, setSelectedOrg] = useState<string | undefined>();
-  const [teams, setTeams] = useState<Team[]>([]);
-  
+export default function InviteUserForm({ teams, onInvite }: InviteUserFormProps) {
   const form = useForm<InvitationFormValues>({
     resolver: zodResolver(invitationSchema),
     defaultValues: {
       email: "",
       role: "",
-      organizationId: undefined,
       teamId: undefined,
     },
   });
-
-  const handleOrganizationChange = (orgId: string) => {
-    setSelectedOrg(orgId);
-    const org = organizations.find(o => o.id === orgId);
-    setTeams(org?.teams || []);
-    form.setValue("organizationId", orgId);
-    form.setValue("teamId", undefined);
-  };
 
   const onSubmit = (values: InvitationFormValues) => {
     const invitation: Partial<Invitation> = {
       email: values.email,
       role: [values.role as UserRole],
-      organizationId: values.organizationId,
       teamId: values.teamId,
       invitedBy: "1", // Currently logged in user ID
       status: "pending",
@@ -95,7 +81,7 @@ export default function InviteUserForm({ organizations, onInvite }: InviteUserFo
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>Invite User</CardTitle>
-        <CardDescription>Send an invitation to join your organization or team</CardDescription>
+        <CardDescription>Send an invitation to join your team</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -140,22 +126,19 @@ export default function InviteUserForm({ organizations, onInvite }: InviteUserFo
 
             <FormField
               control={form.control}
-              name="organizationId"
+              name="teamId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Organization</FormLabel>
-                  <Select 
-                    onValueChange={(value) => handleOrganizationChange(value)} 
-                    value={field.value}
-                  >
+                  <FormLabel>Team</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select an organization" />
+                        <SelectValue placeholder="Select a team (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {organizations.map(org => (
-                        <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                      {teams.map(team => (
+                        <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -163,31 +146,6 @@ export default function InviteUserForm({ organizations, onInvite }: InviteUserFo
                 </FormItem>
               )}
             />
-
-            {selectedOrg && teams.length > 0 && (
-              <FormField
-                control={form.control}
-                name="teamId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a team (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {teams.map(team => (
-                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full flex items-center gap-2">

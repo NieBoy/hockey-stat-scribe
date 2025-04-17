@@ -1,19 +1,12 @@
+
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
-
-export interface Organization {
-  id: string;
-  name: string;
-  teams: Team[];
-  admins: User[];
-}
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole[];  // Multiple roles are now possible
-  organizations?: Organization[];
   teams?: Team[];
   children?: User[]; // For parents to link to player accounts
   stats?: PlayerStat[];
@@ -27,7 +20,7 @@ export interface Team {
   id: string;
   name: string;
   logo?: string;
-  organizationId: string;
+  organizationId: string; // Keep for compatibility with existing code
   players: User[];
   coaches: User[];
   parents: User[];  // Parents associated with the team
@@ -124,7 +117,6 @@ export interface Invitation {
   id: string;
   email: string;
   role: UserRole[];
-  organizationId?: string;
   teamId?: string;
   invitedBy: string;
   status: 'pending' | 'accepted' | 'declined';

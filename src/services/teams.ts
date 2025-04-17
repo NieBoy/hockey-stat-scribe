@@ -7,8 +7,7 @@ export const getTeams = async (): Promise<Team[]> => {
     .from('teams')
     .select(`
       id, 
-      name, 
-      organization_id
+      name
     `);
 
   if (error) {
@@ -78,7 +77,7 @@ export const getTeams = async (): Promise<Team[]> => {
     teams.push({
       id: team.id,
       name: team.name,
-      organizationId: team.organization_id,
+      organizationId: '',
       players,
       coaches,
       parents
@@ -94,8 +93,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     .from('teams')
     .select(`
       id, 
-      name, 
-      organization_id
+      name
     `)
     .eq('id', id)
     .single();
@@ -138,7 +136,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
   return {
     id: data.id,
     name: data.name,
-    organizationId: data.organization_id,
+    organizationId: '',
     players: playersResult.data?.map(p => ({
       id: p.users?.id || p.user_id,
       name: p.users?.name || '',
@@ -174,11 +172,11 @@ export const createTeam = async (teamData: {
   }
 
   try {
+    // Remove organization_id from the insert
     const { data, error } = await supabase
       .from('teams')
       .insert({
-        name: teamData.name,
-        organization_id: teamData.organizationId || 'default'
+        name: teamData.name
       })
       .select()
       .single();
@@ -212,7 +210,7 @@ export const createTeam = async (teamData: {
     return {
       id: data.id,
       name: data.name,
-      organizationId: data.organization_id,
+      organizationId: '',
       players: [],
       coaches: [],
       parents: []

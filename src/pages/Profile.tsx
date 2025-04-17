@@ -7,7 +7,6 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import UserSettings from "@/components/profile/UserSettings";
 import TeamsList from "@/components/profile/TeamsList";
-import OrganizationsList from "@/components/profile/OrganizationsList";
 import PlayersList from "@/components/profile/PlayersList";
 import RoleManager from "@/components/profile/RoleManager";
 import { useQuery } from "@tanstack/react-query";
@@ -102,12 +101,11 @@ export default function Profile() {
         </div>
 
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {(isAdmin || isCoach) && <TabsTrigger value="teams">Teams</TabsTrigger>}
             {(isAdmin || isCoach || isParent) && <TabsTrigger value="players">Players</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="organizations">Organizations</TabsTrigger>}
           </TabsList>
           <TabsContent value="settings" className="py-6">
             <UserSettings user={user} />
@@ -164,14 +162,6 @@ export default function Profile() {
                 )}
               </div>
               <PlayersList players={[]} />
-            </TabsContent>
-          )}
-          {isAdmin && (
-            <TabsContent value="organizations" className="py-6">
-              <OrganizationsList 
-                organizations={[]} 
-                isAdmin={true}
-              />
             </TabsContent>
           )}
         </Tabs>
