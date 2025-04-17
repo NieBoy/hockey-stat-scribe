@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeams, addPlayerToTeam, removePlayerFromTeam } from "@/services/teams";
 import { toast } from "sonner";
 import { Team } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 export function useTeams() {
   const [addPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
@@ -14,6 +15,12 @@ export function useTeams() {
     position: "",
     number: ""
   });
+
+  // Check if user is authenticated
+  const checkAuth = async () => {
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
+  };
 
   const { 
     data: teams, 
@@ -39,35 +46,50 @@ export function useTeams() {
   const submitNewPlayer = async () => {
     if (!selectedTeam) return;
     
-    if (newPlayer.name) {
-      try {
-        console.log(`Adding player to team ${selectedTeam.id}:`, newPlayer);
-        
-        await addPlayerToTeam(selectedTeam.id, {
-          name: newPlayer.name,
-          email: newPlayer.email || undefined, // Optional email
-          position: newPlayer.position || undefined, // Optional position
-          number: newPlayer.number
-        });
-        
-        toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
-        setAddPlayerDialogOpen(false);
-        setNewPlayer({ name: "", email: "", position: "", number: "" });
-        
-        // Force a refetch to get the updated team data including the new player
-        console.log("Refetching teams data after adding player...");
-        refetch(); 
-      } catch (error) {
-        console.error("Error adding player:", error);
-        toast.error("Failed to add player");
+    try {
+      // Check authentication before proceeding
+      const isAuthenticated = await checkAuth();
+      if (!isAuthenticated) {
+        toast.error("You must be logged in to add players");
+        return;
       }
-    } else {
-      toast.error("Player name is required");
+
+      if (!newPlayer.name) {
+        toast.error("Player name is required");
+        return;
+      }
+      
+      console.log(`Adding player to team ${selectedTeam.id}:`, newPlayer);
+      
+      await addPlayerToTeam(selectedTeam.id, {
+        name: newPlayer.name,
+        email: newPlayer.email || undefined, // Optional email
+        position: newPlayer.position || undefined, // Optional position
+        number: newPlayer.number
+      });
+      
+      toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
+      setAddPlayerDialogOpen(false);
+      setNewPlayer({ name: "", email: "", position: "", number: "" });
+      
+      // Force a refetch to get the updated team data including the new player
+      console.log("Refetching teams data after adding player...");
+      refetch(); 
+    } catch (error) {
+      console.error("Error adding player:", error);
+      toast.error(`Failed to add player: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleRemovePlayer = async (teamId: string, playerId: string, playerName: string) => {
     try {
+      // Check authentication before proceeding
+      const isAuthenticated = await checkAuth();
+      if (!isAuthenticated) {
+        toast.error("You must be logged in to remove players");
+        return;
+      }
+
       console.log(`Removing player ${playerId} from team ${teamId}`);
       
       await removePlayerFromTeam(teamId, playerId);
@@ -82,7 +104,7 @@ export function useTeams() {
       refetch();
     } catch (error) {
       console.error("Error removing player:", error);
-      toast.error("Failed to remove player");
+      toast.error(`Failed to remove player: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
