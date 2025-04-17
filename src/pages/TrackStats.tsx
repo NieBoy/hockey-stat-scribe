@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, Save } from "lucide-react";
-import { mockGames, currentUser } from "@/lib/mock-data";
+import { mockGames } from "@/lib/mock-data";
 import { GameStat } from "@/types";
 import StatTracker from "@/components/stats/StatTracker";
 
@@ -53,7 +52,6 @@ export default function TrackStats() {
         <StatTracker 
           game={game}
           statTypes={assignedStatTypes}
-          user={currentUser}
           onStatRecorded={handleStatRecorded}
         />
       ) : (

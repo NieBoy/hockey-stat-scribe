@@ -1,11 +1,9 @@
-
-import { StatType } from "@/types";
+import { StatType, User } from "@/types";
 import StatCard from "./StatCard";
-import { Player } from "@/types";
 
 interface StatTypeSectionProps {
   statType: StatType;
-  players: Player[];
+  players: User[];
   stats: { playerId: string; value: number }[];
   getTeamName: (playerId: string) => string;
   onStatRecorded: (playerId: string, value: number) => void;
