@@ -28,6 +28,7 @@ export const getTeams = async (): Promise<Team[]> => {
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
         .select(`
+          id,
           user_id,
           role,
           position,
@@ -51,7 +52,7 @@ export const getTeams = async (): Promise<Team[]> => {
       const players = (teamMembers || [])
         .filter(member => member.role === 'player')
         .map(p => ({
-          id: p.users?.id || p.user_id,
+          id: p.user_id,
           name: p.users?.name || 'Unknown Player',
           email: p.users?.email,
           role: ['player'] as UserRole[],
@@ -63,7 +64,7 @@ export const getTeams = async (): Promise<Team[]> => {
       const coaches = (teamMembers || [])
         .filter(member => member.role === 'coach')
         .map(c => ({
-          id: c.users?.id || c.user_id,
+          id: c.user_id,
           name: c.users?.name || 'Unknown Coach',
           email: c.users?.email,
           role: ['coach'] as UserRole[]
@@ -72,7 +73,7 @@ export const getTeams = async (): Promise<Team[]> => {
       const parents = (teamMembers || [])
         .filter(member => member.role === 'parent')
         .map(p => ({
-          id: p.users?.id || p.user_id,
+          id: p.user_id,
           name: p.users?.name || 'Unknown Parent',
           email: p.users?.email,
           role: ['parent'] as UserRole[]
@@ -115,6 +116,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const { data: teamMembers, error: membersError } = await supabase
       .from('team_members')
       .select(`
+        id,
         user_id,
         role,
         position,
@@ -139,7 +141,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const players = members
       .filter(member => member.role === 'player')
       .map(p => ({
-        id: p.users?.id || p.user_id,
+        id: p.user_id,
         name: p.users?.name || 'Unknown Player',
         email: p.users?.email,
         role: ['player'] as UserRole[],
@@ -151,7 +153,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const coaches = members
       .filter(member => member.role === 'coach')
       .map(c => ({
-        id: c.users?.id || c.user_id,
+        id: c.user_id,
         name: c.users?.name || 'Unknown Coach',
         email: c.users?.email,
         role: ['coach'] as UserRole[]
@@ -160,7 +162,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const parents = members
       .filter(member => member.role === 'parent')
       .map(p => ({
-        id: p.users?.id || p.user_id,
+        id: p.user_id,
         name: p.users?.name || 'Unknown Parent',
         email: p.users?.email,
         role: ['parent'] as UserRole[]

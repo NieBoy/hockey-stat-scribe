@@ -4,7 +4,7 @@
 
 import { getTeams, getTeamById } from './teamQueries';
 import { createTeam } from './teamCreation';
-import { addPlayerToTeam, removePlayerFromTeam } from './playerManagement';
+import { addPlayerToTeam, removePlayerFromTeam, getTeamMembers, updatePlayerInfo, sendTeamInvitations } from './playerManagement';
 import { updateTeamLineup } from './lineupManagement';
 
 export {
@@ -13,5 +13,8 @@ export {
   createTeam,
   addPlayerToTeam,
   removePlayerFromTeam,
-  updateTeamLineup
+  updateTeamLineup,
+  getTeamMembers,
+  updatePlayerInfo,
+  sendTeamInvitations
 };

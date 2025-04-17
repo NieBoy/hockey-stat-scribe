@@ -10,6 +10,9 @@ import TeamHeader from "@/components/teams/TeamHeader";
 import PlayersTabContent from "@/components/teams/PlayersTabContent";
 import CoachesTabContent from "@/components/teams/CoachesTabContent";
 import StatsTabContent from "@/components/teams/StatsTabContent";
+import TeamMembersTable from "@/components/teams/TeamMembersTable";
+import { sendTeamInvitations } from "@/services/teams";
+import { toast } from "sonner";
 
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
@@ -27,8 +30,20 @@ export default function TeamDetail() {
     handleRemovePlayer,
     team,
     isLoadingTeam,
-    teamError
+    teamError,
+    refetchTeam
   } = useTeams(id);
+  
+  const handleSendInvitations = async (memberIds: string[]) => {
+    try {
+      if (!team) return;
+      await sendTeamInvitations(team.id, memberIds);
+      toast.success(`Invitations sent to ${memberIds.length} team members`);
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+      toast.error("Failed to send invitations");
+    }
+  };
   
   if (isLoadingTeam) {
     return (
@@ -74,10 +89,11 @@ export default function TeamDetail() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
+          <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
             <TabsTrigger value="players">Players</TabsTrigger>
             <TabsTrigger value="coaches">Coaches</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
+            <TabsTrigger value="all-members">All Members</TabsTrigger>
           </TabsList>
           
           <TabsContent value="players" className="space-y-4">
@@ -94,6 +110,14 @@ export default function TeamDetail() {
           
           <TabsContent value="stats" className="space-y-4">
             <StatsTabContent />
+          </TabsContent>
+          
+          <TabsContent value="all-members" className="space-y-4">
+            <TeamMembersTable 
+              team={team}
+              onSendInvitations={handleSendInvitations}
+              onRemoveMember={(member) => handleRemovePlayer(team.id, member.id, member.name)}
+            />
           </TabsContent>
         </Tabs>
       </div>

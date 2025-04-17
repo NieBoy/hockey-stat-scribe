@@ -51,7 +51,11 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
       return true;
     } catch (error) {
       console.error("Error adding player:", error);
-      toast.error(`Failed to add player: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error occurred while adding player';
+      
+      toast.error(`Failed to add player: ${errorMessage}`);
       return false;
     }
   };
@@ -77,7 +81,11 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
       return true;
     } catch (error) {
       console.error("Error removing player:", error);
-      toast.error(`Failed to remove player: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error occurred while removing player';
+      
+      toast.error(`Failed to remove player: ${errorMessage}`);
       return false;
     }
   };
