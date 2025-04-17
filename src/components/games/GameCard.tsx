@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Game } from "@/types";
 import { format } from "date-fns";
-import { CalendarClock, MapPin, Users } from "lucide-react";
+import { CalendarClock, MapPin, Users, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GameCardProps {
   game: Game;
@@ -14,6 +15,8 @@ interface GameCardProps {
 export default function GameCard({ game }: GameCardProps) {
   const formattedDate = format(new Date(game.date), "MMM d, yyyy");
   const formattedTime = format(new Date(game.date), "h:mm a");
+  const { user } = useAuth();
+  const isCoach = user?.role.includes('coach');
   
   return (
     <Card className="overflow-hidden">
@@ -64,9 +67,18 @@ export default function GameCard({ game }: GameCardProps) {
               <Link to={`/games/${game.id}/track`}>Track Stats</Link>
             </Button>
           ) : (
-            <Button variant="outline" asChild>
-              <Link to={`/games/${game.id}/manage`}>Manage Game</Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link to={`/games/${game.id}/manage`}>Manage Game</Link>
+              </Button>
+              {isCoach && (
+                <Button variant="secondary" asChild>
+                  <Link to={`/games/${game.id}/assign-trackers`}>
+                    <UserPlus className="mr-2 h-4 w-4" /> Assign Trackers
+                  </Link>
+                </Button>
+              )}
+            </>
           )}
         </div>
       </CardFooter>

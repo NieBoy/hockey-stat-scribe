@@ -3,18 +3,21 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ClipboardEdit, BarChart3 } from "lucide-react";
+import { ChevronLeft, ClipboardEdit, BarChart3, UserPlus } from "lucide-react";
 import { Game } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { mockGames } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>();
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const isCoach = user?.role.includes('coach');
   
   useEffect(() => {
     // For demo purposes, we're using mock data
@@ -61,11 +64,13 @@ export default function GameDetail() {
                 <ClipboardEdit className="h-4 w-4" /> Track Events
               </Link>
             </Button>
-            <Button variant="outline" className="gap-2" asChild>
-              <Link to={`/stats/track/${id}`}>
-                <BarChart3 className="h-4 w-4" /> Track Stats
-              </Link>
-            </Button>
+            {isCoach && (
+              <Button variant="outline" className="gap-2" asChild>
+                <Link to={`/games/${id}/assign-trackers`}>
+                  <UserPlus className="h-4 w-4" /> Assign Stat Trackers
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -144,6 +149,13 @@ export default function GameDetail() {
                       <ClipboardEdit className="mr-2 h-4 w-4" /> Start Tracking Events
                     </Link>
                   </Button>
+                  {isCoach && (
+                    <Button variant="outline" asChild>
+                      <Link to={`/games/${id}/assign-trackers`}>
+                        <UserPlus className="mr-2 h-4 w-4" /> Assign Stat Trackers
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -174,11 +186,20 @@ export default function GameDetail() {
                 <p className="text-muted-foreground mb-4">
                   Track detailed player statistics for this game.
                 </p>
-                <Button variant="outline" asChild>
-                  <Link to={`/stats/track/${id}`}>
-                    <BarChart3 className="mr-2 h-4 w-4" /> Track Stats
-                  </Link>
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button variant="outline" asChild>
+                    <Link to={`/stats/track/${id}`}>
+                      <BarChart3 className="mr-2 h-4 w-4" /> Track Stats
+                    </Link>
+                  </Button>
+                  {isCoach && (
+                    <Button variant="outline" asChild>
+                      <Link to={`/games/${id}/assign-trackers`}>
+                        <UserPlus className="mr-2 h-4 w-4" /> Assign Stat Trackers
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
