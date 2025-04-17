@@ -46,13 +46,12 @@ const TeamMembersTable = ({
 }: TeamMembersTableProps) => {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
-  
-  const allMembers = [
+  const [allMembers, setAllMembers] = useState([
     ...(team.players || []),
     ...(team.coaches || []),
     ...(team.parents || [])
-  ];
-
+  ]);
+  
   const handleSelectMember = (memberId: string) => {
     setSelectedMembers(prev => {
       if (prev.includes(memberId)) {
@@ -78,10 +77,22 @@ const TeamMembersTable = ({
     setMemberToDelete(member);
   };
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (memberToDelete && onRemoveMember) {
-      onRemoveMember(memberToDelete);
+      // Optimistically remove the member from the local state
+      setAllMembers(prev => prev.filter(m => m.id !== memberToDelete.id));
+      
+      // Call the parent handler
+      await onRemoveMember(memberToDelete);
+      
+      // Clear selected member if they were selected
+      setSelectedMembers(prev => prev.filter(id => id !== memberToDelete.id));
+      
+      // Clear the deletion state
       setMemberToDelete(null);
+      
+      // Show success message
+      toast.success(`${memberToDelete.name} has been removed from the team`);
     }
   };
   
@@ -203,20 +214,19 @@ const TeamMembersTable = ({
         </Table>
       </div>
 
-      {/* Confirmation dialog for member deletion */}
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {memberToDelete?.name} from the team?
+              This will permanently delete {memberToDelete?.name} from the team.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Remove
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
