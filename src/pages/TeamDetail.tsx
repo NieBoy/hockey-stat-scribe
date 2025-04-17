@@ -1,7 +1,7 @@
+
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
-import { mockTeams, mockUsers } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,26 +17,60 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useTeams } from "@/hooks/useTeams";
+import { useQuery } from "@tanstack/react-query";
+import { getTeamById } from "@/services/teams";
+import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 
 export default function TeamDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("players");
-  const [addPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
-  const [newPlayer, setNewPlayer] = useState({
-    name: "",
-    email: "",
-    position: "",
-    number: ""
+  
+  const { 
+    addPlayerDialogOpen, 
+    setAddPlayerDialogOpen, 
+    newPlayer,
+    setNewPlayer,
+    handleAddPlayer,
+    submitNewPlayer,
+    selectedTeam,
+    handleRemovePlayer
+  } = useTeams();
+
+  const { 
+    data: team, 
+    isLoading, 
+    error 
+  } = useQuery({
+    queryKey: ['team', id],
+    queryFn: () => getTeamById(id),
+    enabled: !!id,
+    staleTime: 10000,
   });
   
-  const team = mockTeams.find(team => team.id === id);
-  
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Error Loading Team</h1>
+          <p className="text-red-500">{(error as Error).message}</p>
+          <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (!team) {
     return (
       <MainLayout>
@@ -57,31 +91,6 @@ export default function TeamDetail() {
       .toUpperCase();
   };
   
-  const handleAddPlayer = () => {
-    // In a real app, this would be an API call
-    if (newPlayer.name) {
-      // Create a new player and add to team
-      const newPlayerId = `player-${Date.now()}`;
-      const playerToAdd = {
-        id: newPlayerId,
-        name: newPlayer.name,
-        email: newPlayer.email,
-        position: newPlayer.position,
-        number: newPlayer.number,
-        role: ["player"],
-        teams: [{ id: team.id, name: team.name }]
-      };
-      
-      // In a real app, we would update the backend
-      // For now, just show a success message
-      toast.success(`Player ${newPlayer.name} added to team!`);
-      setAddPlayerDialogOpen(false);
-      setNewPlayer({ name: "", email: "", position: "", number: "" });
-    } else {
-      toast.error("Player name is required");
-    }
-  };
-
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -111,7 +120,7 @@ export default function TeamDetail() {
                 Lineup Editor
               </Link>
             </Button>
-            <Button className="gap-2" onClick={() => setAddPlayerDialogOpen(true)}>
+            <Button className="gap-2" onClick={() => handleAddPlayer(team.id)}>
               <Plus className="h-4 w-4" />
               Add Player
             </Button>
@@ -131,32 +140,42 @@ export default function TeamDetail() {
                 {team.players.map(player => (
                   <Card key={player.id}>
                     <CardHeader className="pb-2">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getUserInitials(player.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-base font-medium">
-                            <Link 
-                              to={`/players/${player.id}`} 
-                              className="hover:underline"
-                            >
-                              {player.name}
-                            </Link>
-                          </CardTitle>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {player.number && <span>#{player.number}</span>}
-                            {player.position && (
-                              <>
-                                {player.number && <span>•</span>}
-                                <span>{player.position}</span>
-                                {player.lineNumber && <span> (Line {player.lineNumber})</span>}
-                              </>
-                            )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getUserInitials(player.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-base font-medium">
+                              <Link 
+                                to={`/players/${player.id}`} 
+                                className="hover:underline"
+                              >
+                                {player.name}
+                              </Link>
+                            </CardTitle>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {player.number && <span>#{player.number}</span>}
+                              {player.position && (
+                                <>
+                                  {player.number && <span>•</span>}
+                                  <span>{player.position}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                          onClick={() => handleRemovePlayer(team.id, player.id, player.name)}
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove player</span>
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -184,7 +203,7 @@ export default function TeamDetail() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     This team doesn't have any players yet.
                   </p>
-                  <Button className="mt-4" onClick={() => setAddPlayerDialogOpen(true)}>
+                  <Button className="mt-4" onClick={() => handleAddPlayer(team.id)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Player
                   </Button>
                 </CardContent>
@@ -217,9 +236,11 @@ export default function TeamDetail() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-sm text-muted-foreground mb-2">
-                        {coach.email}
-                      </div>
+                      {coach.email && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {coach.email}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -253,81 +274,14 @@ export default function TeamDetail() {
       </div>
 
       {/* Add Player Dialog */}
-      <Dialog open={addPlayerDialogOpen} onOpenChange={setAddPlayerDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Player to {team.name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-name" className="text-right">
-                Name <span className="text-red-500">*</span>
-              </Label>
-              <Input 
-                id="player-name" 
-                value={newPlayer.name}
-                onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})}
-                className="col-span-3" 
-                placeholder="Player name"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-number" className="text-right">
-                Number <span className="text-red-500">*</span>
-              </Label>
-              <Input 
-                id="player-number" 
-                value={newPlayer.number}
-                onChange={(e) => setNewPlayer({...newPlayer, number: e.target.value})}
-                className="col-span-3" 
-                placeholder="Jersey number"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-email" className="text-right">
-                Email <span className="text-gray-400">(optional)</span>
-              </Label>
-              <Input 
-                id="player-email" 
-                value={newPlayer.email}
-                onChange={(e) => setNewPlayer({...newPlayer, email: e.target.value})}
-                className="col-span-3" 
-                type="email"
-                placeholder="player@example.com"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-position" className="text-right">
-                Position <span className="text-gray-400">(optional)</span>
-              </Label>
-              <Select 
-                value={newPlayer.position} 
-                onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Center">Center</SelectItem>
-                  <SelectItem value="Left Wing">Left Wing</SelectItem>
-                  <SelectItem value="Right Wing">Right Wing</SelectItem>
-                  <SelectItem value="Left Defense">Left Defense</SelectItem>
-                  <SelectItem value="Right Defense">Right Defense</SelectItem>
-                  <SelectItem value="Goalie">Goalie</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" type="button">Cancel</Button>
-            </DialogClose>
-            <Button type="button" onClick={handleAddPlayer}>Add Player</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddPlayerDialog
+        isOpen={addPlayerDialogOpen}
+        onOpenChange={setAddPlayerDialogOpen}
+        selectedTeam={selectedTeam}
+        onSubmit={submitNewPlayer}
+        newPlayer={newPlayer}
+        setNewPlayer={setNewPlayer}
+      />
     </MainLayout>
   );
 }
