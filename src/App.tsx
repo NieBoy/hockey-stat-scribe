@@ -24,6 +24,9 @@ import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import StatTrackerAssignment from "@/pages/StatTrackerAssignment";
+import PlayerDetail from "@/pages/PlayerDetail";
+import PlayerStats from "@/pages/PlayerStats";
+import NotFound from "@/pages/NotFound";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -103,6 +106,19 @@ function AppRoutes() {
           <TeamDetail />
         </RequireAuth>
       } />
+      {/* New Player routes */}
+      <Route path="/players/:id" element={
+        <RequireAuth>
+          <PlayerDetail />
+        </RequireAuth>
+      } />
+      <Route path="/players/:id/stats" element={
+        <RequireAuth>
+          <PlayerStats />
+        </RequireAuth>
+      } />
+      {/* 404 route */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
