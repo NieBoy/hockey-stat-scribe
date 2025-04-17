@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Trash2 } from "lucide-react";
 import { User } from "@/types";
 import { useState, useEffect, useCallback } from "react";
 import ParentPlayerManager from "@/components/teams/ParentPlayerManager";
@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { getUserInitials } from "@/utils/nameUtils";
 import { Link } from "react-router-dom";
+import { deleteTeamMember } from "@/services/teams/teamMembershipService";
+import { toast } from "sonner";
 
 interface PlayerParentsProps {
   player: User;
@@ -75,6 +77,19 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
     setShowAddParent(false);
     loadParents();
   };
+  
+  const handleRemoveParent = async (parent: User) => {
+    try {
+      const success = await deleteTeamMember(parent.id);
+      if (success) {
+        toast.success(`${parent.name} has been removed as a parent`);
+        loadParents();
+      }
+    } catch (error) {
+      console.error("Error removing parent:", error);
+      toast.error("Failed to remove parent");
+    }
+  };
 
   return (
     <>
@@ -115,13 +130,23 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
                       {getUserInitials(parent.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="space-y-1">
-                    <Link 
-                      to={`/players/${parent.id}`}
-                      className="text-lg font-medium hover:underline"
-                    >
-                      {parent.name}
-                    </Link>
+                  <div className="space-y-1 flex-1">
+                    <div className="flex justify-between items-center">
+                      <Link 
+                        to={`/players/${parent.id}`}
+                        className="text-lg font-medium hover:underline"
+                      >
+                        {parent.name}
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-destructive"
+                        onClick={() => handleRemoveParent(parent)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <div className="text-sm text-muted-foreground">Parent</div>
                     {parent.email && (
                       <div className="text-sm text-muted-foreground">{parent.email}</div>
