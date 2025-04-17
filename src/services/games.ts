@@ -10,36 +10,49 @@ export const getGames = async (): Promise<Game[]> => {
         *,
         home_team:teams!home_team_id(
           id,
-          name,
-          team_members(*)
+          name
         ),
         away_team:teams!away_team_id(
           id,
-          name,
-          team_members(*)
+          name
         )
       `);
 
     if (error) throw error;
     
+    // Get team members in a separate query
+    const gameIds = data?.map(game => game.id) || [];
+    
     // Transform the database response to match our Game type
-    const transformedData = data?.map(game => {
+    const transformedData = await Promise.all((data || []).map(async game => {
+      // Get team members for home team
+      const { data: homeTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', game.home_team.id);
+      
+      // Get team members for away team
+      const { data: awayTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', game.away_team.id);
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: game.home_team.id,
         name: game.home_team.name,
-        players: game.home_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: game.home_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: game.home_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: game.away_team.id,
         name: game.away_team.name,
-        players: game.away_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: game.away_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: game.away_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       return {
@@ -54,7 +67,7 @@ export const getGames = async (): Promise<Game[]> => {
         isActive: game.is_active,
         stats: [] // Default empty array
       };
-    }) || [];
+    }));
     
     return transformedData;
   } catch (error) {
@@ -71,13 +84,11 @@ export const getGameById = async (id: string): Promise<Game | null> => {
         *,
         home_team:teams!home_team_id(
           id,
-          name,
-          team_members(*)
+          name
         ),
         away_team:teams!away_team_id(
           id,
-          name,
-          team_members(*)
+          name
         )
       `)
       .eq('id', id)
@@ -85,24 +96,35 @@ export const getGameById = async (id: string): Promise<Game | null> => {
 
     if (error) throw error;
     
-    // Transform to match Game type
     if (data) {
+      // Get team members for home team
+      const { data: homeTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', data.home_team.id);
+      
+      // Get team members for away team
+      const { data: awayTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', data.away_team.id);
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: data.home_team.id,
         name: data.home_team.name,
-        players: data.home_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: data.home_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: data.home_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: data.away_team.id,
         name: data.away_team.name,
-        players: data.away_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: data.away_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: data.away_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       const game: Game = {
@@ -150,13 +172,11 @@ export const createGame = async (gameData: {
         *,
         home_team:teams!home_team_id(
           id,
-          name,
-          team_members(*)
+          name
         ),
         away_team:teams!away_team_id(
           id,
-          name,
-          team_members(*)
+          name
         )
       `)
       .single();
@@ -166,24 +186,35 @@ export const createGame = async (gameData: {
       throw error;
     }
 
-    // Transform to match Game type
     if (data) {
+      // Get team members for home team
+      const { data: homeTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', data.home_team.id);
+      
+      // Get team members for away team
+      const { data: awayTeamMembers } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('team_id', data.away_team.id);
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: data.home_team.id,
         name: data.home_team.name,
-        players: data.home_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: data.home_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: data.home_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: data.away_team.id,
         name: data.away_team.name,
-        players: data.away_team.team_members?.filter(m => m.role === 'player') || [],
-        coaches: data.away_team.team_members?.filter(m => m.role === 'coach') || [],
-        parents: data.away_team.team_members?.filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
+        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
+        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
       };
       
       const game: Game = {
