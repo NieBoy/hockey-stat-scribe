@@ -25,7 +25,7 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Get or create user
+    // Get or create user - This now uses the create_player_user RPC function
     const userId = await getOrCreatePlayerUser(playerData);
     
     // Verify that the user exists in the database before proceeding
@@ -39,6 +39,8 @@ export const addPlayerToTeam = async (
       console.error("Failed to verify user exists:", checkError);
       throw new Error(`Could not verify user exists with ID ${userId}`);
     }
+    
+    console.log(`User verified with ID ${userId}, adding as team member`);
     
     // Add the team member
     await addTeamMember(
