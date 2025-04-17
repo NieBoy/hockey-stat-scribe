@@ -28,26 +28,29 @@ export const getCurrentUser = async (): Promise<User | null> => {
       .from('team_members')
       .select(`
         team_id,
-        teams!inner (id, name)
+        teams (id, name)
       `)
       .eq('user_id', data.id);
       
     // Build role array
     const userRoles = roles?.map(r => r.role as UserRole) || [];
     
+    // Build teams array safely with proper null checks
+    const teams = teamMembers?.map(tm => ({
+      id: tm.teams?.id || '',
+      name: tm.teams?.name || '',
+      organizationId: '',
+      players: [],
+      coaches: [],
+      parents: []
+    })) || [];
+    
     return {
       id: data.id,
       name: data.name || '',
       email: data.email,
       role: userRoles,
-      teams: teamMembers?.map(tm => ({
-        id: tm.teams?.id || '',
-        name: tm.teams?.name || '',
-        organizationId: '',
-        players: [],
-        coaches: [],
-        parents: []
-      })) || [],
+      teams,
       isAdmin: userRoles.includes('admin')
     };
   } catch (error) {

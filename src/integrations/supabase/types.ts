@@ -9,22 +9,185 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      game_stats: {
+        Row: {
+          created_at: string
+          details: string | null
+          game_id: string
+          id: string
+          period: number
+          player_id: string
+          stat_type: string
+          timestamp: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          game_id: string
+          id?: string
+          period: number
+          player_id: string
+          stat_type: string
+          timestamp: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          game_id?: string
+          id?: string
+          period?: number
+          player_id?: string
+          stat_type?: string
+          timestamp?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_stats_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          away_team_id: string
+          created_at: string
+          current_period: number
+          date: string
+          home_team_id: string
+          id: string
+          is_active: boolean
+          location: string
+          periods: number
+        }
+        Insert: {
+          away_team_id: string
+          created_at?: string
+          current_period?: number
+          date: string
+          home_team_id: string
+          id?: string
+          is_active?: boolean
+          location: string
+          periods?: number
+        }
+        Update: {
+          away_team_id?: string
+          created_at?: string
+          current_period?: number
+          date?: string
+          home_team_id?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          periods?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_stats: {
+        Row: {
+          created_at: string
+          games_played: number
+          id: string
+          player_id: string
+          stat_type: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          games_played?: number
+          id?: string
+          player_id: string
+          stat_type: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          games_played?: number
+          id?: string
+          player_id?: string
+          stat_type?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      stat_trackers: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          stat_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          stat_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          stat_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stat_trackers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
           id: string
+          line_number: number | null
+          position: string | null
+          role: string | null
           team_id: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          line_number?: number | null
+          position?: string | null
+          role?: string | null
           team_id: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          line_number?: number | null
+          position?: string | null
+          role?: string | null
           team_id?: string
           user_id?: string | null
         }

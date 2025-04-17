@@ -16,7 +16,7 @@ const gameSchema = z.object({
   date: z.date(),
   homeTeam: z.string().min(1, "Home team is required"),
   awayTeam: z.string().min(1, "Away team is required").refine(
-    (value, data) => value !== data.homeTeam, 
+    (value, ctx) => value !== ctx.data.homeTeam, 
     { message: "Away team must be different from home team" }
   ),
   location: z.string().min(1, "Location is required"),
