@@ -1,18 +1,49 @@
 
 import { useState } from 'react';
 import { Trophy, Flag, Clock } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 import EventButton from './EventButton';
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 
 type EventType = 'goal' | 'penalty' | 'timeout';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+  const { id: gameId } = useParams<{ id: string }>();
+  const { toast } = useToast();
 
-  const handleEventSelect = (eventType: EventType) => {
-    setSelectedEvent(eventType);
-    console.log('Selected event:', eventType);
-    // We'll implement the event flow logic in the next step
+  const handleEventSelect = async (eventType: EventType) => {
+    if (!gameId) return;
+
+    try {
+      const { error } = await supabase
+        .from('game_events')
+        .insert({
+          game_id: gameId,
+          event_type: eventType,
+          period: 1, // We'll implement period tracking later
+          team_type: 'home', // We'll add team selection later
+        });
+
+      if (error) throw error;
+
+      setSelectedEvent(eventType);
+      toast({
+        title: "Event Recorded",
+        description: `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} has been recorded.`
+      });
+      
+      console.log('Event recorded:', { eventType, gameId });
+    } catch (error) {
+      console.error('Error recording event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record event. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
