@@ -8,12 +8,12 @@ export const getGames = async (): Promise<Game[]> => {
       .from('games')
       .select(`
         *,
-        home_team:home_team_id (
+        home_team:teams!home_team_id(
           id,
           name,
           players:team_members(*)
         ),
-        away_team:away_team_id (
+        away_team:teams!away_team_id(
           id,
           name,
           players:team_members(*)
@@ -49,12 +49,12 @@ export const getGameById = async (id: string): Promise<Game | null> => {
       .from('games')
       .select(`
         *,
-        home_team:home_team_id (
+        home_team:teams!home_team_id(
           id,
           name,
           players:team_members(*)
         ),
-        away_team:away_team_id (
+        away_team:teams!away_team_id(
           id,
           name,
           players:team_members(*)
@@ -110,12 +110,12 @@ export const createGame = async (gameData: {
       })
       .select(`
         *,
-        home_team:home_team_id (
+        home_team:teams!home_team_id(
           id,
           name,
           players:team_members(*)
         ),
-        away_team:away_team_id (
+        away_team:teams!away_team_id(
           id,
           name,
           players:team_members(*)
