@@ -9,15 +9,18 @@ import CoachAddForm from "./CoachAddForm";
 
 interface CoachesTabContentProps {
   team: Team;
+  onCoachAdded?: () => void;
 }
 
-const CoachesTabContent = ({ team }: CoachesTabContentProps) => {
+const CoachesTabContent = ({ team, onCoachAdded }: CoachesTabContentProps) => {
   const [showAddCoach, setShowAddCoach] = useState(false);
   
   const handleCoachAdded = () => {
     setShowAddCoach(false);
-    // We would ideally refresh the coaches list here
-    // This would typically be handled by a refetch in the parent component
+    // Call the callback to refresh team data in parent component
+    if (onCoachAdded) {
+      onCoachAdded();
+    }
   };
 
   return (

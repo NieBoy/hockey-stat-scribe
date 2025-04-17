@@ -22,11 +22,20 @@ export default function ParentPlayerManager({ player, onParentAdded }: ParentPla
     setLoading(true);
 
     try {
+      // Get the team ID from the player's teams array
+      const teamId = player.teams?.[0]?.id;
+      
+      if (!teamId) {
+        throw new Error("Cannot add parent: Player is not associated with any team");
+      }
+
+      console.log("Adding parent to team:", teamId);
+      
       // First create a parent team member
       const { data: parentMember, error: parentError } = await supabase
         .from('team_members')
         .insert({
-          team_id: player.teams?.[0]?.id, // Associate with the same team as player
+          team_id: teamId, // Use the team ID from player's first team
           name: parentName,
           email: parentEmail,
           role: 'parent'

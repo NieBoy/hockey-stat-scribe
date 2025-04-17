@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -79,7 +78,6 @@ export default function TeamDetail() {
     );
   }
   
-  // This function will be passed to components that need to refresh team data
   const handleTeamUpdate = () => {
     refetchTeam();
   };
@@ -110,7 +108,10 @@ export default function TeamDetail() {
           </TabsContent>
           
           <TabsContent value="coaches" className="space-y-4">
-            <CoachesTabContent team={team} />
+            <CoachesTabContent 
+              team={team} 
+              onCoachAdded={handleTeamUpdate} 
+            />
           </TabsContent>
           
           <TabsContent value="stats" className="space-y-4">
@@ -127,7 +128,6 @@ export default function TeamDetail() {
         </Tabs>
       </div>
 
-      {/* Add Player Dialog */}
       <AddPlayerDialog
         isOpen={addPlayerDialogOpen}
         onOpenChange={setAddPlayerDialogOpen}
