@@ -23,11 +23,16 @@ export default function SignIn() {
     try {
       const result = await signIn(email, password);
       if (result.error) {
-        setError(result.error);
+        // Display more helpful error message
+        if (result.error.includes("Invalid login credentials")) {
+          setError("Invalid email or password. If you haven't registered yet, please sign up first.");
+        } else {
+          setError(result.error);
+        }
       }
       // The redirect is handled in the useAuth hook
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -103,6 +108,9 @@ export default function SignIn() {
               <Link to="/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
+            </div>
+            <div className="text-center text-xs text-gray-500 mt-2">
+              For testing, please create a new account via the Sign up page
             </div>
           </CardFooter>
         </form>

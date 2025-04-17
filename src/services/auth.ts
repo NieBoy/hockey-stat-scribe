@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, UserRole } from "@/types";
 
@@ -124,6 +123,7 @@ export const signIn = async (
     });
 
     if (error) {
+      console.error("Sign in error:", error.message);
       return { user: null, error: error.message };
     }
     
@@ -134,9 +134,9 @@ export const signIn = async (
     // Get complete user profile
     const user = await getCurrentUser();
     return { user, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Sign in error:", error);
-    return { user: null, error: 'An unexpected error occurred' };
+    return { user: null, error: error?.message || 'An unexpected error occurred' };
   }
 };
 
@@ -156,6 +156,7 @@ export const signUp = async (
     });
 
     if (error) {
+      console.error("Sign up error:", error.message);
       return { success: false, error: error.message };
     }
     
@@ -189,9 +190,9 @@ export const signUp = async (
     }
     
     return { success: true, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Sign up error:", error);
-    return { success: false, error: 'An unexpected error occurred' };
+    return { success: false, error: error?.message || 'An unexpected error occurred' };
   }
 };
 

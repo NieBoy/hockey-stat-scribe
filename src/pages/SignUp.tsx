@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PenTool } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function SignUp() {
   const { signUp } = useAuth();
@@ -16,6 +17,7 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,16 +29,28 @@ export default function SignUp() {
     
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await signUp(email, password, name);
       
       if (result.error) {
-        setError(result.error);
+        if (result.error.includes("already registered")) {
+          setError("This email is already registered. Please sign in instead.");
+        } else {
+          setError(result.error);
+        }
+      } else if (result.success) {
+        setSuccess("Account created successfully! You can now sign in.");
+        toast.success("Account created! Please sign in");
+        
+        // Redirect after a short delay so the user can see the success message
+        setTimeout(() => {
+          navigate("/signin");
+        }, 1500);
       }
-      // If successful, the redirect is handled in the useAuth hook
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -60,6 +74,11 @@ export default function SignUp() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                {success}
               </div>
             )}
             <div className="space-y-2">
