@@ -1,5 +1,4 @@
-
-import { Game, User, Team, GameStat } from '@/types';
+import { Game, User, Team, GameStat, UserRole } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 export const getGames = async (): Promise<Game[]> => {
@@ -37,22 +36,45 @@ export const getGames = async (): Promise<Game[]> => {
         .select('*')
         .eq('team_id', game.away_team.id);
       
+      // Map team members to User type, converting string role to UserRole array
+      const mapTeamMemberToUser = (member: any): User => ({
+        id: member.user_id || member.id,
+        name: member.name || '',
+        email: member.email,
+        role: [member.role as UserRole], // Convert string to array of UserRole
+        position: member.position as any, // Cast to Position type
+        lineNumber: member.line_number,
+        number: member.jersey_number
+      });
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: game.home_team.id,
         name: game.home_team.name,
-        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (homeTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (homeTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: game.away_team.id,
         name: game.away_team.name,
-        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (awayTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (awayTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       return {
@@ -109,22 +131,45 @@ export const getGameById = async (id: string): Promise<Game | null> => {
         .select('*')
         .eq('team_id', data.away_team.id);
       
+      // Map team members to User type, converting string role to UserRole array
+      const mapTeamMemberToUser = (member: any): User => ({
+        id: member.user_id || member.id,
+        name: member.name || '',
+        email: member.email,
+        role: [member.role as UserRole], // Convert string to array of UserRole
+        position: member.position as any, // Cast to Position type
+        lineNumber: member.line_number,
+        number: member.jersey_number
+      });
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: data.home_team.id,
         name: data.home_team.name,
-        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (homeTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (homeTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: data.away_team.id,
         name: data.away_team.name,
-        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (awayTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (awayTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       const game: Game = {
@@ -199,22 +244,45 @@ export const createGame = async (gameData: {
         .select('*')
         .eq('team_id', data.away_team.id);
       
+      // Map team members to User type, converting string role to UserRole array
+      const mapTeamMemberToUser = (member: any): User => ({
+        id: member.user_id || member.id,
+        name: member.name || '',
+        email: member.email,
+        role: [member.role as UserRole], // Convert string to array of UserRole
+        position: member.position as any, // Cast to Position type
+        lineNumber: member.line_number,
+        number: member.jersey_number
+      });
+      
       // Transform the home team data to match our Team type
       const homeTeam: Team = {
         id: data.home_team.id,
         name: data.home_team.name,
-        players: (homeTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (homeTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (homeTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (homeTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (homeTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (homeTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       // Transform the away team data to match our Team type
       const awayTeam: Team = {
         id: data.away_team.id,
         name: data.away_team.name,
-        players: (awayTeamMembers || []).filter(m => m.role === 'player') || [],
-        coaches: (awayTeamMembers || []).filter(m => m.role === 'coach') || [],
-        parents: (awayTeamMembers || []).filter(m => m.role === 'parent') || []
+        players: (awayTeamMembers || [])
+          .filter(m => m.role === 'player')
+          .map(mapTeamMemberToUser),
+        coaches: (awayTeamMembers || [])
+          .filter(m => m.role === 'coach')
+          .map(mapTeamMemberToUser),
+        parents: (awayTeamMembers || [])
+          .filter(m => m.role === 'parent')
+          .map(mapTeamMemberToUser)
       };
       
       const game: Game = {
