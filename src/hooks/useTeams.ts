@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getTeams, addPlayerToTeam } from "@/services/teams";
+import { getTeams, addPlayerToTeam, removePlayerFromTeam } from "@/services/teams";
 import { toast } from "sonner";
 import { Team } from "@/types";
 
@@ -66,6 +66,26 @@ export function useTeams() {
     }
   };
 
+  const handleRemovePlayer = async (teamId: string, playerId: string, playerName: string) => {
+    try {
+      console.log(`Removing player ${playerId} from team ${teamId}`);
+      
+      await removePlayerFromTeam(teamId, playerId);
+      
+      // Get team name for success message
+      const teamName = teams?.find(team => team.id === teamId)?.name || "team";
+      
+      toast.success(`Player ${playerName} removed from ${teamName}!`);
+      
+      // Force a refetch to update the teams data
+      console.log("Refetching teams data after removing player...");
+      refetch();
+    } catch (error) {
+      console.error("Error removing player:", error);
+      toast.error("Failed to remove player");
+    }
+  };
+
   return {
     teams,
     isLoading,
@@ -78,6 +98,7 @@ export function useTeams() {
     newPlayer,
     setNewPlayer,
     handleAddPlayer,
+    handleRemovePlayer,
     submitNewPlayer
   };
 }

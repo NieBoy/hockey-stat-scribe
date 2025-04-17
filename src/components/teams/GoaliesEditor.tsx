@@ -4,6 +4,7 @@ import { User, Position } from "@/types";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
 
 interface GoaliesEditorProps {
   goalies: User[];
@@ -25,8 +26,10 @@ const GoaliesEditor = ({ goalies, availablePlayers, onPlayerSelect }: GoaliesEdi
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => onPlayerSelect('goalies', 0, 'G', goalie.id)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                onClick={() => onPlayerSelect('goalies', 0, 'G', 'none')}
               >
+                <Trash2 className="h-4 w-4 mr-1" />
                 Remove
               </Button>
             </div>

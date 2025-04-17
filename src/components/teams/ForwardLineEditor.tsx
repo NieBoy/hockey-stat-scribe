@@ -3,6 +3,8 @@ import React from "react";
 import { ForwardLine, User, Position } from "@/types";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface ForwardLineEditorProps {
   line: ForwardLine;
@@ -18,9 +20,21 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
         <CardTitle>Line {line.lineNumber}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm font-medium mb-1">Left Wing</p>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-sm font-medium">Left Wing</p>
+              {line.leftWing && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 px-2 text-red-500 hover:text-red-700 hover:bg-red-100"
+                  onClick={() => onPlayerSelect('forwards', index, 'LW', 'none')}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
             <Select 
               value={line.leftWing?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'LW', value)}
@@ -44,7 +58,19 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
             </Select>
           </div>
           <div>
-            <p className="text-sm font-medium mb-1">Center</p>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-sm font-medium">Center</p>
+              {line.center && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 px-2 text-red-500 hover:text-red-700 hover:bg-red-100"
+                  onClick={() => onPlayerSelect('forwards', index, 'C', 'none')}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
             <Select 
               value={line.center?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'C', value)}
@@ -68,7 +94,19 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
             </Select>
           </div>
           <div>
-            <p className="text-sm font-medium mb-1">Right Wing</p>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-sm font-medium">Right Wing</p>
+              {line.rightWing && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 px-2 text-red-500 hover:text-red-700 hover:bg-red-100"
+                  onClick={() => onPlayerSelect('forwards', index, 'RW', 'none')}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
             <Select 
               value={line.rightWing?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'RW', value)}

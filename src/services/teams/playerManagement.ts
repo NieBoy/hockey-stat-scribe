@@ -156,3 +156,42 @@ export const addPlayerToTeam = async (
     throw error;
   }
 };
+
+export const removePlayerFromTeam = async (teamId: string, playerId: string): Promise<boolean> => {
+  console.log(`Removing player ${playerId} from team ${teamId}`);
+  
+  try {
+    // Try to remove from Supabase first
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('user_id', playerId);
+        
+      if (error) throw error;
+      
+      console.log(`Successfully removed player ${playerId} from team ${teamId} in Supabase`);
+      return true;
+    } catch (error) {
+      console.error("Error removing player from Supabase:", error);
+      
+      // Fallback to mock implementation
+      const teamIndex = mockTeams.findIndex(t => t.id === teamId);
+      if (teamIndex >= 0) {
+        const originalLength = mockTeams[teamIndex].players.length;
+        mockTeams[teamIndex].players = mockTeams[teamIndex].players.filter(p => p.id !== playerId);
+        
+        if (mockTeams[teamIndex].players.length < originalLength) {
+          console.log(`Removed player from mock team: ${mockTeams[teamIndex].name}`);
+          return true;
+        }
+      }
+      
+      return false;
+    }
+  } catch (error) {
+    console.error("Error in removePlayerFromTeam:", error);
+    throw error;
+  }
+};
