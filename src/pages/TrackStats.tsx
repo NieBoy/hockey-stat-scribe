@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
+
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Save } from "lucide-react";
-import { GameStat } from "@/types";
+import { ChevronLeft } from "lucide-react";
 import StatTracker from "@/components/stats/StatTracker";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
-import { fetchGameStats, insertGameStat, deleteGameStat } from "@/services/stats/gameStatsService";
-import { useToast } from "@/hooks/use-toast";
 import { getGameById } from "@/services/games";
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -70,12 +66,6 @@ export default function TrackStats() {
               {game.homeTeam.name} vs {game.awayTeam.name}
             </p>
           </div>
-          <Button 
-            className="gap-2" 
-            onClick={handleSaveAllStats}
-          >
-            <Save className="h-4 w-4" /> Save All Stats
-          </Button>
         </div>
       </div>
 

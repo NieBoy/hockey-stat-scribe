@@ -1,9 +1,8 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Game, StatType, GameStat } from "@/types";
-import { Save } from "lucide-react";
+import PeriodSelector from "./PeriodSelector";
 import StatTypeSection from "./StatTypeSection";
 
 interface StatTrackerProps {
@@ -22,12 +21,6 @@ export default function StatTracker({
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
   const [stats, setStats] = useState<GameStat[]>(existingStats);
 
-  // Update stats when existing stats change
-  useEffect(() => {
-    setStats(existingStats);
-  }, [existingStats]);
-
-  // Combine players from both teams
   const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
 
   const getTeamName = (playerId: string): string => {
@@ -58,22 +51,15 @@ export default function StatTracker({
       <CardHeader>
         <CardTitle>Stat Tracker</CardTitle>
         <CardDescription>
-          {game.homeTeam.name} vs. {game.awayTeam.name} | Period: {selectedPeriod}
+          {game.homeTeam.name} vs {game.awayTeam.name} | Period: {selectedPeriod}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="flex justify-center space-x-4 mb-4">
-            {[1, 2, 3, 4].map((period) => (
-              <Button
-                key={period}
-                variant={selectedPeriod === period ? "default" : "outline"}
-                onClick={() => setSelectedPeriod(period)}
-              >
-                {period === 4 ? "Overtime" : `Period ${period}`}
-              </Button>
-            ))}
-          </div>
+          <PeriodSelector 
+            selectedPeriod={selectedPeriod} 
+            onPeriodChange={setSelectedPeriod} 
+          />
           {statTypes.map((statType) => (
             <StatTypeSection
               key={statType}
