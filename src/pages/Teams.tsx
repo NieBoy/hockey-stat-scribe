@@ -21,7 +21,8 @@ export default function Teams() {
   const [newPlayer, setNewPlayer] = useState({
     name: "",
     email: "",
-    position: ""
+    position: "",
+    number: ""
   });
 
   const { data: teams, isLoading, error, refetch } = useQuery({
@@ -41,24 +42,25 @@ export default function Teams() {
   const submitNewPlayer = async () => {
     if (!selectedTeam) return;
     
-    if (newPlayer.name && newPlayer.email) {
+    if (newPlayer.name) {
       try {
         await addPlayerToTeam(selectedTeam.id, {
           name: newPlayer.name,
-          email: newPlayer.email,
-          position: newPlayer.position
+          email: newPlayer.email || undefined, // Optional email
+          position: newPlayer.position || undefined, // Optional position
+          number: newPlayer.number
         });
         
         toast.success(`Player ${newPlayer.name} added to ${selectedTeam.name}!`);
         setAddPlayerDialogOpen(false);
-        setNewPlayer({ name: "", email: "", position: "" });
+        setNewPlayer({ name: "", email: "", position: "", number: "" });
         refetch(); // Refresh teams data
       } catch (error) {
         console.error("Error adding player:", error);
         toast.error("Failed to add player");
       }
     } else {
-      toast.error("Please fill in all required fields");
+      toast.error("Player name is required");
     }
   };
 
@@ -174,17 +176,35 @@ export default function Teams() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-name" className="text-right">Name</Label>
+              <Label htmlFor="player-name" className="text-right">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input 
                 id="player-name" 
                 value={newPlayer.name}
                 onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})}
                 className="col-span-3" 
                 placeholder="Player name"
+                required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-email" className="text-right">Email</Label>
+              <Label htmlFor="player-number" className="text-right">
+                Number <span className="text-red-500">*</span>
+              </Label>
+              <Input 
+                id="player-number" 
+                value={newPlayer.number}
+                onChange={(e) => setNewPlayer({...newPlayer, number: e.target.value})}
+                className="col-span-3" 
+                placeholder="Jersey number"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-email" className="text-right">
+                Email <span className="text-gray-400">(optional)</span>
+              </Label>
               <Input 
                 id="player-email" 
                 value={newPlayer.email}
@@ -195,7 +215,9 @@ export default function Teams() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-position" className="text-right">Position</Label>
+              <Label htmlFor="player-position" className="text-right">
+                Position <span className="text-gray-400">(optional)</span>
+              </Label>
               <Select 
                 value={newPlayer.position} 
                 onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}

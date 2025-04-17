@@ -31,7 +31,8 @@ export default function TeamDetail() {
   const [newPlayer, setNewPlayer] = useState({
     name: "",
     email: "",
-    position: ""
+    position: "",
+    number: ""
   });
   
   const team = mockTeams.find(team => team.id === id);
@@ -58,7 +59,7 @@ export default function TeamDetail() {
   
   const handleAddPlayer = () => {
     // In a real app, this would be an API call
-    if (newPlayer.name && newPlayer.email) {
+    if (newPlayer.name) {
       // Create a new player and add to team
       const newPlayerId = `player-${Date.now()}`;
       const playerToAdd = {
@@ -66,6 +67,7 @@ export default function TeamDetail() {
         name: newPlayer.name,
         email: newPlayer.email,
         position: newPlayer.position,
+        number: newPlayer.number,
         role: ["player"],
         teams: [{ id: team.id, name: team.name }]
       };
@@ -74,9 +76,9 @@ export default function TeamDetail() {
       // For now, just show a success message
       toast.success(`Player ${newPlayer.name} added to team!`);
       setAddPlayerDialogOpen(false);
-      setNewPlayer({ name: "", email: "", position: "" });
+      setNewPlayer({ name: "", email: "", position: "", number: "" });
     } else {
-      toast.error("Please fill in all required fields");
+      toast.error("Player name is required");
     }
   };
 
@@ -144,12 +146,16 @@ export default function TeamDetail() {
                               {player.name}
                             </Link>
                           </CardTitle>
-                          {player.position && (
-                            <div className="text-xs text-muted-foreground">
-                              Position: {player.position}
-                              {player.lineNumber && ` (Line ${player.lineNumber})`}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {player.number && <span>#{player.number}</span>}
+                            {player.position && (
+                              <>
+                                {player.number && <span>•</span>}
+                                <span>{player.position}</span>
+                                {player.lineNumber && <span> (Line {player.lineNumber})</span>}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -254,17 +260,35 @@ export default function TeamDetail() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-name" className="text-right">Name</Label>
+              <Label htmlFor="player-name" className="text-right">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input 
                 id="player-name" 
                 value={newPlayer.name}
                 onChange={(e) => setNewPlayer({...newPlayer, name: e.target.value})}
                 className="col-span-3" 
                 placeholder="Player name"
+                required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-email" className="text-right">Email</Label>
+              <Label htmlFor="player-number" className="text-right">
+                Number <span className="text-red-500">*</span>
+              </Label>
+              <Input 
+                id="player-number" 
+                value={newPlayer.number}
+                onChange={(e) => setNewPlayer({...newPlayer, number: e.target.value})}
+                className="col-span-3" 
+                placeholder="Jersey number"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-email" className="text-right">
+                Email <span className="text-gray-400">(optional)</span>
+              </Label>
               <Input 
                 id="player-email" 
                 value={newPlayer.email}
@@ -275,7 +299,9 @@ export default function TeamDetail() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="player-position" className="text-right">Position</Label>
+              <Label htmlFor="player-position" className="text-right">
+                Position <span className="text-gray-400">(optional)</span>
+              </Label>
               <Select 
                 value={newPlayer.position} 
                 onValueChange={(value) => setNewPlayer({...newPlayer, position: value})}
