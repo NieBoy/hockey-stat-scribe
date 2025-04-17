@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Hockey, Flag, Clock } from 'lucide-react';
+import { Trophy, Flag, Clock } from 'lucide-react';
 import EventButton from './EventButton';
 import { Card } from "@/components/ui/card";
 
@@ -21,7 +21,7 @@ export default function EventTracker() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EventButton
             label="Goal"
-            icon={<Hockey className="h-8 w-8" />}
+            icon={<Trophy className="h-8 w-8" />}
             onClick={() => handleEventSelect('goal')}
             className="bg-green-500 hover:bg-green-600"
           />

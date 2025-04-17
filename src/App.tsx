@@ -7,7 +7,7 @@ import Index from "@/pages/Index";
 import Profile from "@/pages/Profile";
 import Games from "@/pages/Games";
 import Teams from "@/pages/Teams";
-import NewTeam from "@/pages/NewTeam";
+import TeamCreate from "@/pages/TeamCreate";
 import TeamDetail from "@/pages/TeamDetail";
 import NewGame from "@/pages/NewGame";
 import GameDetail from "@/pages/GameDetail";
@@ -72,7 +72,7 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
-   {
+  {
     path: "/games/:id/track",
     element: (
       <RequireAuth>
@@ -100,7 +100,7 @@ const router = createBrowserRouter([
     path: "/teams/new",
     element: (
       <RequireAuth>
-        <NewTeam />
+        <TeamCreate />
       </RequireAuth>
     ),
   },
