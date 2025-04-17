@@ -10,9 +10,17 @@ import TeamsList from "@/components/profile/TeamsList";
 import OrganizationsList from "@/components/profile/OrganizationsList";
 import PlayersList from "@/components/profile/PlayersList";
 import RoleManager from "@/components/profile/RoleManager";
+import { useQuery } from "@tanstack/react-query";
+import { getTeams } from "@/services/teams";
 
 export default function Profile() {
   const { user } = useAuth();
+
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
+    queryKey: ['teams'],
+    queryFn: getTeams,
+    enabled: !!user
+  });
 
   if (!user) {
     return <div>Loading...</div>;
@@ -22,6 +30,19 @@ export default function Profile() {
   const isCoach = user.role.includes('coach');
   const isPlayer = user.role.includes('player');
   const isParent = user.role.includes('parent');
+
+  // Get teams for the current user
+  const userTeams = teams.filter(team => {
+    // Admin can see all teams
+    if (isAdmin) return true;
+    // Coach can see teams they coach
+    if (isCoach) return team.coaches.some(coach => coach.id === user.id);
+    // Player can see teams they play in
+    if (isPlayer) return team.players.some(player => player.id === user.id);
+    // Parent can see teams their children play in
+    if (isParent) return team.parents.some(parent => parent.id === user.id);
+    return false;
+  });
 
   return (
     <MainLayout>
@@ -65,7 +86,13 @@ export default function Profile() {
                   </Link>
                 </Button>
               </div>
-              <TeamsList teams={user.teams || []} />
+              {teamsLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <TeamsList teams={userTeams} isAdmin={isAdmin} />
+              )}
               <div className="mt-6 flex justify-center">
                 <Button variant="outline" asChild>
                   <Link to="/teams">View All Teams</Link>
