@@ -1,7 +1,7 @@
 
 // Re-export all team membership related functions with specific naming to avoid conflicts
 export { addTeamMember } from './membershipService';
-export { removeTeamMember } from './memberDeletionService';
+export { removeTeamMember, deleteTeamMember } from './memberDeletionService';
 export { updateTeamMemberInfo } from './memberUpdateService';
 
 // Re-export from other team service files
@@ -20,6 +20,3 @@ export {
   sendTeamInvitations as sendInvitationsToTeamMembers,
   acceptInvitation
 } from './invitationService';
-
-// Re-export deleteTeamMember
-export { deleteTeamMember } from './memberDeletionService';
