@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -13,132 +12,32 @@ import { fetchGameStats, insertGameStat, deleteGameStat } from "@/services/stats
 import { useToast } from "@/hooks/use-toast";
 import { getGameById } from "@/services/games";
 import { useQuery } from "@tanstack/react-query";
+import LoadingSpinner from "@/components/ui/loading-spinner";
+import GameStatsList from "@/components/stats/GameStatsList";
+import { useGameStats } from "@/hooks/useGameStats";
 
 export default function TrackStats() {
   const { id = '' } = useParams<{ id: string }>();
-  const [gameStats, setGameStats] = useState<GameStat[]>([]);
   const { user } = useAuth();
-  const { toast } = useToast();
   
-  // Use React Query to fetch the game
   const { data: game, isLoading: isGameLoading } = useQuery({
     queryKey: ['games', id],
     queryFn: () => getGameById(id),
     enabled: !!id
   });
   
-  // Find which stat types this user is assigned to track
+  const { gameStats, handleStatRecorded, handleStatDeleted } = useGameStats(id);
+  
   const userAssignment = user && game ? game.statTrackers.find(
     tracker => tracker.user.id === user.id
   ) : undefined;
   
   const assignedStatTypes = userAssignment?.statTypes || [];
-  
-  // Fetch existing game stats on component mount
-  useEffect(() => {
-    const loadGameStats = async () => {
-      if (id) {
-        try {
-          const stats = await fetchGameStats(id);
-          setGameStats(stats);
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to load game stats",
-            variant: "destructive"
-          });
-        }
-      }
-    };
-    loadGameStats();
-  }, [id, toast]);
-
-  // Real-time stats subscription
-  useEffect(() => {
-    if (!id) return;
-
-    const channel = supabase
-      .channel('game_stats_changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'game_stats', 
-          filter: `game_id=eq.${id}` 
-        },
-        (payload) => {
-          switch(payload.eventType) {
-            case 'INSERT':
-              const newStat = {
-                id: payload.new.id,
-                gameId: payload.new.game_id,
-                playerId: payload.new.player_id,
-                statType: payload.new.stat_type,
-                period: payload.new.period,
-                timestamp: new Date(payload.new.timestamp),
-                value: payload.new.value,
-                details: payload.new.details || ''
-              };
-              setGameStats(prev => [...prev, newStat]);
-              break;
-            case 'DELETE':
-              setGameStats(prev => 
-                prev.filter(stat => stat.id !== payload.old.id)
-              );
-              break;
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id]);
-  
-  // Handler for stat recording
-  const handleStatRecorded = async (stat: Omit<GameStat, 'id' | 'timestamp'>) => {
-    try {
-      await insertGameStat(stat);
-      // Note: The real-time listener will handle adding the stat to state
-      toast({
-        title: "Stat Recorded",
-        description: "The stat has been successfully recorded."
-      });
-    } catch (error) {
-      console.error("Error recording stat:", error);
-      toast({
-        title: "Error",
-        description: "Failed to record stat",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handler for saving all stats (optional)
-  const handleSaveAllStats = async () => {
-    try {
-      // Batch insert or update logic can be added here if needed
-      toast({
-        title: "Stats Saved",
-        description: "All stats have been saved successfully."
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save stats",
-        variant: "destructive"
-      });
-    }
-  };
 
   if (isGameLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }
@@ -181,12 +80,19 @@ export default function TrackStats() {
       </div>
 
       {assignedStatTypes.length > 0 ? (
-        <StatTracker 
-          game={game}
-          statTypes={assignedStatTypes}
-          onStatRecorded={handleStatRecorded}
-          existingStats={gameStats}
-        />
+        <>
+          <StatTracker 
+            game={game}
+            statTypes={assignedStatTypes}
+            onStatRecorded={handleStatRecorded}
+            existingStats={gameStats}
+          />
+          <GameStatsList 
+            gameStats={gameStats}
+            game={game}
+            onDelete={handleStatDeleted}
+          />
+        </>
       ) : (
         <Card>
           <CardHeader>
@@ -199,53 +105,6 @@ export default function TrackStats() {
             <Button asChild>
               <Link to={`/games/${id}`}>Return to Game</Link>
             </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {gameStats.length > 0 && (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Stats Recorded This Session</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2">Player</th>
-                    <th className="text-left pb-2">Stat</th>
-                    <th className="text-left pb-2">Period</th>
-                    <th className="text-left pb-2">Value</th>
-                    <th className="text-left pb-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gameStats.map((stat) => {
-                    const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-                      p => p.id === stat.playerId
-                    );
-                    return (
-                      <tr key={stat.id} className="border-b">
-                        <td className="py-2">{player?.name || 'Unknown Player'}</td>
-                        <td className="py-2 capitalize">{stat.statType}</td>
-                        <td className="py-2">{stat.period}</td>
-                        <td className="py-2">{stat.value}</td>
-                        <td className="py-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => deleteGameStat(stat.id)}
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </CardContent>
         </Card>
       )}
