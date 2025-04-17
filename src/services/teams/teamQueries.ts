@@ -24,7 +24,7 @@ export const getTeams = async (): Promise<Team[]> => {
     const teams: Team[] = [];
     
     for (const team of teamsData || []) {
-      // Get all team members
+      // Get all team members with their user details
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
         .select(`
@@ -50,7 +50,7 @@ export const getTeams = async (): Promise<Team[]> => {
       
       // Filter members by role
       const players = (teamMembers || [])
-        .filter(member => member.role === 'player')
+        .filter(member => member.role === 'player' && member.users)
         .map(p => ({
           id: p.user_id,
           name: p.users?.name || 'Unknown Player',
@@ -62,7 +62,7 @@ export const getTeams = async (): Promise<Team[]> => {
         }));
       
       const coaches = (teamMembers || [])
-        .filter(member => member.role === 'coach')
+        .filter(member => member.role === 'coach' && member.users)
         .map(c => ({
           id: c.user_id,
           name: c.users?.name || 'Unknown Coach',
@@ -71,7 +71,7 @@ export const getTeams = async (): Promise<Team[]> => {
         }));
         
       const parents = (teamMembers || [])
-        .filter(member => member.role === 'parent')
+        .filter(member => member.role === 'parent' && member.users)
         .map(p => ({
           id: p.user_id,
           name: p.users?.name || 'Unknown Parent',
@@ -112,7 +112,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       throw error;
     }
     
-    // Get all team members
+    // Get all team members with their user details
     const { data: teamMembers, error: membersError } = await supabase
       .from('team_members')
       .select(`
@@ -134,12 +134,14 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       throw membersError;
     }
     
+    console.log(`Team ${data.name} has ${teamMembers?.length || 0} members`);
+    
     // Make sure we have an array to work with, even if empty
     const members = teamMembers || [];
     
     // Filter members by role
     const players = members
-      .filter(member => member.role === 'player')
+      .filter(member => member.role === 'player' && member.users)
       .map(p => ({
         id: p.user_id,
         name: p.users?.name || 'Unknown Player',
@@ -151,7 +153,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       }));
     
     const coaches = members
-      .filter(member => member.role === 'coach')
+      .filter(member => member.role === 'coach' && member.users)
       .map(c => ({
         id: c.user_id,
         name: c.users?.name || 'Unknown Coach',
@@ -160,7 +162,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       }));
       
     const parents = members
-      .filter(member => member.role === 'parent')
+      .filter(member => member.role === 'parent' && member.users)
       .map(p => ({
         id: p.user_id,
         name: p.users?.name || 'Unknown Parent',

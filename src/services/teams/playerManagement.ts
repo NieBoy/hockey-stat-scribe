@@ -22,37 +22,25 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
 
-    // First, check if this player needs a user record
-    let userId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    // Generate a new UUID for the user
+    let userId = crypto.randomUUID();
     
-    // If we have an email, we can check if a user already exists with this email
-    if (playerData.email) {
-      const { data: existingUsers } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', playerData.email)
-        .limit(1);
-      
-      if (existingUsers && existingUsers.length > 0) {
-        userId = existingUsers[0].id;
-        console.log(`Found existing user with email ${playerData.email}: ${userId}`);
-      } else {
-        // Create a new user record
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: userId,
-            name: playerData.name,
-            email: playerData.email
-          })
-          .select();
-        
-        if (userError) {
-          console.error("Error creating user:", userError);
-          // Don't throw here - we'll try to create the team member directly
-        }
-      }
+    // First create a user record in the public.users table
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        name: playerData.name,
+        email: playerData.email || null
+      })
+      .select();
+    
+    if (userError) {
+      console.error("Error creating user:", userError);
+      throw userError;
     }
+    
+    console.log("Created new user:", newUser);
     
     // Now add the team member
     const { data: teamMemberData, error: teamMemberError } = await supabase
@@ -118,7 +106,7 @@ export const removePlayerFromTeam = async (teamId: string, playerId: string): Pr
   }
 };
 
-// New function to get all team members
+// Get all team members
 export const getTeamMembers = async (teamId: string): Promise<any[]> => {
   try {
     const { data, error } = await supabase
@@ -145,7 +133,7 @@ export const getTeamMembers = async (teamId: string): Promise<any[]> => {
   }
 };
 
-// New function to update player information
+// Update player information
 export const updatePlayerInfo = async (
   teamId: string,
   playerId: string,
@@ -164,15 +152,32 @@ export const updatePlayerInfo = async (
       throw new Error("User must be authenticated to update player information");
     }
     
+    // Update user information if provided
+    if (playerData.name || playerData.email !== undefined) {
+      const updateUserData: any = {};
+      if (playerData.name) updateUserData.name = playerData.name;
+      if (playerData.email !== undefined) updateUserData.email = playerData.email;
+      
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update(updateUserData)
+        .eq('id', playerId);
+        
+      if (userUpdateError) {
+        console.error("Error updating user information:", userUpdateError);
+        throw userUpdateError;
+      }
+    }
+    
     // Update team_members table
     const updateData: any = {};
     
-    if (playerData.position) {
+    if (playerData.position !== undefined) {
       updateData.position = playerData.position;
     }
     
-    if (playerData.number) {
-      updateData.line_number = parseInt(playerData.number, 10);
+    if (playerData.number !== undefined) {
+      updateData.line_number = playerData.number ? parseInt(playerData.number, 10) : null;
     }
     
     if (Object.keys(updateData).length > 0) {
@@ -201,6 +206,27 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     // Implementation for sending batch invitations would go here
     // For now, we'll just log the action
     console.log(`Sending invitations to ${memberIds.length} members of team ${teamId}`);
+    
+    // Fetch users to get their emails
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .in('id', memberIds);
+      
+    if (usersError) {
+      console.error("Error fetching users for invitations:", usersError);
+      throw usersError;
+    }
+    
+    // Filter out users without emails
+    const usersWithEmail = users?.filter(user => user.email) || [];
+    
+    if (usersWithEmail.length === 0) {
+      console.log("No users with emails to invite");
+      return false;
+    }
+    
+    console.log(`Would send emails to: ${usersWithEmail.map(u => u.email).join(', ')}`);
     
     // You would typically call an API endpoint or edge function here to send the emails
     
