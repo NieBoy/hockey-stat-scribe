@@ -4,13 +4,17 @@ import { Trophy, Flag, Clock } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import EventButton from './EventButton';
+import GameControls from './GameControls';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 
 type EventType = 'goal' | 'penalty' | 'timeout';
+type TeamType = 'home' | 'away';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+  const [currentPeriod, setCurrentPeriod] = useState(1);
+  const [teamType, setTeamType] = useState<TeamType>('home');
   const { id: gameId } = useParams<{ id: string }>();
   const { toast } = useToast();
 
@@ -23,8 +27,8 @@ export default function EventTracker() {
         .insert({
           game_id: gameId,
           event_type: eventType,
-          period: 1, // We'll implement period tracking later
-          team_type: 'home', // We'll add team selection later
+          period: currentPeriod,
+          team_type: teamType,
         });
 
       if (error) throw error;
@@ -32,10 +36,10 @@ export default function EventTracker() {
       setSelectedEvent(eventType);
       toast({
         title: "Event Recorded",
-        description: `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} has been recorded.`
+        description: `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} has been recorded for ${teamType} team in period ${currentPeriod}.`
       });
       
-      console.log('Event recorded:', { eventType, gameId });
+      console.log('Event recorded:', { eventType, gameId, period: currentPeriod, team: teamType });
     } catch (error) {
       console.error('Error recording event:', error);
       toast({
@@ -49,6 +53,13 @@ export default function EventTracker() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="p-6">
+        <GameControls
+          period={currentPeriod}
+          teamType={teamType}
+          onPeriodChange={setCurrentPeriod}
+          onTeamChange={setTeamType}
+        />
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EventButton
             label="Goal"
