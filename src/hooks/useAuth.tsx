@@ -24,40 +24,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Set up auth listener and check for existing session
   useEffect(() => {
-    // First set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event);
-        if (session?.user) {
-          // Use setTimeout to avoid any deadlocks
-          setTimeout(async () => {
-            try {
-              const currentUser = await getCurrentUser();
-              setUser(currentUser);
-              
-              // Redirect if on auth pages
-              const path = location.pathname;
-              if (currentUser && (path === '/signin' || path === '/signup')) {
-                const from = location.state?.from?.pathname || "/";
-                navigate(from, { replace: true });
-              }
-            } catch (error) {
-              console.error("Error fetching user in auth state change:", error);
-            }
-          }, 0);
-        } else {
-          setUser(null);
-        }
-      }
-    );
-    
-    // Then check for existing session
+    let subscription: any;
+
+    // First check for existing session
     const checkSession = async () => {
       try {
+        setLoading(true);
         const { data } = await supabase.auth.getSession();
+        
         if (data.session) {
+          console.log("Found existing session");
           const currentUser = await getCurrentUser();
           setUser(currentUser);
+          
+          // Redirect if on auth pages
+          if (currentUser && (location.pathname === '/signin' || location.pathname === '/signup')) {
+            const from = location.state?.from?.pathname || "/";
+            navigate(from, { replace: true });
+          }
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -66,10 +50,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     
+    // Then set up the auth state change listener
+    const setupAuthListener = async () => {
+      const { data } = await supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log("Auth state changed:", event);
+          
+          if (event === 'SIGNED_OUT') {
+            setUser(null);
+            return;
+          }
+          
+          if (session?.user) {
+            // Use setTimeout to avoid any deadlocks
+            setTimeout(async () => {
+              const currentUser = await getCurrentUser();
+              setUser(currentUser);
+              
+              // Redirect if on auth pages
+              if (currentUser && (location.pathname === '/signin' || location.pathname === '/signup')) {
+                const from = location.state?.from?.pathname || "/";
+                navigate(from, { replace: true });
+              }
+            }, 0);
+          }
+        }
+      );
+      
+      subscription = data.subscription;
+    };
+    
     checkSession();
+    setupAuthListener();
 
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [navigate, location]);
 

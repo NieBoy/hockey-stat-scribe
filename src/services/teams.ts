@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { Team, User, Lines, UserRole, Position } from "@/types";
 
@@ -8,8 +7,7 @@ export const getTeams = async (): Promise<Team[]> => {
     .select(`
       id, 
       name, 
-      organization_id,
-      logo_url
+      organization_id
     `);
 
   if (error) throw error;
@@ -17,7 +15,7 @@ export const getTeams = async (): Promise<Team[]> => {
   // Need to fetch players and coaches separately
   const teams: Team[] = [];
   
-  for (const team of data) {
+  for (const team of data || []) {
     const playersResult = await supabase
       .from('team_members')
       .select(`
@@ -27,8 +25,7 @@ export const getTeams = async (): Promise<Team[]> => {
         line_number,
         users:user_id(id, name, email)
       `)
-      .eq('team_id', team.id)
-      .eq('role', 'player');
+      .eq('team_id', team.id);
       
     const coachesResult = await supabase
       .from('team_members')
@@ -48,31 +45,36 @@ export const getTeams = async (): Promise<Team[]> => {
       .eq('team_id', team.id)
       .eq('role', 'parent');
     
+    const players = playersResult.data?.filter(p => p.role === 'player').map(p => ({
+      id: p.users?.id || p.user_id,
+      name: p.users?.name || '',
+      email: p.users?.email || '',
+      role: ['player'] as UserRole[],
+      position: p.position as Position,
+      lineNumber: p.line_number
+    })) || [];
+    
+    const coaches = coachesResult.data?.map(c => ({
+      id: c.users?.id || c.user_id,
+      name: c.users?.name || '',
+      email: c.users?.email || '',
+      role: ['coach'] as UserRole[]
+    })) || [];
+    
+    const parents = parentsResult.data?.map(p => ({
+      id: p.users?.id || p.user_id,
+      name: p.users?.name || '',
+      email: p.users?.email || '',
+      role: ['parent'] as UserRole[]
+    })) || [];
+    
     teams.push({
       id: team.id,
       name: team.name,
-      logo: team.logo_url,
       organizationId: team.organization_id,
-      players: playersResult.data?.map(p => ({
-        id: p.users.id,
-        name: p.users.name,
-        email: p.users.email,
-        role: ['player'] as UserRole[],
-        position: p.position as Position,
-        lineNumber: p.line_number
-      })) || [],
-      coaches: coachesResult.data?.map(c => ({
-        id: c.users.id,
-        name: c.users.name,
-        email: c.users.email,
-        role: ['coach'] as UserRole[]
-      })) || [],
-      parents: parentsResult.data?.map(p => ({
-        id: p.users.id,
-        name: p.users.name,
-        email: p.users.email,
-        role: ['parent'] as UserRole[]
-      })) || []
+      players,
+      coaches,
+      parents
     });
   }
   
@@ -85,8 +87,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     .select(`
       id, 
       name, 
-      organization_id,
-      logo_url
+      organization_id
     `)
     .eq('id', id)
     .single();
@@ -129,26 +130,25 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
   return {
     id: data.id,
     name: data.name,
-    logo: data.logo_url,
     organizationId: data.organization_id,
     players: playersResult.data?.map(p => ({
-      id: p.users.id,
-      name: p.users.name,
-      email: p.users.email,
+      id: p.users?.id || p.user_id,
+      name: p.users?.name || '',
+      email: p.users?.email || '',
       role: ['player'] as UserRole[],
       position: p.position as Position,
       lineNumber: p.line_number
     })) || [],
     coaches: coachesResult.data?.map(c => ({
-      id: c.users.id,
-      name: c.users.name,
-      email: c.users.email,
+      id: c.users?.id || c.user_id,
+      name: c.users?.name || '',
+      email: c.users?.email || '',
       role: ['coach'] as UserRole[]
     })) || [],
     parents: parentsResult.data?.map(p => ({
-      id: p.users.id,
-      name: p.users.name,
-      email: p.users.email,
+      id: p.users?.id || p.user_id,
+      name: p.users?.name || '',
+      email: p.users?.email || '',
       role: ['parent'] as UserRole[]
     })) || []
   };
@@ -157,14 +157,12 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
 export const createTeam = async (teamData: {
   name: string;
   organizationId: string;
-  logo?: string;
 }): Promise<Team | null> => {
   const { data, error } = await supabase
     .from('teams')
     .insert({
       name: teamData.name,
-      organization_id: teamData.organizationId,
-      logo_url: teamData.logo
+      organization_id: teamData.organizationId
     })
     .select()
     .single();
@@ -174,7 +172,6 @@ export const createTeam = async (teamData: {
   return {
     id: data.id,
     name: data.name,
-    logo: data.logo_url,
     organizationId: data.organization_id,
     players: [],
     coaches: [],
@@ -203,18 +200,28 @@ export const addPlayerToTeam = async (
     // User exists
     userId = existingUsers.id;
   } else {
-    // Create new user
-    const { data: newUser, error: createError } = await supabase
+    // Create new user with UUID
+    const { data: { user } } = await supabase.auth.signUp({
+      email: playerData.email,
+      password: Math.random().toString(36).substring(2, 10), // Generate random password
+      options: {
+        data: {
+          name: playerData.name
+        }
+      }
+    });
+    
+    if (!user) throw new Error("Failed to create user");
+    userId = user.id;
+    
+    // Create user profile
+    await supabase
       .from('users')
       .insert({
+        id: userId,
         name: playerData.name,
         email: playerData.email
-      })
-      .select()
-      .single();
-      
-    if (createError) throw createError;
-    userId = newUser.id;
+      });
     
     // Assign player role to user
     await supabase
