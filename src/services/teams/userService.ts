@@ -44,9 +44,9 @@ export const getOrCreatePlayerUser = async (playerData: {
     }
 
     // If no existing user is found, use the RPC function to create a user
-    console.log("Creating new player user...");
+    console.log("Creating new player user with updated RPC function...");
     
-    // Use the create_player_user function which is set up as a security definer
+    // Use the updated create_player_user function to create a user directly in the users table
     const { data, error } = await supabase.rpc(
       'create_player_user',
       { 

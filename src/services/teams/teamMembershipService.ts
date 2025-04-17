@@ -15,19 +15,24 @@ export const addTeamMember = async (
   try {
     console.log(`Adding team member: userId=${userId}, role=${role}, to teamId=${teamId}`);
     
-    // Check if the team member already exists
-    const { data: existingMember } = await supabase
+    // Check if the team member already exists to avoid duplicate entries
+    const { data: existingMember, error: checkError } = await supabase
       .from('team_members')
       .select('id')
       .eq('team_id', teamId)
       .eq('user_id', userId)
       .maybeSingle();
     
+    if (checkError) {
+      console.error("Error checking for existing team member:", checkError);
+    }
+    
     if (existingMember) {
       console.log(`User ${userId} is already a member of team ${teamId}`);
       return true;
     }
     
+    // Add the team member
     const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({

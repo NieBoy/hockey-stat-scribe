@@ -25,8 +25,8 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Get or create user with our security definer RPC function
-    console.log("Creating or fetching player user...");
+    // Get or create user with our improved security definer RPC function
+    console.log("Creating or fetching player user with updated function...");
     const userId = await getOrCreatePlayerUser(playerData);
     
     if (!userId) {
@@ -35,21 +35,25 @@ export const addPlayerToTeam = async (
     
     console.log(`Received user ID ${userId}, verifying it exists...`);
     
-    // Double-check that the user exists in the database
+    // Double-check that the user exists in the database before proceeding with team member addition
     const { data: userExists, error: checkError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, name, email')
       .eq('id', userId)
       .single();
       
-    if (checkError || !userExists) {
+    if (checkError) {
       console.error("Failed to verify user exists:", checkError);
-      throw new Error(`Could not verify user ID ${userId} exists in the database`);
+      throw new Error(`Could not verify user ID ${userId} exists in the database: ${checkError.message}`);
+    }
+    
+    if (!userExists) {
+      throw new Error(`User with ID ${userId} not found in database`);
     }
     
     console.log(`User verified with ID ${userId}, now adding as team member`);
     
-    // Add the team member
+    // Add the team member with improved error handling
     await addTeamMember(
       teamId, 
       userId, 
@@ -63,15 +67,16 @@ export const addPlayerToTeam = async (
     // Return a user object with the data we have
     return {
       id: userId,
-      name: playerData.name,
-      email: playerData.email || `player_${userId.substring(0, 8)}@example.com`,
+      name: userExists.name || playerData.name,
+      email: userExists.email || playerData.email || `player_${userId.substring(0, 8)}@example.com`,
       role: ['player'],
       position: playerData.position as Position,
       number: playerData.number
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in addPlayerToTeam:", error);
-    throw error;
+    // Provide more detailed error information for debugging
+    throw new Error(`Failed to add player to team: ${error.message || "Unknown error"}`);
   }
 };
 
