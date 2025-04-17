@@ -9,6 +9,88 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_players: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          is_opponent: boolean | null
+          jersey_number: string | null
+          player_id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          is_opponent?: boolean | null
+          jersey_number?: string | null
+          player_id: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_opponent?: boolean | null
+          jersey_number?: string | null
+          player_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_players_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "game_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_type: string
+          game_id: string
+          id: string
+          period: number
+          team_type: string
+          time_in_period: unknown | null
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          game_id: string
+          id?: string
+          period: number
+          team_type: string
+          time_in_period?: unknown | null
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          game_id?: string
+          id?: string
+          period?: number
+          team_type?: string
+          time_in_period?: unknown | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_events_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_stats: {
         Row: {
           created_at: string
