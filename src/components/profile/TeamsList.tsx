@@ -31,7 +31,7 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
               <CardHeader className="pb-2">
                 <CardTitle>{team.name}</CardTitle>
                 <CardDescription>
-                  {team.organizationId ? `Organization ID: ${team.organizationId}` : 'No organization'}
+                  {team.players.length} players, {team.coaches.length} coaches
                 </CardDescription>
               </CardHeader>
               <CardContent>

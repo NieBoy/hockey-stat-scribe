@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
-import { mockTeams, mockOrganizations, mockUsers } from "@/lib/mock-data";
+import { mockTeams, mockUsers } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +35,6 @@ export default function TeamDetail() {
   });
   
   const team = mockTeams.find(team => team.id === id);
-  const organization = mockOrganizations.find(org => org.id === team?.organizationId);
   
   if (!team) {
     return (
@@ -98,11 +96,6 @@ export default function TeamDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-3xl font-bold tracking-tight">{team.name}</h1>
-              {organization && (
-                <Badge variant="outline" className="ml-2">
-                  {organization.name}
-                </Badge>
-              )}
             </div>
             <p className="text-muted-foreground mt-1">
               {team.players.length} players • {team.coaches.length} coaches
