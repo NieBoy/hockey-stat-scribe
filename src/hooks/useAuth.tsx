@@ -8,7 +8,7 @@ import { toast } from "sonner";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ user: User | null; error: string | null }>;
   signUp: (email: string, password: string, name: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 }
@@ -36,18 +36,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { user, error } = await apiSignIn(email, password);
-      if (error) {
-        toast.error(error);
-        return;
+      const result = await apiSignIn(email, password);
+      if (result.error) {
+        toast.error(result.error);
+        return result;
       }
       
-      setUser(user);
+      setUser(result.user);
       toast.success("Signed in successfully");
       navigate("/");
+      return result;
     } catch (error) {
       console.error("Sign in error:", error);
-      toast.error("Failed to sign in");
+      const errorMessage = "Failed to sign in";
+      toast.error(errorMessage);
+      return { user: null, error: errorMessage };
     }
   };
 

@@ -1,158 +1,206 @@
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { GameFormState, Team } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { GameFormState, Team } from "@/types";
-import { cn } from "@/lib/utils";
-import { mockTeams } from "@/lib/mock-data";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface NewGameFormProps {
-  onSubmit: (data: GameFormState) => void;
+const gameSchema = z.object({
+  date: z.date(),
+  homeTeam: z.string().min(1, "Home team is required"),
+  awayTeam: z.string().min(1, "Away team is required").refine(
+    (value, data) => value !== data.homeTeam, 
+    { message: "Away team must be different from home team" }
+  ),
+  location: z.string().min(1, "Location is required"),
+  periods: z.number().min(1).max(5)
+});
+
+export interface NewGameFormProps {
+  onSubmit: (data: GameFormState) => Promise<void>;
   teams: Team[];
-  isSubmitting?: boolean; // Added isSubmitting prop
+  isSubmitting?: boolean;
 }
 
-export default function NewGameForm({ onSubmit, teams = mockTeams, isSubmitting = false }: NewGameFormProps) {
-  const [date, setDate] = useState<Date>(new Date());
-  const [formData, setFormData] = useState<GameFormState>({
-    date: new Date(),
-    homeTeam: "",
-    awayTeam: "",
-    location: "",
-    periods: 3,
+const NewGameForm = ({ onSubmit, teams, isSubmitting = false }: NewGameFormProps) => {
+  const form = useForm<GameFormState>({
+    resolver: zodResolver(gameSchema),
+    defaultValues: {
+      date: new Date(),
+      homeTeam: "",
+      awayTeam: "",
+      location: "",
+      periods: 3
+    }
   });
 
-  const handleChange = (field: keyof GameFormState, value: string | Date | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
   return (
-    <Card>
-      <form onSubmit={handleSubmit}>
-        <CardHeader>
-          <CardTitle>Create New Game</CardTitle>
-          <CardDescription>
-            Schedule a new hockey game and assign stat trackers.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Game Date & Time</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className="w-full pl-3 text-left font-normal"
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter location" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="homeTeam"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Home Team</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(date) => {
-                    if (date) {
-                      setDate(date);
-                      handleChange("date", date);
-                    }
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select home team" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="homeTeam">Home Team</Label>
+          <FormField
+            control={form.control}
+            name="awayTeam"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Away Team</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select away team" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {teams
+                      .filter(team => team.id !== form.watch("homeTeam"))
+                      .map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="periods"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Number of Periods</FormLabel>
               <Select 
-                onValueChange={(value) => handleChange("homeTeam", value)}
-                required
+                onValueChange={(value) => field.onChange(parseInt(value, 10))} 
+                defaultValue={field.value.toString()}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select home team" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number of periods" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="space-y-2">
-              <Label htmlFor="awayTeam">Away Team</Label>
-              <Select 
-                onValueChange={(value) => handleChange("awayTeam", value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select away team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="Enter arena name"
-              value={formData.location}
-              onChange={(e) => handleChange("location", e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="periods">Number of Periods</Label>
-            <Select 
-              defaultValue="3" 
-              onValueChange={(value) => handleChange("periods", parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select number of periods" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">2 Periods</SelectItem>
-                <SelectItem value="3">3 Periods</SelectItem>
-                <SelectItem value="4">4 Periods</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Game"}
-          </Button>
-        </CardFooter>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className="animate-spin mr-2">○</span>
+              Creating Game...
+            </>
+          ) : (
+            "Create Game"
+          )}
+        </Button>
       </form>
-    </Card>
+    </Form>
   );
-}
+};
+
+export default NewGameForm;

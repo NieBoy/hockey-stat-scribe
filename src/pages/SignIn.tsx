@@ -1,24 +1,20 @@
 
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PenTool } from "lucide-react"; // Changed from Hockey to PenTool
+import { PenTool } from "lucide-react"; // Using PenTool icon
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SignIn() {
   const { signIn } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Get the location the user was trying to access
-  const from = location.state?.from?.pathname || "/";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,7 +22,10 @@ export default function SignIn() {
     setError(null);
 
     try {
-      await signIn(email, password);
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError(result.error);
+      }
       // The redirect is handled in the useAuth hook
     } catch (err) {
       setError("An unexpected error occurred.");
