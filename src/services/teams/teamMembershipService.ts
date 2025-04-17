@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 
@@ -169,20 +170,37 @@ export const removeTeamMember = async (teamId: string, memberId: string): Promis
 
 /**
  * Removes a team member and any related records
+ * Fixed to prevent infinite recursion in RLS policies
  */
 export const deleteTeamMember = async (memberId: string): Promise<boolean> => {
   try {
     console.log("Deleting team member:", memberId);
     
-    // First remove any parent-player relationships
-    const { error: relationError } = await supabase
+    // First retrieve any parent-player relationships to delete them directly
+    const { data: relations, error: relationsError } = await supabase
       .from('player_parents')
-      .delete()
+      .select('*')
       .or(`parent_id.eq.${memberId},player_id.eq.${memberId}`);
       
-    if (relationError) {
-      console.error("Error deleting player-parent relations:", relationError);
-      throw relationError;
+    if (relationsError) {
+      console.error("Error retrieving parent-player relations:", relationsError);
+      throw relationsError;
+    }
+    
+    // Delete the relations directly if any exist
+    if (relations && relations.length > 0) {
+      for (const relation of relations) {
+        const { error: deleteRelationError } = await supabase
+          .from('player_parents')
+          .delete()
+          .eq('parent_id', relation.parent_id)
+          .eq('player_id', relation.player_id);
+          
+        if (deleteRelationError) {
+          console.error("Error deleting relation:", deleteRelationError);
+          throw deleteRelationError;
+        }
+      }
     }
     
     // Then delete the team member
