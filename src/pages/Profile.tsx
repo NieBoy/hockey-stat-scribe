@@ -1,103 +1,24 @@
 
 import MainLayout from "@/components/layout/MainLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
-import UserSettings from "@/components/profile/UserSettings";
-import TeamsList from "@/components/profile/TeamsList";
-import PlayersList from "@/components/profile/PlayersList";
-import RoleManager from "@/components/profile/RoleManager";
-import { useQuery } from "@tanstack/react-query";
-import { getTeams } from "@/services/teams";
-import { useState, useEffect } from "react";
-import { Team, User } from "@/types";
-import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
+import ProfileTabs from "@/components/profile/ProfileTabs";
+import { useProfileData } from "@/hooks/useProfileData";
 
 export default function Profile() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("settings");
-  const [allPlayers, setAllPlayers] = useState<User[]>([]);
-
-  // Fix: Remove onError from the options object and use onError callback
+  
+  // Use the custom hook for profile data management
   const { 
-    data: teams = [], 
-    isLoading: teamsLoading, 
-    error: teamsError, 
-    refetch 
-  } = useQuery({
-    queryKey: ['teams'],
-    queryFn: getTeams,
-    enabled: !!user,
-    // Force refetch when the component mounts
-    refetchOnMount: true,
-    // Refresh teams data when this component is active, but less frequently
-    refetchInterval: 5000,
-    // Add retry logic for more resilience
-    retry: 3,
-    retryDelay: 1000
-  });
-
-  // Handle errors separately
-  useEffect(() => {
-    if (teamsError) {
-      console.error("Failed to fetch teams:", teamsError);
-      toast.error("Failed to load teams data");
-    }
-  }, [teamsError]);
-
-  // Manually refresh data when the component mounts or tab changes
-  useEffect(() => {
-    const refreshData = async () => {
-      console.log("Manual data refresh triggered");
-      try {
-        await refetch();
-      } catch (e) {
-        console.error("Manual refresh error:", e);
-      }
-    };
-    
-    refreshData();
-  }, [refetch, activeTab]);
-
-  useEffect(() => {
-    console.log("Profile loaded with user:", user);
-    console.log("Teams loaded:", teams);
-    
-    if (teamsError) {
-      console.error("Error fetching teams:", teamsError);
-    }
-
-    // Extract all players from all teams
-    if (teams && teams.length > 0) {
-      const playersFromTeams: User[] = [];
-      teams.forEach(team => {
-        console.log(`Processing team ${team.name} with ${team.players?.length || 0} players`);
-        if (team.players && team.players.length > 0) {
-          team.players.forEach(player => {
-            // Add team information to player
-            const playerWithTeam = {
-              ...player,
-              teams: player.teams || [{ 
-                id: team.id, 
-                name: team.name,
-                players: [],
-                coaches: [],
-                parents: []
-              }]
-            };
-            playersFromTeams.push(playerWithTeam);
-          });
-        }
-      });
-      setAllPlayers(playersFromTeams);
-      console.log("All players extracted:", playersFromTeams);
-    } else {
-      console.log("No teams available or teams is empty");
-      setAllPlayers([]);
-    }
-  }, [user, teams, teamsError]);
+    teams, 
+    allPlayers, 
+    teamsLoading, 
+    teamsError, 
+    refetch,
+    filterUserTeams 
+  } = useProfileData(user);
 
   if (!user) {
     return (
@@ -115,37 +36,7 @@ export default function Profile() {
   const isParent = user.role.includes('parent');
 
   // Get teams for the current user
-  const userTeams = teams.filter(team => {
-    console.log("Filtering team:", team.id, team.name);
-    console.log("Team coaches:", team.coaches?.map(c => c.id));
-    
-    // Admin can see all teams
-    if (isAdmin) return true;
-    
-    // Coach can see teams they coach
-    if (isCoach) {
-      const isCoaching = team.coaches?.some(coach => coach.id === user.id);
-      console.log("Is coaching this team:", isCoaching, "user.id:", user.id);
-      return isCoaching;
-    }
-    
-    // Player can see teams they play in
-    if (isPlayer) {
-      const isPlaying = team.players?.some(player => player.id === user.id);
-      console.log("Is player in this team:", isPlaying);
-      return isPlaying;
-    }
-    
-    // Parent can see teams their children play in
-    if (isParent) {
-      const isParentInTeam = team.parents?.some(parent => parent.id === user.id);
-      console.log("Is parent in this team:", isParentInTeam);
-      return isParentInTeam;
-    }
-    
-    return false;
-  });
-
+  const userTeams = filterUserTeams(user);
   console.log("Filtered user teams:", userTeams);
 
   return (
@@ -166,34 +57,17 @@ export default function Profile() {
           </Button>
         </div>
 
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
-            {(isAdmin || isCoach) && <TabsTrigger value="teams">Teams</TabsTrigger>}
-            {(isAdmin || isCoach || isParent) && <TabsTrigger value="players">Players</TabsTrigger>}
-          </TabsList>
-          <TabsContent value="settings" className="py-6">
-            <UserSettings user={user} />
-          </TabsContent>
-          <TabsContent value="roles" className="py-6">
-            <RoleManager />
-          </TabsContent>
-          {(isAdmin || isCoach) && (
-            <TabsContent value="teams" className="py-6">
-              <TeamsList teams={userTeams} isAdmin={isAdmin} />
-            </TabsContent>
-          )}
-          {(isAdmin || isCoach || isParent) && (
-            <TabsContent value="players" className="py-6">
-              <PlayersList 
-                players={allPlayers} 
-                isParent={isParent} 
-                isCoach={isCoach} 
-              />
-            </TabsContent>
-          )}
-        </Tabs>
+        <ProfileTabs
+          user={user}
+          teams={userTeams}
+          allPlayers={allPlayers}
+          isAdmin={isAdmin}
+          isCoach={isCoach}
+          isParent={isParent}
+          teamsLoading={teamsLoading}
+          teamsError={teamsError}
+          refetchTeams={refetch}
+        />
       </div>
     </MainLayout>
   );
