@@ -54,4 +54,3 @@ export const updateTeamMemberInfo = async (
     throw error;
   }
 };
-
