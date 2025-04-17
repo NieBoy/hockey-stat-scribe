@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "@/types";
 import { getCurrentUser, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/services/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
@@ -20,17 +20,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Set up auth listener
+  // Set up auth listener and check for existing session
   useEffect(() => {
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event);
         if (session?.user) {
-          // Use setTimeout to avoid any potential deadlocks
+          // Use setTimeout to avoid any deadlocks
           setTimeout(async () => {
-            const user = await getCurrentUser();
-            setUser(user);
+            try {
+              const currentUser = await getCurrentUser();
+              setUser(currentUser);
+              
+              // Redirect if on auth pages
+              const path = location.pathname;
+              if (currentUser && (path === '/signin' || path === '/signup')) {
+                const from = location.state?.from?.pathname || "/";
+                navigate(from, { replace: true });
+              }
+            } catch (error) {
+              console.error("Error fetching user in auth state change:", error);
+            }
           }, 0);
         } else {
           setUser(null);
@@ -39,23 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     
     // Then check for existing session
-    const initializeAuth = async () => {
+    const checkSession = async () => {
       try {
-        const user = await getCurrentUser();
-        setUser(user);
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          const currentUser = await getCurrentUser();
+          setUser(currentUser);
+        }
       } catch (error) {
-        console.error("Error loading user:", error);
+        console.error("Error checking session:", error);
       } finally {
         setLoading(false);
       }
     };
     
-    initializeAuth();
+    checkSession();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate, location]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -65,7 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (result.user) {
         setUser(result.user);
         toast.success("Signed in successfully");
-        navigate("/");
+        
+        // Redirect to intended destination or home
+        const from = location.state?.from?.pathname || "/";
+        navigate(from, { replace: true });
       }
       return result;
     } catch (error) {

@@ -61,8 +61,7 @@ export default function NewGame() {
         ) : (
           <NewGameForm 
             onSubmit={handleCreateGame} 
-            teams={teams || []} 
-            isSubmitting={loading}
+            teams={teams || []}
           />
         )}
       </div>

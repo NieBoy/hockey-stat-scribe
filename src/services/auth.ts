@@ -4,41 +4,61 @@ import { User, UserRole } from "@/types";
 
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get the current user from Supabase Auth
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!user) return null;
+    if (!authUser) return null;
     
-    // Get user data from our users table
-    const { data, error } = await supabase
+    // Get user profile data from the users table
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single();
       
-    if (error || !data) return null;
+    if (userError || !userData) {
+      console.error("Error fetching user profile:", userError);
+      return null;
+    }
     
-    // Get user's roles
-    const { data: roles } = await supabase
+    // Get user roles from the user_roles table
+    const { data: rolesData, error: rolesError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id);
+      .eq('user_id', authUser.id);
       
-    // Get user's teams - simple approach first
-    const { data: teamMembers } = await supabase
+    if (rolesError) {
+      console.error("Error fetching user roles:", rolesError);
+      return null;
+    }
+    
+    // Extract roles into an array
+    const roles = (rolesData || []).map(r => r.role as UserRole);
+    
+    // Fetch teams the user belongs to
+    const { data: teamMembersData, error: teamMembersError } = await supabase
       .from('team_members')
       .select('team_id')
-      .eq('user_id', user.id);
+      .eq('user_id', authUser.id);
       
-    // Get team details separately to avoid join errors
+    if (teamMembersError) {
+      console.error("Error fetching team members:", teamMembersError);
+      return null;
+    }
+    
+    // Get details for each team
     const teams = [];
-    if (teamMembers && teamMembers.length > 0) {
-      const teamIds = teamMembers.map(tm => tm.team_id);
-      const { data: teamsData } = await supabase
+    if (teamMembersData && teamMembersData.length > 0) {
+      const teamIds = teamMembersData.map(tm => tm.team_id);
+      
+      const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
         .select('id, name, organization_id')
         .in('id', teamIds);
         
-      if (teamsData) {
+      if (teamsError) {
+        console.error("Error fetching teams:", teamsError);
+      } else if (teamsData) {
         for (const team of teamsData) {
           teams.push({
             id: team.id,
@@ -52,19 +72,17 @@ export const getCurrentUser = async (): Promise<User | null> => {
       }
     }
     
-    // Build role array
-    const userRoles = roles?.map(r => r.role as UserRole) || [];
-    
+    // Construct and return the user object
     return {
-      id: data.id,
-      name: data.name || '',
-      email: data.email,
-      role: userRoles,
+      id: userData.id,
+      name: userData.name || '',
+      email: userData.email,
+      role: roles,
       teams,
-      isAdmin: userRoles.includes('admin')
+      isAdmin: roles.includes('admin')
     };
   } catch (error) {
-    console.error("Error getting user data:", error);
+    console.error("Error in getCurrentUser:", error);
     return null;
   }
 };
@@ -74,19 +92,23 @@ export const signIn = async (
   password: string
 ): Promise<{ user: User | null; error: string | null }> => {
   try {
+    // Sign in with Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) return { user: null, error: error.message };
-    
-    if (data.user) {
-      const currentUser = await getCurrentUser();
-      return { user: currentUser, error: null };
+    if (error) {
+      return { user: null, error: error.message };
     }
     
-    return { user: null, error: 'Failed to sign in' };
+    if (!data.user) {
+      return { user: null, error: 'Failed to sign in' };
+    }
+    
+    // Get complete user profile
+    const user = await getCurrentUser();
+    return { user, error: null };
   } catch (error) {
     console.error("Sign in error:", error);
     return { user: null, error: 'An unexpected error occurred' };
@@ -99,14 +121,12 @@ export const signUp = async (
   name: string
 ): Promise<{ success: boolean; error: string | null }> => {
   try {
-    // First, create auth user
+    // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          name: name
-        }
+        data: { name }
       }
     });
 
@@ -115,24 +135,24 @@ export const signUp = async (
     }
     
     if (!data.user) {
-      return { success: false, error: 'Failed to create user' };
+      return { success: false, error: 'Failed to create account' };
     }
     
-    // Then create profile in users table
-    const { error: insertError } = await supabase
+    // Create user profile in the users table
+    const { error: profileError } = await supabase
       .from('users')
       .insert({
         id: data.user.id,
-        email: email,
-        name: name
+        email,
+        name
       });
       
-    if (insertError) {
-      console.error("Error creating user profile:", insertError);
+    if (profileError) {
+      console.error("Error creating user profile:", profileError);
       return { success: false, error: 'Failed to create user profile' };
     }
     
-    // Give default role
+    // Assign default role
     const { error: roleError } = await supabase
       .from('user_roles')
       .insert({
@@ -142,6 +162,7 @@ export const signUp = async (
       
     if (roleError) {
       console.error("Error assigning role:", roleError);
+      // Continue even if role assignment fails
     }
     
     return { success: true, error: null };

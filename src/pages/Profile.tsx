@@ -51,11 +51,11 @@ export default function Profile() {
             <TeamsList teams={user.teams || []} />
           </TabsContent>
           <TabsContent value="players" className="py-6">
-            <PlayersList />
+            <PlayersList players={[]} />
           </TabsContent>
           {user.isAdmin && (
             <TabsContent value="organizations" className="py-6">
-              <OrganizationsList />
+              <OrganizationsList organizations={[]} />
             </TabsContent>
           )}
         </Tabs>
