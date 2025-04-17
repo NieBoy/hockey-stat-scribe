@@ -56,44 +56,47 @@ export const getGames = async (): Promise<Game[]> => {
 
 export const getGameById = async (id: string): Promise<Game | null> => {
   try {
-    // Get game data
+    // Get game data with proper type handling
     const data = await fetchGameWithTeams(id);
     
-    if (data) {
-      // Get team members for both teams
-      const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-        fetchTeamMembers(data.home_team.id),
-        fetchTeamMembers(data.away_team.id)
-      ]);
-      
-      // Transform the team data
-      const homeTeam = transformTeamData(
-        data.home_team.id,
-        data.home_team.name,
-        homeTeamMembers
-      );
-      
-      const awayTeam = transformTeamData(
-        data.away_team.id,
-        data.away_team.name,
-        awayTeamMembers
-      );
-      
-      return {
-        id: data.id,
-        date: new Date(data.date),
-        homeTeam,
-        awayTeam,
-        location: data.location,
-        statTrackers: [],
-        periods: data.periods,
-        currentPeriod: data.current_period,
-        isActive: data.is_active,
-        stats: []
-      };
+    if (!data) {
+      return null;
     }
     
-    return null;
+    // Since we're using .single() in fetchGameWithTeams for a specific ID,
+    // data should be a GameDbResponse object, not an array
+    
+    // Get team members for both teams
+    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
+      fetchTeamMembers(data.home_team.id),
+      fetchTeamMembers(data.away_team.id)
+    ]);
+    
+    // Transform the team data
+    const homeTeam = transformTeamData(
+      data.home_team.id,
+      data.home_team.name,
+      homeTeamMembers
+    );
+    
+    const awayTeam = transformTeamData(
+      data.away_team.id,
+      data.away_team.name,
+      awayTeamMembers
+    );
+    
+    return {
+      id: data.id,
+      date: new Date(data.date),
+      homeTeam,
+      awayTeam,
+      location: data.location,
+      statTrackers: [],
+      periods: data.periods,
+      currentPeriod: data.current_period,
+      isActive: data.is_active,
+      stats: []
+    };
   } catch (error) {
     console.error("Error fetching game:", error);
     return null;
@@ -117,41 +120,41 @@ export const createGame = async (gameData: {
       gameData.periods
     );
     
-    if (data) {
-      // Get team members for both teams
-      const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-        fetchTeamMembers(data.home_team.id),
-        fetchTeamMembers(data.away_team.id)
-      ]);
-      
-      // Transform the team data
-      const homeTeam = transformTeamData(
-        data.home_team.id,
-        data.home_team.name,
-        homeTeamMembers
-      );
-      
-      const awayTeam = transformTeamData(
-        data.away_team.id,
-        data.away_team.name,
-        awayTeamMembers
-      );
-      
-      return {
-        id: data.id,
-        date: new Date(data.date),
-        homeTeam,
-        awayTeam,
-        location: data.location,
-        statTrackers: [],
-        periods: data.periods,
-        currentPeriod: data.current_period,
-        isActive: data.is_active,
-        stats: []
-      };
+    if (!data) {
+      return null;
     }
     
-    return null;
+    // Get team members for both teams
+    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
+      fetchTeamMembers(data.home_team.id),
+      fetchTeamMembers(data.away_team.id)
+    ]);
+    
+    // Transform the team data
+    const homeTeam = transformTeamData(
+      data.home_team.id,
+      data.home_team.name,
+      homeTeamMembers
+    );
+    
+    const awayTeam = transformTeamData(
+      data.away_team.id,
+      data.away_team.name,
+      awayTeamMembers
+    );
+    
+    return {
+      id: data.id,
+      date: new Date(data.date),
+      homeTeam,
+      awayTeam,
+      location: data.location,
+      statTrackers: [],
+      periods: data.periods,
+      currentPeriod: data.current_period,
+      isActive: data.is_active,
+      stats: []
+    };
   } catch (error) {
     console.error("Error creating game:", error);
     return null;
