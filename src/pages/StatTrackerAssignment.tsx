@@ -1,11 +1,9 @@
 
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronLeft } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { StatTypeSelector } from '@/components/stats/StatTypeSelector';
+import { StatTrackerHeader } from '@/components/stats/StatTrackerHeader';
+import { StatTrackerAssignmentForm } from '@/components/stats/StatTrackerAssignmentForm';
 import { useStatTrackerAssignment } from '@/hooks/useStatTrackerAssignment';
 
 export default function StatTrackerAssignment() {
@@ -33,37 +31,23 @@ export default function StatTrackerAssignment() {
   return (
     <MainLayout>
       <div className="container mx-auto p-4 space-y-6">
-        <Button variant="ghost" className="mb-6" asChild>
-          <Link to={`/games/${gameId}`} className="flex items-center gap-2">
-            <ChevronLeft className="h-4 w-4" /> Back to Game
-          </Link>
-        </Button>
+        <StatTrackerHeader 
+          gameId={gameId!}
+          homeTeamName={game?.home_team?.name}
+          awayTeamName={game?.away_team?.name}
+        />
 
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold">
-            {game ? `Assign Stat Trackers for ${game.home_team?.name || 'Home Team'} vs ${game.away_team?.name || 'Away Team'}` : 'Assign Stat Trackers'}
-          </h1>
-
-          <Card className="p-6">
-            <StatTypeSelector
-              selectedTrackers={selectedTrackers}
-              teamMembers={teamMembers}
-              onSelect={(statType, value) => setSelectedTrackers(prev => ({
-                ...prev,
-                [statType]: value || null
-              }))}
-            />
-
-            <Button 
-              onClick={handleTrackerAssignment}
-              className="mt-6 w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : saveSuccess ? 'Saved Successfully' : 'Save Assignments'}
-            </Button>
-          </Card>
-        </div>
+        <StatTrackerAssignmentForm
+          selectedTrackers={selectedTrackers}
+          teamMembers={teamMembers}
+          loading={loading}
+          saveSuccess={saveSuccess}
+          onSelect={(statType, value) => setSelectedTrackers(prev => ({
+            ...prev,
+            [statType]: value || null
+          }))}
+          onSave={handleTrackerAssignment}
+        />
       </div>
     </MainLayout>
   );
