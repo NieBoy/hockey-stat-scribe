@@ -13,6 +13,14 @@ export const createTeam = async (teamData: {
   }
 
   try {
+    // Get the current authenticated user's session
+    const { data: authData } = await supabase.auth.getSession();
+    const userId = authData.session?.user.id;
+
+    if (!userId) {
+      throw new Error("User must be authenticated to create a team");
+    }
+
     // Create team in Supabase
     const { data, error } = await supabase
       .from('teams')
@@ -30,29 +38,24 @@ export const createTeam = async (teamData: {
     console.log("Team created successfully in Supabase:", data);
     
     // Automatically add the current user as a coach for the team
-    const { data: authData } = await supabase.auth.getSession();
-    if (authData.session?.user.id) {
-      const userId = authData.session.user.id;
-      console.log("Adding current user as coach:", userId);
+    const { error: teamMemberError } = await supabase
+      .from('team_members')
+      .insert({
+        team_id: data.id,
+        user_id: userId,
+        role: 'coach'
+      });
       
-      const { error: teamMemberError } = await supabase
-        .from('team_members')
-        .insert({
-          team_id: data.id,
-          user_id: userId,
-          role: 'coach'
-        });
-        
-      if (teamMemberError) {
-        console.error("Error adding coach to team:", teamMemberError);
-      }
+    if (teamMemberError) {
+      console.error("Error adding coach to team:", teamMemberError);
+      throw teamMemberError;
     }
     
     return {
       id: data.id,
       name: data.name,
       players: [],
-      coaches: [],
+      coaches: [{ id: userId, name: '', role: ['coach'] }],
       parents: []
     };
   } catch (error) {
