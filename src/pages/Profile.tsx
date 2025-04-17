@@ -12,7 +12,7 @@ import RoleManager from "@/components/profile/RoleManager";
 import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/services/teams";
 import { useState, useEffect } from "react";
-import { User } from "@/types";
+import { Team, User } from "@/types";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -26,7 +26,7 @@ export default function Profile() {
     // Force refetch when the component mounts
     refetchOnMount: true,
     // Refresh teams data when this component is active
-    refetchInterval: 5000
+    refetchInterval: 3000
   });
 
   useEffect(() => {
@@ -46,7 +46,13 @@ export default function Profile() {
             // Add team information to player
             const playerWithTeam = {
               ...player,
-              teams: [{ id: team.id, name: team.name }]
+              teams: player.teams || [{ 
+                id: team.id, 
+                name: team.name,
+                players: [],
+                coaches: [],
+                parents: []
+              }]
             };
             playersFromTeams.push(playerWithTeam);
           });

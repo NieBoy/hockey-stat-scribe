@@ -4,7 +4,7 @@ import { User } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, User as UserIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 interface PlayersListProps {
@@ -30,10 +30,16 @@ export default function PlayersList({ players, isParent = false, isCoach = false
     } else if (player.teams && player.teams.length > 0) {
       // Merge team information for existing players
       const existingTeams = existingPlayer.teams || [];
-      const newTeam = player.teams[0];
-      if (!existingTeams.some(t => t.id === newTeam.id)) {
-        existingPlayer.teams = [...existingTeams, newTeam];
-      }
+      const newTeams = player.teams;
+      
+      // Add any teams that don't already exist in the player's team list
+      player.teams.forEach(newTeam => {
+        if (!existingTeams.some(t => t.id === newTeam.id)) {
+          existingTeams.push(newTeam);
+        }
+      });
+      
+      existingPlayer.teams = existingTeams;
     }
     return acc;
   }, []);
@@ -62,9 +68,13 @@ export default function PlayersList({ players, isParent = false, isCoach = false
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getUserInitials(player.name)}
-                    </AvatarFallback>
+                    {player.profileImage ? (
+                      <AvatarImage src={player.profileImage} alt={player.name} />
+                    ) : (
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getUserInitials(player.name)}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div>
                     <CardTitle>
@@ -94,16 +104,23 @@ export default function PlayersList({ players, isParent = false, isCoach = false
                       <span className="font-medium">Position:</span> {player.position}
                     </div>
                   )}
+                  {player.description && (
+                    <div className="mt-2">
+                      {player.description}
+                    </div>
+                  )}
                   {player.teams && player.teams.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       <span className="font-medium">Teams:</span>
-                      {player.teams.map((team) => (
-                        <Badge key={team.id} variant="outline" className="ml-1">
-                          <Link to={`/teams/${team.id}`} className="hover:underline">
-                            {team.name}
-                          </Link>
-                        </Badge>
-                      ))}
+                      <div className="flex flex-wrap gap-1">
+                        {player.teams.map((team) => (
+                          <Badge key={team.id} variant="outline" className="ml-1">
+                            <Link to={`/teams/${team.id}`} className="hover:underline">
+                              {team.name}
+                            </Link>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
