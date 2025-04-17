@@ -18,6 +18,11 @@ export default function Profile() {
     return <div>Loading...</div>;
   }
 
+  const isAdmin = user.role.includes('admin');
+  const isCoach = user.role.includes('coach');
+  const isPlayer = user.role.includes('player');
+  const isParent = user.role.includes('parent');
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -37,11 +42,12 @@ export default function Profile() {
         </div>
 
         <Tabs defaultValue="settings">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
-            <TabsTrigger value="teams">Teams</TabsTrigger>
-            <TabsTrigger value="players">Players</TabsTrigger>
+            {(isAdmin || isCoach) && <TabsTrigger value="teams">Teams</TabsTrigger>}
+            {(isAdmin || isCoach || isParent) && <TabsTrigger value="players">Players</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="organizations">Organizations</TabsTrigger>}
           </TabsList>
           <TabsContent value="settings" className="py-6">
             <UserSettings user={user} />
@@ -49,13 +55,17 @@ export default function Profile() {
           <TabsContent value="roles" className="py-6">
             <RoleManager />
           </TabsContent>
-          <TabsContent value="teams" className="py-6">
-            <TeamsList teams={user.teams || []} />
-          </TabsContent>
-          <TabsContent value="players" className="py-6">
-            <PlayersList players={[]} />
-          </TabsContent>
-          {user.isAdmin && (
+          {(isAdmin || isCoach) && (
+            <TabsContent value="teams" className="py-6">
+              <TeamsList teams={user.teams || []} />
+            </TabsContent>
+          )}
+          {(isAdmin || isCoach || isParent) && (
+            <TabsContent value="players" className="py-6">
+              <PlayersList players={[]} />
+            </TabsContent>
+          )}
+          {isAdmin && (
             <TabsContent value="organizations" className="py-6">
               <OrganizationsList organizations={[]} />
             </TabsContent>

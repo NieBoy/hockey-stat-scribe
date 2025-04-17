@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, UserRole } from "@/types";
 
@@ -48,22 +49,71 @@ export const getCurrentUser = async (): Promise<User | null> => {
       .select('role')
       .eq('user_id', authUser.id);
       
-    // If no roles exist yet, create default 'player' role
+    // If no roles exist yet, need to determine appropriate role
     let roles: UserRole[] = [];
     if (rolesError || !rolesData || rolesData.length === 0) {
-      console.log("Creating default role for user:", authUser.id);
-      // Assign default role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authUser.id,
-          role: 'player'
-        });
+      console.log("No roles found for user, determining appropriate role");
       
-      if (!roleError) {
-        roles = ['player'] as UserRole[];
+      // Check if user is associated with any teams or organizations
+      const { data: teamMemberships, error: teamError } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('user_id', authUser.id);
+        
+      if (teamError) {
+        console.error("Error checking team memberships:", teamError);
+      }
+      
+      // If user has no team associations, make them an admin
+      if (!teamMemberships || teamMemberships.length === 0) {
+        console.log("No team associations found, assigning admin role to:", authUser.id);
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authUser.id,
+            role: 'admin'
+          });
+        
+        if (!roleError) {
+          roles = ['admin'] as UserRole[];
+        } else {
+          console.error("Error assigning admin role:", roleError);
+          // Fallback to player role if admin assignment fails
+          const { error: fallbackRoleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: authUser.id,
+              role: 'player'
+            });
+          
+          if (!fallbackRoleError) {
+            roles = ['player'] as UserRole[];
+          } else {
+            console.error("Error assigning fallback role:", fallbackRoleError);
+          }
+        }
       } else {
-        console.error("Error assigning default role:", roleError);
+        // User has team associations, use existing role from team membership
+        // Default to player if we can't determine
+        console.log("User has team associations, using role from membership");
+        let assignedRole = 'player';
+        
+        if (teamMemberships.some(tm => tm.role === 'coach')) {
+          assignedRole = 'coach';
+        }
+        
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authUser.id,
+            role: assignedRole
+          });
+        
+        if (!roleError) {
+          roles = [assignedRole] as UserRole[];
+        } else {
+          console.error("Error assigning role from team membership:", roleError);
+        }
       }
     } else {
       // Extract roles into an array
