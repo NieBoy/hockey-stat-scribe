@@ -22,7 +22,9 @@ export default function Profile() {
     queryFn: getTeams,
     enabled: !!user,
     // Force refetch when the component mounts
-    refetchOnMount: true
+    refetchOnMount: true,
+    // Refresh teams data when this component is active
+    refetchInterval: activeTab === "teams" ? 10000 : false
   });
 
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function Profile() {
   // Get teams for the current user
   const userTeams = teams.filter(team => {
     console.log("Filtering team:", team.id, team.name);
+    console.log("Team coaches:", team.coaches.map(c => c.id));
     
     // Admin can see all teams
     if (isAdmin) return true;
@@ -59,7 +62,7 @@ export default function Profile() {
     // Coach can see teams they coach
     if (isCoach) {
       const isCoaching = team.coaches.some(coach => coach.id === user.id);
-      console.log("Is coaching this team:", isCoaching);
+      console.log("Is coaching this team:", isCoaching, "user.id:", user.id);
       return isCoaching;
     }
     
@@ -115,38 +118,7 @@ export default function Profile() {
           </TabsContent>
           {(isAdmin || isCoach) && (
             <TabsContent value="teams" className="py-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Teams</h2>
-                <Button asChild>
-                  <Link to="/teams/new">
-                    <Plus className="mr-2 h-4 w-4" /> Add Team
-                  </Link>
-                </Button>
-              </div>
-              {teamsLoading ? (
-                <div className="flex items-center justify-center h-48">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-                </div>
-              ) : teamsError ? (
-                <div className="p-4 rounded-md bg-destructive/10 text-destructive dark:bg-destructive/20">
-                  <p>Error loading teams: {(teamsError as Error).message}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              ) : (
-                <TeamsList teams={userTeams} isAdmin={isAdmin} />
-              )}
-              <div className="mt-6 flex justify-center">
-                <Button variant="outline" asChild>
-                  <Link to="/teams">View All Teams</Link>
-                </Button>
-              </div>
+              <TeamsList teams={userTeams} isAdmin={isAdmin} />
             </TabsContent>
           )}
           {(isAdmin || isCoach || isParent) && (

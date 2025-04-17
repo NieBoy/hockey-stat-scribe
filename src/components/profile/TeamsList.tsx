@@ -15,7 +15,7 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Teams</h2>
-        {isAdmin && (
+        {(isAdmin || teams.length > 0) && (
           <Button asChild>
             <Link to="/teams/new">
               <Plus className="mr-2 h-4 w-4" /> Add Team
@@ -62,16 +62,20 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
             <p className="mt-2 text-sm text-muted-foreground">
               You are not associated with any teams yet.
             </p>
-            {isAdmin && (
-              <Button className="mt-4" asChild>
-                <Link to="/teams/new">
-                  <Plus className="mr-2 h-4 w-4" /> Create a team
-                </Link>
-              </Button>
-            )}
+            <Button className="mt-4" asChild>
+              <Link to="/teams/new">
+                <Plus className="mr-2 h-4 w-4" /> Create a team
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       )}
+
+      <div className="mt-6 flex justify-center">
+        <Button variant="outline" asChild>
+          <Link to="/teams">View All Teams</Link>
+        </Button>
+      </div>
     </>
   );
 }
