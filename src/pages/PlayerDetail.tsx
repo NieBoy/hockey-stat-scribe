@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -10,6 +9,14 @@ import { supabase } from "@/lib/supabase";
 import { User, Position, UserRole } from "@/types";
 import ParentPlayerManager from "@/components/teams/ParentPlayerManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const getUserInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
+};
 
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +32,6 @@ export default function PlayerDetail() {
       try {
         console.log("Fetching player details for ID:", id);
         
-        // Fetch player from team_members without the teams join which was causing the error
         const { data: playerData, error: playerError } = await supabase
           .from('team_members')
           .select(`
@@ -48,7 +54,6 @@ export default function PlayerDetail() {
           return;
         }
         
-        // Now fetch the team name separately
         let teamName = "";
         if (playerData.team_id) {
           const { data: teamData, error: teamError } = await supabase
@@ -62,12 +67,11 @@ export default function PlayerDetail() {
           }
         }
         
-        // Transform to User type
         const playerDetails: User = {
           id: playerData.id,
           name: playerData.name || 'Unknown Player',
           email: playerData.email || undefined,
-          role: [playerData.role as UserRole || 'player'], // Cast to UserRole
+          role: [playerData.role as UserRole || 'player'],
           position: playerData.position as Position,
           lineNumber: playerData.line_number,
           number: playerData.line_number ? String(playerData.line_number) : undefined,
@@ -93,14 +97,6 @@ export default function PlayerDetail() {
       fetchPlayerDetails();
     }
   }, [id]);
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   if (loading) {
     return (
@@ -260,12 +256,4 @@ export default function PlayerDetail() {
       </div>
     </MainLayout>
   );
-
-  function getUserInitials(name: string) {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  }
 }
