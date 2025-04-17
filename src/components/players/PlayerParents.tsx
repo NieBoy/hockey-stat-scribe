@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { User } from "@/types";
@@ -23,6 +24,7 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
     
     setLoading(true);
     try {
+      // Get parent-player relationships
       const { data: relationships, error: relError } = await supabase
         .from('player_parents')
         .select('parent_id')
@@ -33,6 +35,7 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
       if (relationships && relationships.length > 0) {
         const parentIds = relationships.map(rel => rel.parent_id);
         
+        // Get parent details
         const { data: parentData, error: parentError } = await supabase
           .from('team_members')
           .select('id, name, email, role')
@@ -45,7 +48,12 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
           id: parent.id,
           name: parent.name || 'Unknown Parent',
           email: parent.email,
-          role: ['parent'] as ['parent']
+          role: ['parent'] as ['parent'],
+          children: [{ // Add the current player as a child
+            id: player.id,
+            name: player.name,
+            role: ['player'] as ['player']
+          }]
         }));
         
         setParents(parentUsers);
@@ -107,16 +115,20 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
                       {getUserInitials(parent.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="space-y-1">
                     <Link 
                       to={`/players/${parent.id}`}
-                      className="hover:underline font-medium"
+                      className="text-lg font-medium hover:underline"
                     >
                       {parent.name}
                     </Link>
+                    <div className="text-sm text-muted-foreground">Parent</div>
                     {parent.email && (
-                      <p className="text-sm text-muted-foreground">{parent.email}</p>
+                      <div className="text-sm text-muted-foreground">{parent.email}</div>
                     )}
+                    <div className="text-sm">
+                      Parent of: {player.name}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
