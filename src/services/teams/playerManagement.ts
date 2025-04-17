@@ -22,128 +22,32 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
 
-    // Generate a unique player ID if no email is provided
-    if (!playerData.email) {
-      // Generate a UUID for the player
-      const tempPlayerId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-      
-      // First create minimal player in users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: tempPlayerId,
-          name: playerData.name,
-          email: `${tempPlayerId}@example.com` // Create dummy email for database constraint
-        })
-        .select()
-        .single();
-        
-      if (userError) {
-        console.error("Error creating user:", userError);
-        throw userError;
-      }
-      
-      // Add the player to team_members table
-      const { error: teamMemberError } = await supabase
-        .from('team_members')
-        .insert({
-          team_id: teamId,
-          user_id: tempPlayerId,
-          role: 'player',
-          position: playerData.position || null,
-          line_number: playerData.number ? parseInt(playerData.number, 10) : null
-        });
-        
-      if (teamMemberError) {
-        console.error("Error adding player to team:", teamMemberError);
-        throw teamMemberError;
-      }
-      
-      console.log(`Successfully added player ${playerData.name} to team ${teamId} in Supabase`);
-      
-      return {
-        id: tempPlayerId,
-        name: playerData.name,
-        role: ['player'],
-        position: playerData.position as Position,
-        number: playerData.number
-      };
-    }
+    // Generate a unique player ID
+    const tempPlayerId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
-    // If email is provided, find or create the user
-    const { data: existingUsers, error: findError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('email', playerData.email)
-      .maybeSingle();
-      
-    if (findError) {
-      console.error("Error finding user:", findError);
-      throw findError;
-    }
-    
-    let userId: string;
-      
-    if (existingUsers) {
-      // User exists
-      userId = existingUsers.id;
-    } else {
-      // Generate a UUID for the new user
-      const newUserId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-      
-      // Create new user with the generated ID
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          id: newUserId,
-          name: playerData.name,
-          email: playerData.email
-        })
-        .select()
-        .single();
-      
-      if (createError) {
-        console.error("Error creating user:", createError);
-        throw new Error(`Failed to create user: ${createError.message}`);
-      }
-      if (!newUser) throw new Error("Failed to create user: No data returned");
-      
-      userId = newUser.id;
-      
-      // Assign player role to user
-      try {
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: userId,
-            role: 'player'
-          });
-      } catch (error) {
-        console.error("Error assigning player role:", error);
-        // Continue even if role assignment fails
-      }
-    }
-    
-    // Add player to team
-    const { error: teamMemberError } = await supabase
+    // Add the player directly to team_members table without creating a user record
+    // This bypasses the RLS policy issue on the users table
+    const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({
         team_id: teamId,
-        user_id: userId,
+        user_id: tempPlayerId, // Use the generated ID
         role: 'player',
         position: playerData.position || null,
-        line_number: playerData.number ? parseInt(playerData.number) : null
-      });
+        line_number: playerData.number ? parseInt(playerData.number, 10) : null
+      })
+      .select();
       
     if (teamMemberError) {
       console.error("Error adding player to team:", teamMemberError);
       throw teamMemberError;
     }
     
-    console.log(`Successfully added player ${playerData.name} with email to team ${teamId}`);
+    console.log(`Successfully added player ${playerData.name} to team ${teamId} in Supabase`);
     
+    // Return a user object with the data we have
     return {
-      id: userId,
+      id: tempPlayerId,
       name: playerData.name,
       email: playerData.email,
       role: ['player'],

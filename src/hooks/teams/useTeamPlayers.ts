@@ -38,8 +38,8 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
       
       await addPlayerToTeam(teamId, {
         name: playerData.name,
-        email: playerData.email || undefined, // Optional email
-        position: playerData.position || undefined, // Optional position
+        email: playerData.email || undefined,
+        position: playerData.position || undefined,
         number: playerData.number
       });
       
