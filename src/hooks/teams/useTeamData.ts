@@ -11,12 +11,19 @@ export function useTeamData(teamId?: string) {
     staleTime: 30000,
   });
 
-  const teamQuery = teamId ? useQuery({
-    queryKey: ['team', teamId],
-    queryFn: () => getTeamById(teamId),
-    enabled: !!teamId,
-    staleTime: 10000,
-  }) : { data: null, isLoading: false, error: null };
+  const teamQuery = teamId 
+    ? useQuery({
+        queryKey: ['team', teamId],
+        queryFn: () => getTeamById(teamId),
+        enabled: !!teamId,
+        staleTime: 10000,
+      })
+    : {
+        data: null,
+        isLoading: false,
+        error: null,
+        refetch: async () => ({ data: null })
+      };
 
   return {
     teams: teamsQuery.data,
