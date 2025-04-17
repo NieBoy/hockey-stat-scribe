@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import EventButton from './EventButton';
 import GameControls from './GameControls';
+import EventHistory from './EventHistory';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -80,6 +81,8 @@ export default function EventTracker() {
             className="bg-blue-500 hover:bg-blue-600 md:col-span-2"
           />
         </div>
+
+        <EventHistory gameId={gameId || ''} />
       </Card>
     </div>
   );
