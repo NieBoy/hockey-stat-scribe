@@ -34,7 +34,7 @@ export const addPlayerToTeam = async (
         .maybeSingle();
       
       if (existingUsers) {
-        userId = existingUsers.id;
+        userId = existingUsers.id as `${string}-${string}-${string}-${string}-${string}`;
         console.log(`User with email ${playerData.email} already exists with ID ${userId}`);
       }
     }
