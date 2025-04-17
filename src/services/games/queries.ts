@@ -1,4 +1,6 @@
+
 import { supabase } from '@/lib/supabase';
+import { GameDbResponse } from './types';
 
 export const fetchTeamMembers = async (teamId: string) => {
   const { data, error } = await supabase
@@ -93,7 +95,7 @@ export const startGame = async (gameId: string) => {
     .single();
     
   if (error) throw error;
-  return data;
+  return data as GameDbResponse;
 };
 
 export const endGame = async (gameId: string) => {
@@ -117,7 +119,7 @@ export const endGame = async (gameId: string) => {
     .single();
     
   if (error) throw error;
-  return data;
+  return data as GameDbResponse;
 };
 
 export const updateGamePeriod = async (gameId: string, period: number) => {
@@ -130,4 +132,14 @@ export const updateGamePeriod = async (gameId: string, period: number) => {
     
   if (error) throw error;
   return data;
+};
+
+// Export all queries as a named object for easy import
+export const queries = {
+  fetchTeamMembers,
+  fetchGameWithTeams,
+  createNewGame,
+  startGame,
+  endGame,
+  updateGamePeriod
 };
