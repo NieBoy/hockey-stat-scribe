@@ -123,4 +123,5 @@ export default function SignUp() {
         </form>
       </Card>
     </div>
-  
+  );
+}
