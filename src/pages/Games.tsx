@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { ListFilter, Plus } from "lucide-react";
+import { Calendar, ListFilter, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import GameCard from "@/components/games/GameCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,7 +73,7 @@ export default function Games() {
         </div>
       ) : (
         <div className="text-center py-12 border rounded-lg bg-muted/20">
-          <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+          <Calendar className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-medium">No games found</h3>
           <p className="mt-1 text-muted-foreground">
             {filter !== "all" 

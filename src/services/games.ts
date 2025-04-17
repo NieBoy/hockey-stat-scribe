@@ -21,7 +21,22 @@ export const getGames = async (): Promise<Game[]> => {
       `);
 
     if (error) throw error;
-    return data || [];
+    
+    // Transform the database response to match our Game type
+    const transformedData = data?.map(game => ({
+      id: game.id,
+      date: new Date(game.date),
+      homeTeam: game.home_team as Team,
+      awayTeam: game.away_team as Team, 
+      location: game.location,
+      statTrackers: [], // Default empty array
+      periods: game.periods,
+      currentPeriod: game.current_period,
+      isActive: game.is_active,
+      stats: [] // Default empty array
+    })) || [];
+    
+    return transformedData;
   } catch (error) {
     console.error("Error fetching games:", error);
     return [];
@@ -49,7 +64,25 @@ export const getGameById = async (id: string): Promise<Game | null> => {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Transform to match Game type
+    if (data) {
+      const game: Game = {
+        id: data.id,
+        date: new Date(data.date),
+        homeTeam: data.home_team as Team,
+        awayTeam: data.away_team as Team,
+        location: data.location,
+        statTrackers: [], // Default empty array
+        periods: data.periods,
+        currentPeriod: data.current_period,
+        isActive: data.is_active,
+        stats: [] // Default empty array
+      };
+      return game;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error fetching game:", error);
     return null;
@@ -95,7 +128,24 @@ export const createGame = async (gameData: {
       throw error;
     }
 
-    return data;
+    // Transform to match Game type
+    if (data) {
+      const game: Game = {
+        id: data.id,
+        date: new Date(data.date),
+        homeTeam: data.home_team as Team,
+        awayTeam: data.away_team as Team,
+        location: data.location,
+        statTrackers: [], // Default empty array
+        periods: data.periods,
+        currentPeriod: data.current_period,
+        isActive: data.is_active,
+        stats: [] // Default empty array
+      };
+      return game;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error creating game:", error);
     return null;
