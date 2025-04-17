@@ -23,40 +23,45 @@ import Unauthorized from "./pages/Unauthorized";
 import { AuthProvider } from "./hooks/useAuth";
 import RequireAuth from "./components/auth/RequireAuth";
 
+// Create a new query client instance
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Auth routes */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
-            <Route path="/games" element={<RequireAuth><Games /></RequireAuth>} />
-            <Route path="/games/new" element={<RequireAuth roles={['coach', 'admin']}><NewGame /></RequireAuth>} />
-            <Route path="/games/:id" element={<RequireAuth><GameDetail /></RequireAuth>} />
-            <Route path="/games/:id/track" element={<RequireAuth><TrackStats /></RequireAuth>} />
-            <Route path="/stats" element={<RequireAuth><Stats /></RequireAuth>} />
-            <Route path="/teams" element={<RequireAuth><Teams /></RequireAuth>} />
-            <Route path="/teams/new" element={<RequireAuth roles={['coach', 'admin']}><TeamCreate /></RequireAuth>} />
-            <Route path="/teams/:id" element={<RequireAuth><TeamDetail /></RequireAuth>} />
-            <Route path="/teams/:id/lineup" element={<RequireAuth roles={['coach', 'admin']}><TeamLineup /></RequireAuth>} />
-            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-            <Route path="/invitations" element={<RequireAuth><Invitations /></RequireAuth>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  console.log("App component rendering");
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Auth routes */}
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              
+              {/* Protected routes */}
+              <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+              <Route path="/games" element={<RequireAuth><Games /></RequireAuth>} />
+              <Route path="/games/new" element={<RequireAuth roles={['coach', 'admin']}><NewGame /></RequireAuth>} />
+              <Route path="/games/:id" element={<RequireAuth><GameDetail /></RequireAuth>} />
+              <Route path="/games/:id/track" element={<RequireAuth><TrackStats /></RequireAuth>} />
+              <Route path="/stats" element={<RequireAuth><Stats /></RequireAuth>} />
+              <Route path="/teams" element={<RequireAuth><Teams /></RequireAuth>} />
+              <Route path="/teams/new" element={<RequireAuth roles={['coach', 'admin']}><TeamCreate /></RequireAuth>} />
+              <Route path="/teams/:id" element={<RequireAuth><TeamDetail /></RequireAuth>} />
+              <Route path="/teams/:id/lineup" element={<RequireAuth roles={['coach', 'admin']}><TeamLineup /></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+              <Route path="/invitations" element={<RequireAuth><Invitations /></RequireAuth>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
