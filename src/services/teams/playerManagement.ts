@@ -25,10 +25,17 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Get or create user - This now uses the create_player_user RPC function
+    // Get or create user with our security definer RPC function
+    console.log("Creating or fetching player user...");
     const userId = await getOrCreatePlayerUser(playerData);
     
-    // Verify that the user exists in the database before proceeding
+    if (!userId) {
+      throw new Error("Failed to create or get user ID");
+    }
+    
+    console.log(`Received user ID ${userId}, verifying it exists...`);
+    
+    // Double-check that the user exists in the database
     const { data: userExists, error: checkError } = await supabase
       .from('users')
       .select('id')
@@ -37,10 +44,10 @@ export const addPlayerToTeam = async (
       
     if (checkError || !userExists) {
       console.error("Failed to verify user exists:", checkError);
-      throw new Error(`Could not verify user exists with ID ${userId}`);
+      throw new Error(`Could not verify user ID ${userId} exists in the database`);
     }
     
-    console.log(`User verified with ID ${userId}, adding as team member`);
+    console.log(`User verified with ID ${userId}, now adding as team member`);
     
     // Add the team member
     await addTeamMember(

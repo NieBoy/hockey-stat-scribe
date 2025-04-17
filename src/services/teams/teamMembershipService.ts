@@ -13,6 +13,21 @@ export const addTeamMember = async (
   lineNumber?: number | null
 ): Promise<boolean> => {
   try {
+    console.log(`Adding team member: userId=${userId}, role=${role}, to teamId=${teamId}`);
+    
+    // Check if the team member already exists
+    const { data: existingMember } = await supabase
+      .from('team_members')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (existingMember) {
+      console.log(`User ${userId} is already a member of team ${teamId}`);
+      return true;
+    }
+    
     const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({
@@ -29,6 +44,7 @@ export const addTeamMember = async (
       throw teamMemberError;
     }
     
+    console.log(`Successfully added ${role} to team ${teamId}`);
     return true;
   } catch (error) {
     console.error("Error in addTeamMember:", error);
