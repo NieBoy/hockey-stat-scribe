@@ -12,19 +12,21 @@ import RoleManager from "@/components/profile/RoleManager";
 import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/services/teams";
 import { useState, useEffect } from "react";
+import { User } from "@/types";
 
 export default function Profile() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("settings");
+  const [allPlayers, setAllPlayers] = useState<User[]>([]);
 
-  const { data: teams = [], isLoading: teamsLoading, error: teamsError } = useQuery({
+  const { data: teams = [], isLoading: teamsLoading, error: teamsError, refetch } = useQuery({
     queryKey: ['teams'],
     queryFn: getTeams,
     enabled: !!user,
     // Force refetch when the component mounts
     refetchOnMount: true,
     // Refresh teams data when this component is active
-    refetchInterval: activeTab === "teams" ? 10000 : false
+    refetchInterval: 5000
   });
 
   useEffect(() => {
@@ -33,6 +35,25 @@ export default function Profile() {
     
     if (teamsError) {
       console.error("Error fetching teams:", teamsError);
+    }
+
+    // Extract all players from all teams
+    if (teams && teams.length > 0) {
+      const playersFromTeams: User[] = [];
+      teams.forEach(team => {
+        if (team.players && team.players.length > 0) {
+          team.players.forEach(player => {
+            // Add team information to player
+            const playerWithTeam = {
+              ...player,
+              teams: [{ id: team.id, name: team.name }]
+            };
+            playersFromTeams.push(playerWithTeam);
+          });
+        }
+      });
+      setAllPlayers(playersFromTeams);
+      console.log("All players extracted:", playersFromTeams);
     }
   }, [user, teams, teamsError]);
 
@@ -133,7 +154,11 @@ export default function Profile() {
                   </Button>
                 )}
               </div>
-              <PlayersList players={[]} />
+              <PlayersList 
+                players={allPlayers} 
+                isParent={isParent} 
+                isCoach={isCoach} 
+              />
             </TabsContent>
           )}
         </Tabs>

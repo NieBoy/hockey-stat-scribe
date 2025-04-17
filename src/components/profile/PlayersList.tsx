@@ -1,9 +1,11 @@
+
 import { Link } from "react-router-dom";
 import { User } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, User as UserIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface PlayersListProps {
   players: User[];
@@ -20,6 +22,24 @@ export default function PlayersList({ players, isParent = false, isCoach = false
       .toUpperCase();
   };
 
+  // Remove potential duplicates (same player in multiple teams)
+  const uniquePlayers = players.reduce((acc: User[], player) => {
+    const existingPlayer = acc.find(p => p.id === player.id);
+    if (!existingPlayer) {
+      acc.push(player);
+    } else if (player.teams && player.teams.length > 0) {
+      // Merge team information for existing players
+      const existingTeams = existingPlayer.teams || [];
+      const newTeam = player.teams[0];
+      if (!existingTeams.some(t => t.id === newTeam.id)) {
+        existingPlayer.teams = [...existingTeams, newTeam];
+      }
+    }
+    return acc;
+  }, []);
+
+  console.log("Unique players to display:", uniquePlayers);
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -35,9 +55,9 @@ export default function PlayersList({ players, isParent = false, isCoach = false
         )}
       </div>
       
-      {players.length > 0 ? (
+      {uniquePlayers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {players.map((player) => (
+          {uniquePlayers.map((player) => (
             <Card key={player.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
@@ -67,10 +87,23 @@ export default function PlayersList({ players, isParent = false, isCoach = false
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div>
                     <span className="font-medium">Role:</span> Player
+                    {player.number && <span className="ml-2">#{player.number}</span>}
                   </div>
-                  {player.teams && player.teams.length > 0 && (
+                  {player.position && (
                     <div>
-                      <span className="font-medium">Team:</span> {player.teams[0].name}
+                      <span className="font-medium">Position:</span> {player.position}
+                    </div>
+                  )}
+                  {player.teams && player.teams.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="font-medium">Teams:</span>
+                      {player.teams.map((team) => (
+                        <Badge key={team.id} variant="outline" className="ml-1">
+                          <Link to={`/teams/${team.id}`} className="hover:underline">
+                            {team.name}
+                          </Link>
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>

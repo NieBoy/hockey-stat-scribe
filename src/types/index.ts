@@ -1,3 +1,4 @@
+
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
 
