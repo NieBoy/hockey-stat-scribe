@@ -4,9 +4,9 @@ import {
   addTeamMember, 
   removeTeamMember, 
   updateTeamMemberInfo, 
-  getTeamMembers as fetchTeamMembers 
+  getTeamMembersList as fetchTeamMembers 
 } from "@/services/teams";
-import { sendTeamInvitations as sendInvitations } from "./invitationService";
+import { sendInvitationsToTeamMembers as sendInvitations } from "@/services/teams";
 
 /**
  * Adds a player to a team without requiring a user account

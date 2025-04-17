@@ -10,7 +10,7 @@ import PlayersTabContent from "@/components/teams/PlayersTabContent";
 import CoachesTabContent from "@/components/teams/CoachesTabContent";
 import StatsTabContent from "@/components/teams/StatsTabContent";
 import TeamMembersTable from "@/components/teams/TeamMembersTable";
-import { sendTeamInvitations } from "@/services/teams";
+import { sendInvitationsToTeamMembers } from "@/services/teams";
 import { deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 import { User } from "@/types";
@@ -38,7 +38,7 @@ export default function TeamDetail() {
   const handleSendInvitations = async (memberIds: string[]) => {
     try {
       if (!team) return;
-      await sendTeamInvitations(team.id, memberIds);
+      await sendInvitationsToTeamMembers(team.id, memberIds);
       toast.success(`Invitations sent to ${memberIds.length} team members`);
     } catch (error) {
       console.error("Error sending invitations:", error);
