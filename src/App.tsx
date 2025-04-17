@@ -17,6 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import GameTracking from "@/pages/GameTracking";
+import SignIn from "@/pages/SignIn";
+import SignUp from "@/pages/SignUp";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -30,7 +32,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   }
 
   if (!user) {
-    return <Navigate to="/" />;
+    return <Navigate to="/signin" />;
   }
 
   return children;
@@ -40,6 +42,14 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Index />,
+  },
+  {
+    path: "/signin",
+    element: <SignIn />,
+  },
+  {
+    path: "/signup",
+    element: <SignUp />,
   },
   {
     path: "/profile",
@@ -78,14 +88,6 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <GameTracking />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/games/:id/track",
-    element: (
-      <RequireAuth>
-        <TrackStats />
       </RequireAuth>
     ),
   },
