@@ -69,10 +69,14 @@ export const addPlayerToTeam = async (
       // User exists
       userId = existingUsers.id;
     } else {
-      // Create new user
+      // Generate a UUID for the new user
+      const newUserId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      
+      // Create new user with the generated ID
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
+          id: newUserId,
           name: playerData.name,
           email: playerData.email
         })
