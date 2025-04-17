@@ -1,4 +1,3 @@
-
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
 
@@ -7,7 +6,7 @@ export interface User {
   name: string;
   email?: string;  // Made optional
   role: UserRole[];  // Multiple roles are now possible
-  teams?: Team[];
+  teams?: Team[];  // Added this line
   children?: User[]; // For parents to link to player accounts
   stats?: PlayerStat[];
   isAdmin?: boolean;  // Quick check if user has admin role

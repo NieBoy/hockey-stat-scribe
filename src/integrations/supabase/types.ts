@@ -186,6 +186,42 @@ export type Database = {
           },
         ]
       }
+      player_parents: {
+        Row: {
+          created_at: string
+          id: string
+          parent_id: string | null
+          player_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          player_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_parents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_parents_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_stats: {
         Row: {
           created_at: string

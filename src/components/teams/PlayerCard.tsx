@@ -1,11 +1,11 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { User } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, LineChart } from "lucide-react";
+import { X, LineChart, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
+import ParentPlayerManager from "./ParentPlayerManager";
 
 interface PlayerCardProps {
   player: User;
@@ -14,6 +14,8 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
+  const [showAddParent, setShowAddParent] = useState(false);
+  
   const getUserInitials = (name: string) => {
     return name
       .split(' ')
@@ -75,7 +77,25 @@ const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
               <LineChart className="h-3 w-3" /> Stats
             </Link>
           </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1"
+            onClick={() => setShowAddParent(!showAddParent)}
+          >
+            <UserPlus className="h-3 w-3" /> 
+            {showAddParent ? 'Hide' : 'Add Parent'}
+          </Button>
         </div>
+        
+        {showAddParent && (
+          <div className="mt-4">
+            <ParentPlayerManager 
+              player={player} 
+              onParentAdded={() => setShowAddParent(false)}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
