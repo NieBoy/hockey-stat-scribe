@@ -51,9 +51,21 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
       return true;
     } catch (error) {
       console.error("Error adding player:", error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Unknown error occurred while adding player';
+      let errorMessage = "Unknown error occurred while adding player";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle Supabase error objects
+        const supabaseError = error as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        } else if (supabaseError.error_description) {
+          errorMessage = supabaseError.error_description;
+        } else if (supabaseError.details) {
+          errorMessage = supabaseError.details;
+        }
+      }
       
       toast.error(`Failed to add player: ${errorMessage}`);
       return false;

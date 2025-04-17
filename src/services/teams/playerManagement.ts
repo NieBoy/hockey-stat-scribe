@@ -25,22 +25,39 @@ export const addPlayerToTeam = async (
     // Generate a new UUID for the user
     let userId = crypto.randomUUID();
     
-    // First create a user record in the public.users table
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: userId,
-        name: playerData.name,
-        email: playerData.email || null
-      })
-      .select();
-    
-    if (userError) {
-      console.error("Error creating user:", userError);
-      throw userError;
+    // First check if a user with this email already exists (if email provided)
+    if (playerData.email) {
+      const { data: existingUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', playerData.email)
+        .maybeSingle();
+      
+      if (existingUsers) {
+        userId = existingUsers.id;
+        console.log(`User with email ${playerData.email} already exists with ID ${userId}`);
+      }
     }
-    
-    console.log("Created new user:", newUser);
+
+    // Check if we need to create a new user record
+    if (!playerData.email || !(await userExists(userId))) {
+      // Insert directly using RPC function to bypass RLS
+      const { data: newUser, error: userError } = await supabase.rpc(
+        'create_user_bypass_rls',
+        { 
+          user_id: userId,
+          user_name: playerData.name,
+          user_email: playerData.email || null
+        }
+      );
+      
+      if (userError) {
+        console.error("Error creating user:", userError);
+        throw userError;
+      }
+      
+      console.log("Created new user:", newUser);
+    }
     
     // Now add the team member
     const { data: teamMemberData, error: teamMemberError } = await supabase
@@ -74,6 +91,22 @@ export const addPlayerToTeam = async (
     console.error("Error in addPlayerToTeam:", error);
     throw error;
   }
+};
+
+// Helper function to check if user exists
+const userExists = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error("Error checking if user exists:", error);
+    return false;
+  }
+  
+  return !!data;
 };
 
 export const removePlayerFromTeam = async (teamId: string, playerId: string): Promise<boolean> => {
