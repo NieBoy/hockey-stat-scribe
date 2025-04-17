@@ -1,22 +1,29 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { mockGames, currentUser } from "@/lib/mock-data";
-import { CalendarIcon, ListFilter, Plus } from "lucide-react";
+import { ListFilter, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import GameCard from "@/components/games/GameCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { getGames } from "@/services/games";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Games() {
   const [filter, setFilter] = useState("all");
+  const { user } = useAuth();
+  
+  const { data: games = [], isLoading } = useQuery({
+    queryKey: ['games'],
+    queryFn: getGames
+  });
 
   // Filter games based on selection
   const filteredGames = filter === "active" 
-    ? mockGames.filter(game => game.isActive) 
+    ? games.filter(game => game.isActive) 
     : filter === "upcoming"
-    ? mockGames.filter(game => !game.isActive)
-    : mockGames;
+    ? games.filter(game => !game.isActive)
+    : games;
 
   return (
     <MainLayout>
@@ -27,7 +34,7 @@ export default function Games() {
             View and manage scheduled hockey games.
           </p>
         </div>
-        {currentUser.role.includes('coach') && (
+        {user?.role.includes('coach') && (
           <Button asChild className="gap-2">
             <Link to="/games/new">
               <Plus className="h-4 w-4" /> New Game
@@ -53,7 +60,11 @@ export default function Games() {
         </Select>
       </div>
 
-      {filteredGames.length > 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredGames.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredGames.map((game) => (
             <GameCard key={game.id} game={game} />
@@ -68,7 +79,7 @@ export default function Games() {
               ? "Try changing your filter to see more games." 
               : "Create your first game to get started."}
           </p>
-          {currentUser.role.includes('coach') && filter === "all" && (
+          {user?.role.includes('coach') && filter === "all" && (
             <Button className="mt-4" asChild>
               <Link to="/games/new">
                 <Plus className="mr-2 h-4 w-4" /> Create New Game

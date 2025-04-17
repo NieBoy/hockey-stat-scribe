@@ -1,13 +1,27 @@
 
-// This is a stub implementation that will be replaced with actual API calls
 import { Game, User, Team, GameStat } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 export const getGames = async (): Promise<Game[]> => {
-  // In a real app, this would fetch from an API
   try {
-    // For now, just return empty array since we're removing mock data
-    return [];
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        *,
+        home_team:home_team_id (
+          id,
+          name,
+          players:team_members(*)
+        ),
+        away_team:away_team_id (
+          id,
+          name,
+          players:team_members(*)
+        )
+      `);
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error("Error fetching games:", error);
     return [];
@@ -16,8 +30,26 @@ export const getGames = async (): Promise<Game[]> => {
 
 export const getGameById = async (id: string): Promise<Game | null> => {
   try {
-    // For now, just return null
-    return null;
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        *,
+        home_team:home_team_id (
+          id,
+          name,
+          players:team_members(*)
+        ),
+        away_team:away_team_id (
+          id,
+          name,
+          players:team_members(*)
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error("Error fetching game:", error);
     return null;
@@ -32,10 +64,38 @@ export const createGame = async (gameData: {
   periods: number;
 }): Promise<Game | null> => {
   try {
-    // This will need to be implemented with actual Supabase calls
-    // For now, just log and return null
-    console.log("Creating game with data:", gameData);
-    return null;
+    const { data, error } = await supabase
+      .from('games')
+      .insert({
+        date: gameData.date.toISOString(),
+        location: gameData.location,
+        home_team_id: gameData.homeTeam,
+        away_team_id: gameData.awayTeam,
+        periods: gameData.periods,
+        current_period: 0,
+        is_active: false
+      })
+      .select(`
+        *,
+        home_team:home_team_id (
+          id,
+          name,
+          players:team_members(*)
+        ),
+        away_team:away_team_id (
+          id,
+          name,
+          players:team_members(*)
+        )
+      `)
+      .single();
+
+    if (error) {
+      console.error("Error creating game:", error);
+      throw error;
+    }
+
+    return data;
   } catch (error) {
     console.error("Error creating game:", error);
     return null;
