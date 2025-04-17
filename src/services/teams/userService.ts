@@ -28,8 +28,8 @@ export const getOrCreatePlayerUser = async (playerData: {
   email?: string;
 }): Promise<string> => {
   try {
+    // First check if a user with this email already exists
     if (playerData.email) {
-      // Check if a user with this email already exists
       const { data: existingUsers } = await supabase
         .from('users')
         .select('id')
@@ -43,23 +43,31 @@ export const getOrCreatePlayerUser = async (playerData: {
       }
     }
 
-    // No email provided or no user found with that email
-    // Use our SQL function to create a new user
-    const { data, error } = await supabase.rpc(
-      'create_player_user',
-      { 
-        player_name: playerData.name, 
-        player_email: playerData.email || null 
-      }
-    );
+    // Generate a new UUID for the user
+    const userId = crypto.randomUUID();
+    
+    // Create email - either use provided one or generate a placeholder
+    const email = playerData.email || 
+      `player_${userId.substring(0, 8)}@example.com`;
+    
+    console.log(`Creating new user with ID ${userId} and email ${email}`);
+    
+    // Insert directly into the users table
+    const { error } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        name: playerData.name,
+        email: email
+      });
     
     if (error) {
       console.error("Error creating user:", error);
       throw error;
     }
     
-    console.log("Created new user with ID:", data);
-    return data;
+    console.log("Created new user with ID:", userId);
+    return userId;
   } catch (error) {
     console.error("Error in getOrCreatePlayerUser:", error);
     throw error;
