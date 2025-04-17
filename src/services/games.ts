@@ -30,8 +30,8 @@ export const getGameById = async (id: string): Promise<Game | null> => {
 export const createGame = async (gameData: {
   date: Date;
   location: string;
-  homeTeamId: string;
-  awayTeamId: string;
+  homeTeam: string; // Changed from homeTeamId
+  awayTeam: string; // Changed from awayTeamId
   periods: number;
 }): Promise<Game | null> => {
   try {
@@ -39,8 +39,8 @@ export const createGame = async (gameData: {
     await new Promise(resolve => setTimeout(resolve, 800));
     
     // Get home and away teams
-    const homeTeam = mockTeams.find(team => team.id === gameData.homeTeamId);
-    const awayTeam = mockTeams.find(team => team.id === gameData.awayTeamId);
+    const homeTeam = mockTeams.find(team => team.id === gameData.homeTeam);
+    const awayTeam = mockTeams.find(team => team.id === gameData.awayTeam);
     
     if (!homeTeam || !awayTeam) {
       throw new Error("One or more teams not found");
