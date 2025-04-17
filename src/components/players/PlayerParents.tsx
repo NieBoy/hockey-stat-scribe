@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { User } from "@/types";
@@ -8,6 +7,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { getUserInitials } from "@/utils/nameUtils";
+import { Link } from "react-router-dom";
 
 interface PlayerParentsProps {
   player: User;
@@ -23,7 +23,6 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
     
     setLoading(true);
     try {
-      // Fetch parent relationships
       const { data: relationships, error: relError } = await supabase
         .from('player_parents')
         .select('parent_id')
@@ -34,7 +33,6 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
       if (relationships && relationships.length > 0) {
         const parentIds = relationships.map(rel => rel.parent_id);
         
-        // Fetch parent details from team_members
         const { data: parentData, error: parentError } = await supabase
           .from('team_members')
           .select('id, name, email, role')
@@ -43,7 +41,6 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
           
         if (parentError) throw parentError;
         
-        // Transform into User objects
         const parentUsers = (parentData || []).map(parent => ({
           id: parent.id,
           name: parent.name || 'Unknown Parent',
@@ -68,7 +65,7 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
 
   const handleParentAdded = () => {
     setShowAddParent(false);
-    loadParents(); // Refresh the parents list
+    loadParents();
   };
 
   return (
@@ -111,7 +108,12 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-medium">{parent.name}</h4>
+                    <Link 
+                      to={`/players/${parent.id}`}
+                      className="hover:underline font-medium"
+                    >
+                      {parent.name}
+                    </Link>
                     {parent.email && (
                       <p className="text-sm text-muted-foreground">{parent.email}</p>
                     )}

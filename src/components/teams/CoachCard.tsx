@@ -1,4 +1,3 @@
-
 import React from "react";
 import { User } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +18,7 @@ const CoachCard = ({ coach }: CoachCardProps) => {
   };
 
   return (
-    <Card key={coach.id}>
+    <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-3">
           <Avatar>
@@ -28,7 +27,7 @@ const CoachCard = ({ coach }: CoachCardProps) => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <CardTitle className="text-base font-medium">
+            <CardTitle>
               <Link 
                 to={`/players/${coach.id}`} 
                 className="hover:underline"

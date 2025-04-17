@@ -43,7 +43,22 @@ export default function TeamDetail() {
       toast.error("Failed to send invitations");
     }
   };
-  
+
+  const handleRemoveMember = async (member: User) => {
+    try {
+      if (!team) return;
+      
+      const success = await deleteTeamMember(member.id);
+      if (success) {
+        toast.success(`${member.name} has been removed from the team`);
+        refetchTeam();
+      }
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error("Failed to remove member");
+    }
+  };
+
   if (isLoadingTeam) {
     return (
       <MainLayout>
@@ -122,7 +137,7 @@ export default function TeamDetail() {
             <TeamMembersTable 
               team={team}
               onSendInvitations={handleSendInvitations}
-              onRemoveMember={(member) => handleRemovePlayer(team.id, member.id, member.name)}
+              onRemoveMember={handleRemoveMember}
             />
           </TabsContent>
         </Tabs>

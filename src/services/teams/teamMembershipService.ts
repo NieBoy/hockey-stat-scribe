@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 
@@ -164,6 +163,42 @@ export const removeTeamMember = async (teamId: string, memberId: string): Promis
     return true;
   } catch (error) {
     console.error("Error in removeTeamMember:", error);
+    throw error;
+  }
+};
+
+/**
+ * Removes a team member and any related records
+ */
+export const deleteTeamMember = async (memberId: string): Promise<boolean> => {
+  try {
+    console.log("Deleting team member:", memberId);
+    
+    // First remove any parent-player relationships
+    const { error: relationError } = await supabase
+      .from('player_parents')
+      .delete()
+      .or(`parent_id.eq.${memberId},player_id.eq.${memberId}`);
+      
+    if (relationError) {
+      console.error("Error deleting player-parent relations:", relationError);
+      throw relationError;
+    }
+    
+    // Then delete the team member
+    const { error: memberError } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('id', memberId);
+      
+    if (memberError) {
+      console.error("Error deleting team member:", memberError);
+      throw memberError;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteTeamMember:", error);
     throw error;
   }
 };

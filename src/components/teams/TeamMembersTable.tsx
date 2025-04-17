@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Table, 
@@ -19,6 +18,7 @@ import {
 import { MoreHorizontal, Mail, Trash, Edit } from "lucide-react";
 import { User, Team } from "@/types";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -35,7 +35,6 @@ const TeamMembersTable = ({
 }: TeamMembersTableProps) => {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   
-  // Combine players, coaches, and parents into a single array
   const allMembers = [
     ...(team.players || []),
     ...(team.coaches || []),
@@ -121,7 +120,14 @@ const TeamMembersTable = ({
                       onChange={() => handleSelectMember(member.id)}
                     />
                   </TableCell>
-                  <TableCell>{member.name}</TableCell>
+                  <TableCell>
+                    <Link 
+                      to={`/players/${member.id}`}
+                      className="hover:underline text-primary"
+                    >
+                      {member.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <span className="capitalize">{member.role?.[0] || "player"}</span>
                   </TableCell>
