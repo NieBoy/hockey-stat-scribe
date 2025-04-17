@@ -16,3 +16,24 @@ export interface TeamMemberData {
   position?: string;
   line_number?: number;
 }
+
+// Define the database response shape for games
+export interface GameDbResponse {
+  id: string;
+  date: string;
+  location: string;
+  home_team_id: string;
+  away_team_id: string;
+  periods: number;
+  current_period: number;
+  is_active: boolean;
+  created_at: string;
+  home_team: {
+    id: string;
+    name: string;
+  };
+  away_team: {
+    id: string;
+    name: string;
+  };
+}

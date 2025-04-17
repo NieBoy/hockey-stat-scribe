@@ -2,14 +2,18 @@
 import { Game } from '@/types';
 import { fetchGameWithTeams, fetchTeamMembers, createNewGame } from './queries';
 import { transformTeamData } from './teamTransforms';
+import { GameDbResponse } from './types';
 
 export const getGames = async (): Promise<Game[]> => {
   try {
-    const { data: gamesData, error } = await fetchGameWithTeams();
-    if (error) throw error;
+    // Get games with team data
+    const gamesData = await fetchGameWithTeams();
+    
+    // Ensure we're handling an array
+    const gamesArray = Array.isArray(gamesData) ? gamesData : [gamesData];
     
     // Transform the database response to match our Game type
-    const transformedData = await Promise.all((gamesData || []).map(async game => {
+    const transformedData = await Promise.all(gamesArray.map(async game => {
       // Get team members for both teams
       const [homeTeamMembers, awayTeamMembers] = await Promise.all([
         fetchTeamMembers(game.home_team.id),
@@ -52,8 +56,8 @@ export const getGames = async (): Promise<Game[]> => {
 
 export const getGameById = async (id: string): Promise<Game | null> => {
   try {
-    const { data, error } = await fetchGameWithTeams(id);
-    if (error) throw error;
+    // Get game data
+    const data = await fetchGameWithTeams(id);
     
     if (data) {
       // Get team members for both teams
@@ -104,6 +108,7 @@ export const createGame = async (gameData: {
   periods: number;
 }): Promise<Game | null> => {
   try {
+    // Create the game
     const data = await createNewGame(
       gameData.date,
       gameData.location,

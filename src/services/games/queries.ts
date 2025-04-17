@@ -1,7 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { Game } from '@/types';
-import { transformTeamData } from './teamTransforms';
+import { GameDbResponse } from './types';
 
 export const fetchTeamMembers = async (teamId: string) => {
   const { data, error } = await supabase
@@ -29,10 +29,14 @@ export const fetchGameWithTeams = async (gameId?: string) => {
     `);
     
   if (gameId) {
-    return await query.eq('id', gameId).single();
+    const { data, error } = await query.eq('id', gameId).single();
+    if (error) throw error;
+    return data as GameDbResponse;
   }
   
-  return await query;
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as GameDbResponse[];
 };
 
 export const createNewGame = async (
@@ -67,5 +71,5 @@ export const createNewGame = async (
     .single();
     
   if (error) throw error;
-  return data;
+  return data as GameDbResponse;
 };
