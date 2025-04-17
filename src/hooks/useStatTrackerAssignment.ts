@@ -37,11 +37,13 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         
         let allTeamMembers: any[] = [];
         
+        // Fetch team members with valid user_id values
         for (const teamId of uniqueTeamIds) {
           const { data: members, error } = await supabase
             .from('team_members')
-            .select('id, name, email, role')
-            .eq('team_id', teamId);
+            .select('id, user_id, name, email, role')
+            .eq('team_id', teamId)
+            .not('user_id', 'is', null);
             
           if (error) {
             console.error(`Error fetching members for team ${teamId}:`, error);
@@ -53,27 +55,43 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
           }
         }
         
-        // Add users from users table
+        // Get the list of valid users from the users table
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('*');
+          .select('id, name, email');
 
         if (userError) throw userError;
         
-        const mappedUsers = userData?.map(user => ({
+        // Map users to the expected format, only using valid users
+        const validUsers = userData?.map(user => ({
           id: user.id,
+          user_id: user.id, // Make sure user_id is always set to id
           name: user.name,
           email: user.email,
           role: 'user'
         })) || [];
         
-        const combinedMembers = [...allTeamMembers];
-        mappedUsers.forEach(user => {
+        // Combine team members and users, ensuring only members with valid user_ids are included
+        const combinedMembers: any[] = [];
+        
+        // Filter and map team members to ensure they have valid user_ids
+        allTeamMembers.forEach(member => {
+          if (member.user_id && userData?.some(user => user.id === member.user_id)) {
+            combinedMembers.push({
+              ...member,
+              id: member.user_id // Use user_id as id for consistency
+            });
+          }
+        });
+        
+        // Add users from users table that aren't already in the list
+        validUsers.forEach(user => {
           if (!combinedMembers.some(member => member.id === user.id)) {
             combinedMembers.push(user);
           }
         });
         
+        console.log('Valid members for assignment:', combinedMembers);
         setTeamMembers(combinedMembers);
 
         // Load existing assignments
@@ -121,6 +139,32 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
     try {
       console.log('Current user ID:', user.id);
       console.log('Selected trackers:', selectedTrackers);
+      
+      // Verify all selected users exist in the users table
+      const userIds = Object.values(selectedTrackers).filter(Boolean) as string[];
+      if (userIds.length > 0) {
+        const { data: validUsers, error: validationError } = await supabase
+          .from('users')
+          .select('id')
+          .in('id', userIds);
+          
+        if (validationError) throw validationError;
+        
+        // Check if all selected users exist
+        const validUserIds = validUsers?.map(u => u.id) || [];
+        const invalidIds = userIds.filter(id => !validUserIds.includes(id));
+        
+        if (invalidIds.length > 0) {
+          console.error('Invalid user IDs detected:', invalidIds);
+          toast({
+            title: 'Error',
+            description: 'Some selected users are invalid. Please select valid users only.',
+            variant: 'destructive'
+          });
+          setLoading(false);
+          return;
+        }
+      }
       
       // Delete existing assignments
       const { error: deleteError } = await supabase

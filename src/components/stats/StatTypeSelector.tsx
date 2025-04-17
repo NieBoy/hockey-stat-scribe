@@ -31,7 +31,7 @@ export const StatTypeSelector = ({
             <option value="">Select Tracker</option>
             {teamMembers.map(member => (
               <option key={member.id} value={member.id}>
-                {member.name || member.email} {member.role ? `(${member.role})` : ''}
+                {member.name || member.email} {member.role ? `(${member.role})` : ''} - ID: {member.id.slice(0, 8)}
               </option>
             ))}
           </select>
