@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, UserRole } from "@/types";
 
@@ -23,6 +24,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     // If user doesn't exist in the users table yet, create a minimal profile
     let userProfile = userData;
     if (!userProfile) {
+      console.log("Creating new user profile for:", authUser.id);
       const { data: newUserData, error: createError } = await supabase
         .from('users')
         .insert({
@@ -50,6 +52,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     // If no roles exist yet, create default 'player' role
     let roles: UserRole[] = [];
     if (rolesError || !rolesData || rolesData.length === 0) {
+      console.log("Creating default role for user:", authUser.id);
       // Assign default role
       const { error: roleError } = await supabase
         .from('user_roles')
@@ -60,6 +63,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
       
       if (!roleError) {
         roles = ['player'] as UserRole[];
+      } else {
+        console.error("Error assigning default role:", roleError);
       }
     } else {
       // Extract roles into an array
@@ -95,6 +100,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
         }
       }
     }
+    
+    console.log("Returning user profile:", userProfile?.id, "with roles:", roles);
     
     // Construct and return the user object
     return {
@@ -133,6 +140,12 @@ export const signIn = async (
     
     // Get complete user profile
     const user = await getCurrentUser();
+    if (!user) {
+      console.error("Could not retrieve user profile after sign in");
+      return { user: null, error: 'User profile not found' };
+    }
+    
+    console.log("User signed in successfully:", user.id);
     return { user, error: null };
   } catch (error: any) {
     console.error("Sign in error:", error);
@@ -146,6 +159,8 @@ export const signUp = async (
   name: string
 ): Promise<{ success: boolean; error: string | null }> => {
   try {
+    console.log("Attempting to sign up user:", email);
+    
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -164,17 +179,38 @@ export const signUp = async (
       return { success: false, error: 'Failed to create account' };
     }
     
-    // Create user profile in the users table
-    const { error: profileError } = await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        email,
-        name
-      });
-      
-    if (profileError) {
-      console.error("Error creating user profile:", profileError);
+    console.log("User created in auth:", data.user.id);
+    
+    // Create user profile in the users table with some retry logic
+    let profileCreated = false;
+    let attempts = 0;
+    
+    while (!profileCreated && attempts < 3) {
+      attempts++;
+      try {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email,
+            name
+          });
+          
+        if (profileError) {
+          console.error(`Profile creation attempt ${attempts} failed:`, profileError);
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          profileCreated = true;
+          console.log("User profile created successfully");
+        }
+      } catch (e) {
+        console.error(`Profile creation attempt ${attempts} exception:`, e);
+      }
+    }
+    
+    if (!profileCreated) {
+      console.error("Could not create user profile after multiple attempts");
     }
     
     // Assign default role
@@ -187,6 +223,8 @@ export const signUp = async (
       
     if (roleError) {
       console.error("Error assigning role:", roleError);
+    } else {
+      console.log("Default role assigned successfully");
     }
     
     return { success: true, error: null };

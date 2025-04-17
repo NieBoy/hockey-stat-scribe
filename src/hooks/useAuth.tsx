@@ -25,16 +25,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set up auth listener and check for existing session
   useEffect(() => {
     let subscription: any;
-
-    // First check for existing session
+    
+    console.log("Setting up auth state listener");
+    
+    // First set up the auth state change listener
+    const setupAuthListener = async () => {
+      const { data } = await supabase.auth.onAuthStateChange(
+        (event, session) => {
+          console.log("Auth state changed:", event);
+          
+          if (event === 'SIGNED_OUT') {
+            setUser(null);
+            return;
+          }
+          
+          if (session?.user) {
+            // Use setTimeout to avoid any deadlocks with Supabase auth
+            setTimeout(async () => {
+              try {
+                const currentUser = await getCurrentUser();
+                console.log("Auth state change: got current user:", currentUser?.id);
+                setUser(currentUser);
+                
+                // Redirect if on auth pages
+                if (currentUser && (location.pathname === '/signin' || location.pathname === '/signup')) {
+                  const from = location.state?.from?.pathname || "/";
+                  navigate(from, { replace: true });
+                }
+              } catch (err) {
+                console.error("Error getting user after auth state change:", err);
+              }
+            }, 0);
+          }
+        }
+      );
+      
+      subscription = data.subscription;
+    };
+    
+    // Then check for existing session
     const checkSession = async () => {
       try {
         setLoading(true);
+        console.log("Checking for existing session");
+        
         const { data } = await supabase.auth.getSession();
         
         if (data.session) {
           console.log("Found existing session");
           const currentUser = await getCurrentUser();
+          console.log("Got current user from session:", currentUser?.id);
           setUser(currentUser);
           
           // Redirect if on auth pages
@@ -50,38 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     
-    // Then set up the auth state change listener
-    const setupAuthListener = async () => {
-      const { data } = await supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log("Auth state changed:", event);
-          
-          if (event === 'SIGNED_OUT') {
-            setUser(null);
-            return;
-          }
-          
-          if (session?.user) {
-            // Use setTimeout to avoid any deadlocks
-            setTimeout(async () => {
-              const currentUser = await getCurrentUser();
-              setUser(currentUser);
-              
-              // Redirect if on auth pages
-              if (currentUser && (location.pathname === '/signin' || location.pathname === '/signup')) {
-                const from = location.state?.from?.pathname || "/";
-                navigate(from, { replace: true });
-              }
-            }, 0);
-          }
-        }
-      );
-      
-      subscription = data.subscription;
-    };
-    
-    checkSession();
-    setupAuthListener();
+    // Set up auth listener first, then check session
+    setupAuthListener().then(() => checkSession());
 
     return () => {
       if (subscription) {
@@ -92,11 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log("Signing in user:", email);
       const result = await apiSignIn(email, password);
+      
       if (result.error) {
+        console.log("Sign in error:", result.error);
         toast.error(result.error);
       } else if (result.user) {
         setUser(result.user);
+        console.log("User signed in successfully:", result.user.id);
         toast.success("Signed in successfully");
         
         // Redirect to intended destination or home
@@ -114,12 +128,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
+      console.log("Signing up user:", email);
       const result = await apiSignUp(email, password, name);
+      
       if (result.error) {
+        console.log("Sign up error:", result.error);
         toast.error(result.error);
       } else if (result.success) {
+        console.log("User signed up successfully");
         toast.success("Account created! Please sign in");
-        navigate("/signin");
+        
+        // Don't redirect yet, let the user see the success message
+        setTimeout(() => {
+          navigate("/signin");
+        }, 1500);
       }
       return result;
     } catch (error) {
