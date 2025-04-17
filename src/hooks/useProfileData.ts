@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/services/teams";
-import { User } from "@/types";
+import { User, Team } from "@/types";
 import { toast } from "sonner";
 
 export function useProfileData(user: User | null) {
@@ -44,9 +44,9 @@ export function useProfileData(user: User | null) {
     }
 
     // Extract all players from all teams
-    if (teams && teams.length > 0) {
+    if (teams && (teams as Team[]).length > 0) {
       const playersFromTeams: User[] = [];
-      teams.forEach(team => {
+      (teams as Team[]).forEach(team => {
         console.log(`Processing team ${team.name} with ${team.players?.length || 0} players`);
         if (team.players && team.players.length > 0) {
           team.players.forEach(player => {
@@ -78,7 +78,7 @@ export function useProfileData(user: User | null) {
     if (!user) return [];
     
     console.log("Filtering teams for user:", user.id, user.name, user.role);
-    console.log("Available teams:", teams.map(t => ({ id: t.id, name: t.name })));
+    console.log("Available teams:", (teams as Team[]).map(t => ({ id: t.id, name: t.name })));
     
     const isAdmin = user.role.includes('admin');
     const isCoach = user.role.includes('coach');
@@ -87,12 +87,12 @@ export function useProfileData(user: User | null) {
 
     // Admin can see all teams - return them immediately
     if (isAdmin) {
-      console.log("User is admin, returning all teams:", teams.length);
-      return teams;
+      console.log("User is admin, returning all teams:", (teams as Team[]).length);
+      return teams as Team[];
     }
     
     // For other roles, filter teams based on membership
-    return teams.filter(team => {
+    return (teams as Team[]).filter(team => {
       console.log("Checking team:", team.name);
       
       // Coach can see teams they coach

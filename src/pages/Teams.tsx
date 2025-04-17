@@ -1,4 +1,3 @@
-
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { useTeams } from "@/hooks/useTeams";
 import TeamsGrid from "@/components/teams/TeamsGrid";
 import EmptyTeamsState from "@/components/teams/EmptyTeamsState";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
+import { Team } from "@/types";
 
 export default function Teams() {
   const { user } = useAuth();
@@ -65,8 +65,8 @@ export default function Teams() {
         )}
       </div>
 
-      {teams && teams.length > 0 ? (
-        <TeamsGrid teams={teams} onAddPlayer={handleAddPlayer} />
+      {teams && (teams as Team[]).length > 0 ? (
+        <TeamsGrid teams={teams as Team[]} onAddPlayer={handleAddPlayer} />
       ) : (
         <EmptyTeamsState user={user} />
       )}

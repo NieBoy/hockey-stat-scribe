@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 import { 
@@ -6,7 +5,7 @@ import {
   removeTeamMember, 
   updateTeamMemberInfo, 
   getTeamMembers as fetchTeamMembers 
-} from "./teamMembershipService";
+} from "@/services/teams";
 import { sendTeamInvitations as sendInvitations } from "./invitationService";
 
 /**

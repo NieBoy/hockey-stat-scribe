@@ -11,7 +11,7 @@ import CoachesTabContent from "@/components/teams/CoachesTabContent";
 import StatsTabContent from "@/components/teams/StatsTabContent";
 import TeamMembersTable from "@/components/teams/TeamMembersTable";
 import { sendTeamInvitations } from "@/services/teams";
-import { deleteTeamMember } from "@/services/teams/teamMembershipService";
+import { deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 import { User } from "@/types";
 

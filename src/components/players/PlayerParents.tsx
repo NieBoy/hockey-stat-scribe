@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { UserPlus, Trash2 } from "lucide-react";
 import { User } from "@/types";
@@ -9,7 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { getUserInitials } from "@/utils/nameUtils";
 import { Link } from "react-router-dom";
-import { deleteTeamMember } from "@/services/teams/teamMembershipService";
+import { deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 
 interface PlayerParentsProps {

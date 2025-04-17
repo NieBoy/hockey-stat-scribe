@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import NewGameForm from "@/components/games/NewGameForm";
-import { GameFormState } from "@/types";
+import { GameFormState, Team } from "@/types";
 import { createGame } from "@/services/games";
 import { getTeams } from "@/services/teams";
 import { useQuery } from "@tanstack/react-query";
@@ -61,7 +61,7 @@ export default function NewGame() {
         ) : (
           <NewGameForm 
             onSubmit={handleCreateGame} 
-            teams={teams || []}
+            teams={(teams as Team[] || [])} 
             isLoading={loading}
           />
         )}

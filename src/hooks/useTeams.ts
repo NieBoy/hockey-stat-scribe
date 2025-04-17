@@ -30,8 +30,8 @@ export function useTeams(initialTeamId?: string) {
 
   const { handleAddPlayer, handleRemovePlayer } = useTeamPlayers(refetchTeams);
 
-  const selectedTeam = selectedTeamId && teams
-    ? teams.find(team => team.id === selectedTeamId)
+  const selectedTeam = selectedTeamId && (teams as Team[])
+    ? (teams as Team[]).find(team => team.id === selectedTeamId)
     : team;
 
   const submitNewPlayer = async () => {
