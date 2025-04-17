@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { 
   Table, 
@@ -19,6 +20,16 @@ import { MoreHorizontal, Mail, Trash, Edit } from "lucide-react";
 import { User, Team } from "@/types";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -34,6 +45,7 @@ const TeamMembersTable = ({
   onRemoveMember
 }: TeamMembersTableProps) => {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
   
   const allMembers = [
     ...(team.players || []),
@@ -60,6 +72,21 @@ const TeamMembersTable = ({
     if (onSendInvitations) {
       onSendInvitations(selectedMembers);
     }
+  };
+
+  const confirmDelete = (member: User) => {
+    setMemberToDelete(member);
+  };
+  
+  const handleDelete = () => {
+    if (memberToDelete && onRemoveMember) {
+      onRemoveMember(memberToDelete);
+      setMemberToDelete(null);
+    }
+  };
+  
+  const cancelDelete = () => {
+    setMemberToDelete(null);
   };
   
   return (
@@ -160,7 +187,7 @@ const TeamMembersTable = ({
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem 
-                          onClick={() => onRemoveMember && onRemoveMember(member)}
+                          onClick={() => confirmDelete(member)}
                           className="text-red-600 hover:text-red-600 focus:text-red-600"
                         >
                           <Trash className="mr-2 h-4 w-4" />
@@ -175,8 +202,27 @@ const TeamMembersTable = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirmation dialog for member deletion */}
+      <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {memberToDelete?.name} from the team?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-};
+}
 
 export default TeamMembersTable;

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { UserPlus, Trash2 } from "lucide-react";
 import { User } from "@/types";
@@ -79,6 +80,19 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
   
   const handleRemoveParent = async (parent: User) => {
     try {
+      // First delete the parent-player relationship
+      const { error: relationError } = await supabase
+        .from('player_parents')
+        .delete()
+        .eq('parent_id', parent.id)
+        .eq('player_id', player.id);
+      
+      if (relationError) {
+        console.error("Error removing parent-player relationship:", relationError);
+        throw relationError;
+      }
+      
+      // Then delete the team member
       const success = await deleteTeamMember(parent.id);
       if (success) {
         toast.success(`${parent.name} has been removed as a parent`);

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
   const { player, loading, error } = usePlayerDetails(id);
   const [activeTab, setActiveTab] = useState("details");
+
+  // Determine if this is a parent profile rather than a player
+  const isParentProfile = player?.role?.includes('parent');
 
   if (loading) {
     return (
@@ -62,25 +65,62 @@ export default function PlayerDetail() {
         <Card>
           <PlayerHeader player={player} />
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="stats">Stats</TabsTrigger>
-                <TabsTrigger value="parents">Parents</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="space-y-4">
-                <PlayerDetails player={player} />
-              </TabsContent>
-              
-              <TabsContent value="stats" className="space-y-4">
-                <PlayerStats playerId={player.id} />
-              </TabsContent>
-              
-              <TabsContent value="parents" className="space-y-4">
-                <PlayerParents player={player} />
-              </TabsContent>
-            </Tabs>
+            {isParentProfile ? (
+              // Parent profile view shows different tabs
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+                <TabsList className="grid grid-cols-2 w-full max-w-md mb-6">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="children">Children</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="details" className="space-y-4">
+                  <PlayerDetails player={player} />
+                </TabsContent>
+                
+                <TabsContent value="children" className="space-y-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Children</h3>
+                    {player.children && player.children.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {player.children.map(child => (
+                          <Card key={child.id} className="p-4">
+                            <div className="font-medium">
+                              <Link to={`/players/${child.id}`} className="hover:underline text-primary">
+                                {child.name}
+                              </Link>
+                            </div>
+                            <div className="text-sm text-muted-foreground">Player</div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No children associated with this parent.</p>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              // Regular player profile tabs
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+                <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="stats">Stats</TabsTrigger>
+                  <TabsTrigger value="parents">Parents</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="details" className="space-y-4">
+                  <PlayerDetails player={player} />
+                </TabsContent>
+                
+                <TabsContent value="stats" className="space-y-4">
+                  <PlayerStats playerId={player.id} />
+                </TabsContent>
+                
+                <TabsContent value="parents" className="space-y-4">
+                  <PlayerParents player={player} />
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
