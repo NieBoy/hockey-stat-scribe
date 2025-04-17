@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { User } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ParentPlayerManager from "@/components/teams/ParentPlayerManager";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,51 +18,58 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
   const [parents, setParents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadParents() {
-      if (!player.id) return;
-      
-      setLoading(true);
-      try {
-        // Fetch parent relationships
-        const { data: relationships, error: relError } = await supabase
-          .from('player_parents')
-          .select('parent_id')
-          .eq('player_id', player.id);
-          
-        if (relError) throw relError;
-        
-        if (relationships && relationships.length > 0) {
-          const parentIds = relationships.map(rel => rel.parent_id);
-          
-          // Fetch parent details from team_members
-          const { data: parentData, error: parentError } = await supabase
-            .from('team_members')
-            .select('id, name, email, role')
-            .in('id', parentIds)
-            .eq('role', 'parent');
-            
-          if (parentError) throw parentError;
-          
-          // Transform into User objects
-          const parentUsers = (parentData || []).map(parent => ({
-            id: parent.id,
-            name: parent.name || 'Unknown Parent',
-            email: parent.email,
-            role: ['parent'] as ['parent']
-          }));
-          
-          setParents(parentUsers);
-        }
-      } catch (error) {
-        console.error('Error loading parents:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const loadParents = useCallback(async () => {
+    if (!player.id) return;
     
-    loadParents();
+    setLoading(true);
+    try {
+      // Fetch parent relationships
+      const { data: relationships, error: relError } = await supabase
+        .from('player_parents')
+        .select('parent_id')
+        .eq('player_id', player.id);
+        
+      if (relError) throw relError;
+      
+      if (relationships && relationships.length > 0) {
+        const parentIds = relationships.map(rel => rel.parent_id);
+        
+        // Fetch parent details from team_members
+        const { data: parentData, error: parentError } = await supabase
+          .from('team_members')
+          .select('id, name, email, role')
+          .in('id', parentIds)
+          .eq('role', 'parent');
+          
+        if (parentError) throw parentError;
+        
+        // Transform into User objects
+        const parentUsers = (parentData || []).map(parent => ({
+          id: parent.id,
+          name: parent.name || 'Unknown Parent',
+          email: parent.email,
+          role: ['parent'] as ['parent']
+        }));
+        
+        setParents(parentUsers);
+      } else {
+        setParents([]);
+      }
+    } catch (error) {
+      console.error('Error loading parents:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [player.id]);
+
+  useEffect(() => {
+    loadParents();
+  }, [loadParents]);
+
+  const handleParentAdded = () => {
+    setShowAddParent(false);
+    loadParents(); // Refresh the parents list
+  };
 
   return (
     <>
@@ -83,11 +90,7 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
         <div className="mb-4">
           <ParentPlayerManager 
             player={player} 
-            onParentAdded={() => {
-              setShowAddParent(false);
-              // Refresh parents list when a new parent is added
-              loadParents();
-            }}
+            onParentAdded={handleParentAdded}
           />
         </div>
       )}
@@ -125,48 +128,4 @@ export default function PlayerParents({ player }: PlayerParentsProps) {
       )}
     </>
   );
-
-  // Helper function to reload parents after adding
-  function loadParents() {
-    const loadParentsAsync = async () => {
-      if (!player.id) return;
-      
-      try {
-        // Fetch parent relationships
-        const { data: relationships, error: relError } = await supabase
-          .from('player_parents')
-          .select('parent_id')
-          .eq('player_id', player.id);
-          
-        if (relError) throw relError;
-        
-        if (relationships && relationships.length > 0) {
-          const parentIds = relationships.map(rel => rel.parent_id);
-          
-          // Fetch parent details from team_members
-          const { data: parentData, error: parentError } = await supabase
-            .from('team_members')
-            .select('id, name, email, role')
-            .in('id', parentIds)
-            .eq('role', 'parent');
-            
-          if (parentError) throw parentError;
-          
-          // Transform into User objects
-          const parentUsers = (parentData || []).map(parent => ({
-            id: parent.id,
-            name: parent.name || 'Unknown Parent',
-            email: parent.email,
-            role: ['parent'] as ['parent']
-          }));
-          
-          setParents(parentUsers);
-        }
-      } catch (error) {
-        console.error('Error loading parents:', error);
-      }
-    };
-    
-    loadParentsAsync();
-  }
 }

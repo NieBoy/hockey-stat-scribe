@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,15 +16,44 @@ export default function ParentPlayerManager({ player, onParentAdded }: ParentPla
   const [parentEmail, setParentEmail] = useState('');
   const [parentName, setParentName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [teamId, setTeamId] = useState<string | null>(player.teams?.[0]?.id || null);
+
+  // Fetch the player's team ID if not already available
+  useEffect(() => {
+    async function fetchPlayerTeam() {
+      if (!teamId && player.id) {
+        try {
+          // Get the team ID from the team_members table
+          const { data, error } = await supabase
+            .from('team_members')
+            .select('team_id')
+            .eq('id', player.id)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching player team:', error);
+            return;
+          }
+          
+          if (data && data.team_id) {
+            console.log('Found team ID for player:', data.team_id);
+            setTeamId(data.team_id);
+          }
+        } catch (error) {
+          console.error('Error in fetchPlayerTeam:', error);
+        }
+      }
+    }
+    
+    fetchPlayerTeam();
+  }, [player.id, teamId]);
 
   const handleAddParent = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Get the team ID from the player's teams array
-      const teamId = player.teams?.[0]?.id;
-      
+      // Use the teamId from state, which may have been fetched from the database
       if (!teamId) {
         throw new Error("Cannot add parent: Player is not associated with any team");
       }
@@ -35,7 +64,7 @@ export default function ParentPlayerManager({ player, onParentAdded }: ParentPla
       const { data: parentMember, error: parentError } = await supabase
         .from('team_members')
         .insert({
-          team_id: teamId, // Use the team ID from player's first team
+          team_id: teamId, // Use the team ID we've determined
           name: parentName,
           email: parentEmail,
           role: 'parent'
@@ -91,8 +120,8 @@ export default function ParentPlayerManager({ player, onParentAdded }: ParentPla
               required
             />
           </div>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Adding...' : 'Add Parent'}
+          <Button type="submit" disabled={loading || !teamId}>
+            {loading ? 'Adding...' : !teamId ? 'No Team Found' : 'Add Parent'}
           </Button>
         </form>
       </CardContent>
