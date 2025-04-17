@@ -1,6 +1,6 @@
+
 import { supabase } from "@/lib/supabase";
 import { Team, User, Position, UserRole } from "@/types";
-import { mockTeams } from "@/lib/mock-data";
 
 export const getTeams = async (): Promise<Team[]> => {
   console.log("Fetching teams...");
@@ -15,8 +15,7 @@ export const getTeams = async (): Promise<Team[]> => {
 
     if (teamsError) {
       console.error("Error fetching teams from Supabase:", teamsError);
-      console.log("Falling back to mock data");
-      return mockTeams;
+      throw teamsError;
     }
     
     console.log("Teams data from DB:", teamsData);
@@ -58,7 +57,7 @@ export const getTeams = async (): Promise<Team[]> => {
           role: ['player'] as UserRole[],
           position: p.position as Position,
           lineNumber: p.line_number,
-          number: p.position !== null ? String(p.line_number || '') : undefined // Use line_number as a fallback
+          number: p.line_number ? String(p.line_number) : undefined
         }));
       
       const coaches = (teamMembers || [])
@@ -92,22 +91,12 @@ export const getTeams = async (): Promise<Team[]> => {
     return teams;
   } catch (error) {
     console.error("Error in getTeams:", error);
-    return mockTeams; // Fallback to mock data
+    throw error;
   }
 };
 
 export const getTeamById = async (id: string): Promise<Team | null> => {
   try {
-    // Check if the ID appears to be a mock ID (from mock data)
-    const isMockId = id.startsWith('team-');
-    
-    if (isMockId) {
-      console.log(`ID ${id} appears to be a mock ID, using mock data`);
-      const mockTeam = mockTeams.find(t => t.id === id);
-      return mockTeam || null;
-    }
-    
-    // Otherwise try to fetch from Supabase
     const { data, error } = await supabase
       .from('teams')
       .select(`
@@ -119,10 +108,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
 
     if (error) {
       console.error(`Error fetching team ${id}:`, error);
-      
-      // Fall back to mock data if Supabase fails
-      const mockTeam = mockTeams.find(t => t.id === id);
-      return mockTeam || null;
+      throw error;
     }
     
     // Get all team members
@@ -143,10 +129,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       
     if (membersError) {
       console.error(`Error fetching members for team ${id}:`, membersError);
-      
-      // Fall back to mock data if Supabase fails for team members
-      const mockTeam = mockTeams.find(t => t.id === id);
-      return mockTeam || null;
+      throw membersError;
     }
     
     // Make sure we have an array to work with, even if empty
@@ -162,7 +145,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         role: ['player'] as UserRole[],
         position: p.position as Position,
         lineNumber: p.line_number,
-        number: p.position !== null ? String(p.line_number || '') : undefined
+        number: p.line_number ? String(p.line_number) : undefined
       }));
     
     const coaches = members
@@ -192,9 +175,6 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     };
   } catch (error) {
     console.error(`Error in getTeamById for team ${id}:`, error);
-    
-    // Fall back to mock data if anything fails
-    const mockTeam = mockTeams.find(t => t.id === id);
-    return mockTeam || null;
+    throw error;
   }
 };

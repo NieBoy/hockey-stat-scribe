@@ -15,7 +15,7 @@ export default function TeamLineup() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   
-  const { data: team, isLoading, error } = useQuery({
+  const { data: team, isLoading, error, refetch } = useQuery({
     queryKey: ['team', id],
     queryFn: () => getTeamById(id!),
     enabled: !!id
@@ -51,6 +51,8 @@ export default function TeamLineup() {
       setSaving(true);
       await updateTeamLineup(id, lines);
       toast.success("Team lineup saved successfully!");
+      // Refetch the team data to get the updated lineup
+      refetch();
     } catch (error) {
       console.error("Error saving lineup:", error);
       toast.error("Failed to save lineup");
