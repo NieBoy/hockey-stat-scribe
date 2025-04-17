@@ -56,17 +56,24 @@ export default function TeamCreate() {
       const newTeam = await createTeam(teamData);
       console.log("Team created response:", newTeam);
       
-      // Force refresh the teams data
+      // Force refresh the teams data immediately
       await queryClient.invalidateQueries({ queryKey: ['teams'] });
       
       toast.success("Team created successfully", {
         description: `${data.name} has been added`,
       });
       
-      // Immediately navigate to teams page to show the new team
-      setTimeout(() => {
-        navigate(`/teams`);
-      }, 500);
+      // Navigate to team detail page if we have an ID
+      if (newTeam && newTeam.id) {
+        setTimeout(() => {
+          navigate(`/teams/${newTeam.id}`);
+        }, 500);
+      } else {
+        // Fallback to teams page if no ID is available
+        setTimeout(() => {
+          navigate(`/teams`);
+        }, 500);
+      }
     } catch (error) {
       console.error("Error creating team:", error);
       toast.error("Failed to create team", {

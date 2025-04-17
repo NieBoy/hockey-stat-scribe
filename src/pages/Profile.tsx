@@ -20,23 +20,32 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<string>("settings");
   const [allPlayers, setAllPlayers] = useState<User[]>([]);
 
-  const { data: teams = [], isLoading: teamsLoading, error: teamsError, refetch } = useQuery({
+  // Fix: Remove onError from the options object and use onError callback
+  const { 
+    data: teams = [], 
+    isLoading: teamsLoading, 
+    error: teamsError, 
+    refetch 
+  } = useQuery({
     queryKey: ['teams'],
     queryFn: getTeams,
     enabled: !!user,
     // Force refetch when the component mounts
     refetchOnMount: true,
-    // Refresh teams data when this component is active
-    refetchInterval: 2000,
+    // Refresh teams data when this component is active, but less frequently
+    refetchInterval: 5000,
     // Add retry logic for more resilience
     retry: 3,
-    retryDelay: 1000,
-    // Better error handling
-    onError: (error) => {
-      console.error("Failed to fetch teams:", error);
+    retryDelay: 1000
+  });
+
+  // Handle errors separately
+  useEffect(() => {
+    if (teamsError) {
+      console.error("Failed to fetch teams:", teamsError);
       toast.error("Failed to load teams data");
     }
-  });
+  }, [teamsError]);
 
   // Manually refresh data when the component mounts or tab changes
   useEffect(() => {
