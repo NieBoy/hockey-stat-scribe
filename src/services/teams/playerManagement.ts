@@ -28,6 +28,17 @@ export const addPlayerToTeam = async (
     // Get or create user
     const userId = await getOrCreatePlayerUser(playerData);
     
+    // Check if the user was successfully created
+    const userExistsNow = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (!userExistsNow.data) {
+      throw new Error(`Failed to create user with ID ${userId}`);
+    }
+    
     // Add the team member
     await addTeamMember(
       teamId, 
