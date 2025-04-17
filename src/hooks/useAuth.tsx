@@ -4,12 +4,13 @@ import { User } from "@/types";
 import { getCurrentUser, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/services/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: string | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<boolean>;
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -20,8 +21,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Set up auth listener
   useEffect(() => {
-    async function loadUser() {
+    // First set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          // Use setTimeout to avoid any potential deadlocks
+          setTimeout(async () => {
+            const user = await getCurrentUser();
+            setUser(user);
+          }, 0);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+    
+    // Then check for existing session
+    const initializeAuth = async () => {
       try {
         const user = await getCurrentUser();
         setUser(user);
@@ -30,8 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         setLoading(false);
       }
-    }
-    loadUser();
+    };
+    
+    initializeAuth();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -39,36 +62,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await apiSignIn(email, password);
       if (result.error) {
         toast.error(result.error);
-        return result;
+      } else if (result.user) {
+        setUser(result.user);
+        toast.success("Signed in successfully");
+        navigate("/");
       }
-      
-      setUser(result.user);
-      toast.success("Signed in successfully");
-      navigate("/");
       return result;
     } catch (error) {
-      console.error("Sign in error:", error);
       const errorMessage = "Failed to sign in";
+      console.error("Sign in error:", error);
       toast.error(errorMessage);
       return { user: null, error: errorMessage };
     }
   };
 
-  const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
+  const signUp = async (email: string, password: string, name: string) => {
     try {
-      const success = await apiSignUp(email, password, name);
-      if (!success) {
-        toast.error("Failed to create account");
-        return false;
+      const result = await apiSignUp(email, password, name);
+      if (result.error) {
+        toast.error(result.error);
+      } else if (result.success) {
+        toast.success("Account created! Please sign in");
+        navigate("/signin");
       }
-      
-      toast.success("Account created! Please sign in");
-      navigate("/signin");
-      return true;
+      return result;
     } catch (error) {
       console.error("Sign up error:", error);
-      toast.error("Failed to create account");
-      return false;
+      const errorMessage = "Failed to create account";
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 

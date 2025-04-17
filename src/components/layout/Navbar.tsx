@@ -4,19 +4,22 @@ import { Button } from "@/components/ui/button";
 import { 
   BarChart3, 
   CaseSensitive, 
-  ClipboardList, 
-  User,
-  LogOut,
   Home,
   Users,
   CalendarDays,
   Building,
-  Mail
+  Mail,
+  LogOut,
+  User
 } from "lucide-react";
-import { currentUser } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
+  const { user, signOut } = useAuth();
+
+  if (!user) return null;
+
   const getUserInitials = (name: string) => {
     return name
       .split(' ')
@@ -25,7 +28,7 @@ export default function Navbar() {
       .toUpperCase();
   };
 
-  const hasMultipleRoles = Array.isArray(currentUser.role) && currentUser.role.length > 1;
+  const hasMultipleRoles = Array.isArray(user.role) && user.role.length > 1;
 
   return (
     <nav className="border-b bg-background">
@@ -50,7 +53,7 @@ export default function Navbar() {
             <Users className="h-4 w-4" />
             Teams
           </Link>
-          {currentUser.isAdmin && (
+          {user.isAdmin && (
             <Link to="/organizations" className="flex items-center gap-2 text-sm font-medium">
               <Building className="h-4 w-4" />
               Organizations
@@ -68,23 +71,25 @@ export default function Navbar() {
 
         <div className="flex items-center space-x-2">
           <div className="flex items-center gap-2 text-sm">
-            <span>{currentUser.name}</span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
-              {hasMultipleRoles 
-                ? `${currentUser.role[0].charAt(0).toUpperCase() + currentUser.role[0].slice(1)}${currentUser.isAdmin ? '+' : ''}` 
-                : currentUser.role[0].charAt(0).toUpperCase() + currentUser.role[0].slice(1)}
-            </span>
+            <span>{user.name}</span>
+            {user.role && user.role.length > 0 && (
+              <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
+                {hasMultipleRoles 
+                  ? `${user.role[0].charAt(0).toUpperCase() + user.role[0].slice(1)}${user.isAdmin ? '+' : ''}` 
+                  : user.role[0].charAt(0).toUpperCase() + user.role[0].slice(1)}
+              </span>
+            )}
           </div>
           <Button variant="ghost" size="icon" asChild>
             <Link to="/profile">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                  {getUserInitials(currentUser.name)}
+                  {getUserInitials(user.name || 'U')}
                 </AvatarFallback>
               </Avatar>
             </Link>
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => signOut()}>
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

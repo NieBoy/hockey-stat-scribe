@@ -8,11 +8,7 @@ export const getOrganizations = async (): Promise<Organization[]> => {
     // that returns the teams directly
     const { data, error } = await supabase
       .from('teams')
-      .select(`
-        id,
-        name,
-        organization_id
-      `);
+      .select('id, name, organization_id');
       
     if (error) throw error;
     
@@ -53,11 +49,7 @@ export const getOrganizationById = async (id: string): Promise<Organization | nu
     // Since there's no organizations table yet, find all teams with this organization_id
     const { data, error } = await supabase
       .from('teams')
-      .select(`
-        id,
-        name,
-        organization_id
-      `)
+      .select('id, name, organization_id')
       .eq('organization_id', id);
       
     if (error) return null;
@@ -96,6 +88,8 @@ export const createOrganization = async (name: string): Promise<Organization | n
       .single();
 
     if (error) throw error;
+    
+    if (!data) return null;
     
     return {
       id: data.organization_id || '',

@@ -26,7 +26,7 @@ export default function RequireAuth({ children, roles }: RequireAuthProps) {
   }
 
   // Check for required roles
-  if (roles && !roles.some(role => user.role.includes(role as any))) {
+  if (roles && user.role && !roles.some(role => user.role.includes(role as any))) {
     // User doesn't have the required role
     return <Navigate to="/unauthorized" replace />;
   }

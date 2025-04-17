@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PenTool } from "lucide-react"; // Using PenTool icon
+import { PenTool } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SignUp() {
@@ -31,8 +31,8 @@ export default function SignUp() {
     try {
       const result = await signUp(email, password, name);
       
-      if (!result) {
-        setError("Failed to create account. Email may already be in use.");
+      if (result.error) {
+        setError(result.error);
       }
       // If successful, the redirect is handled in the useAuth hook
     } catch (err) {
@@ -123,5 +123,4 @@ export default function SignUp() {
         </form>
       </Card>
     </div>
-  );
-}
+  

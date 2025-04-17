@@ -1,207 +1,201 @@
-import { useForm } from "react-hook-form";
-import { GameFormState, Team } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from 'react';
+import { z } from 'zod';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const gameSchema = z.object({
-  date: z.date(),
-  homeTeam: z.string().min(1, "Home team is required"),
-  awayTeam: z.string().min(1, "Away team is required").refine(
-    (value, ctx) => {
-      return value !== ctx.data.homeTeam;
-    }, 
-    { message: "Away team must be different from home team" }
-  ),
-  location: z.string().min(1, "Location is required"),
-  periods: z.number().min(1).max(5)
+// Define a schema for form validation
+const gameFormSchema = z.object({
+  date: z.date({
+    required_error: "Please select a date",
+  }),
+  homeTeam: z.string({
+    required_error: "Please select a home team",
+  }),
+  awayTeam: z.string({
+    required_error: "Please select an away team",
+  }).refine(val => val !== '', {
+    message: "Please select an away team"
+  }),
+  location: z.string({
+    required_error: "Please enter a location",
+  }).min(3, {
+    message: "Location must be at least 3 characters",
+  }),
+  periods: z.number({
+    required_error: "Please select the number of periods",
+  }).int().min(1).max(5),
 });
 
-export interface NewGameFormProps {
-  onSubmit: (data: GameFormState) => Promise<void>;
-  teams: Team[];
-  isSubmitting?: boolean;
+export type GameFormState = z.infer<typeof gameFormSchema>;
+
+interface NewGameFormProps {
+  teams: { id: string; name: string }[];
+  onSubmit: (data: GameFormState) => void;
+  isLoading?: boolean;
 }
 
-const NewGameForm = ({ onSubmit, teams, isSubmitting = false }: NewGameFormProps) => {
-  const form = useForm<GameFormState>({
-    resolver: zodResolver(gameSchema),
-    defaultValues: {
-      date: new Date(),
-      homeTeam: "",
-      awayTeam: "",
-      location: "",
-      periods: 3
+export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewGameFormProps) {
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [homeTeam, setHomeTeam] = useState('');
+  const [awayTeam, setAwayTeam] = useState('');
+  const [location, setLocation] = useState('');
+  const [periods, setPeriods] = useState(3);
+
+  const [errors, setErrors] = useState<Partial<Record<keyof GameFormState, string>>>({});
+
+  const validateForm = (): boolean => {
+    const result = gameFormSchema.safeParse({
+      date,
+      homeTeam,
+      awayTeam,
+      location,
+      periods,
+    });
+
+    if (!result.success) {
+      const newErrors: Partial<Record<keyof GameFormState, string>> = {};
+      result.error.issues.forEach((issue) => {
+        const key = issue.path[0] as keyof GameFormState;
+        newErrors[key] = issue.message;
+      });
+      setErrors(newErrors);
+      return false;
     }
-  });
+
+    setErrors({});
+    return true;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      const formData: GameFormState = {
+        date: date!,
+        homeTeam,
+        awayTeam,
+        location,
+        periods,
+      };
+      onSubmit(formData);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className="w-full pl-3 text-left font-normal"
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="date">Game Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+        {errors.date && (
+          <p className="text-sm text-red-500">{errors.date}</p>
+        )}
+      </div>
 
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter location" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="homeTeam">Home Team</Label>
+        <Select value={homeTeam} onValueChange={setHomeTeam}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select home team" />
+          </SelectTrigger>
+          <SelectContent>
+            {teams.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.homeTeam && (
+          <p className="text-sm text-red-500">{errors.homeTeam}</p>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="homeTeam"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Home Team</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select home team" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <div className="space-y-2">
+        <Label htmlFor="awayTeam">Away Team</Label>
+        <Select value={awayTeam} onValueChange={setAwayTeam}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select away team" />
+          </SelectTrigger>
+          <SelectContent>
+            {teams.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.awayTeam && (
+          <p className="text-sm text-red-500">{errors.awayTeam}</p>
+        )}
+      </div>
 
-          <FormField
-            control={form.control}
-            name="awayTeam"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Away Team</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select away team" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {teams
-                      .filter(team => team.id !== form.watch("homeTeam"))
-                      .map((team) => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="periods"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Number of Periods</FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(parseInt(value, 10))} 
-                defaultValue={field.value.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select number of periods" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                  <SelectItem value="5">5</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div className="space-y-2">
+        <Label htmlFor="location">Location</Label>
+        <Input
+          id="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Enter game location"
         />
+        {errors.location && (
+          <p className="text-sm text-red-500">{errors.location}</p>
+        )}
+      </div>
 
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={isSubmitting}
+      <div className="space-y-2">
+        <Label htmlFor="periods">Number of Periods</Label>
+        <Select
+          value={periods.toString()}
+          onValueChange={(value) => setPeriods(parseInt(value))}
         >
-          {isSubmitting ? (
-            <>
-              <span className="animate-spin mr-2">○</span>
-              Creating Game...
-            </>
-          ) : (
-            "Create Game"
-          )}
-        </Button>
-      </form>
-    </Form>
-  );
-};
+          <SelectTrigger>
+            <SelectValue placeholder="Select number of periods" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="2">2</SelectItem>
+            <SelectItem value="3">3</SelectItem>
+            <SelectItem value="4">4</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.periods && (
+          <p className="text-sm text-red-500">{errors.periods}</p>
+        )}
+      </div>
 
-export default NewGameForm;
+      <Button 
+        type="submit" 
+        onClick={handleSubmit} 
+        className="w-full"
+        disabled={isLoading}
+      >
+        {isLoading ? "Creating..." : "Create Game"}
+      </Button>
+    </div>
+  );
+}
