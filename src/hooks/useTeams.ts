@@ -3,6 +3,7 @@ import { Team } from "@/types";
 import { useTeamDialog } from "./teams/useTeamDialog";
 import { useTeamData } from "./teams/useTeamData";
 import { useTeamPlayers } from "./teams/useTeamPlayers";
+import { toast } from "sonner";
 
 export function useTeams(initialTeamId?: string) {
   const {
@@ -34,13 +35,32 @@ export function useTeams(initialTeamId?: string) {
     : team;
 
   const submitNewPlayer = async () => {
-    if (!selectedTeam) return;
+    if (!selectedTeam) {
+      console.error("No team selected");
+      return;
+    }
     
-    const success = await handleAddPlayer(selectedTeam.id, newPlayer);
+    // Validate required fields
+    if (!newPlayer.name.trim()) {
+      toast.error("Player name is required");
+      return;
+    }
     
-    if (success) {
-      setAddPlayerDialogOpen(false);
-      resetPlayerForm();
+    if (!newPlayer.number.trim()) {
+      toast.error("Player number is required");
+      return;
+    }
+    
+    try {
+      const success = await handleAddPlayer(selectedTeam.id, newPlayer);
+      
+      if (success) {
+        setAddPlayerDialogOpen(false);
+        resetPlayerForm();
+        await refetchTeam(); // Also refresh single team data if on team detail page
+      }
+    } catch (error) {
+      console.error("Error submitting player:", error);
     }
   };
 

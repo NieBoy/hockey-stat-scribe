@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { 
   Dialog,
   DialogContent, 
@@ -41,13 +41,18 @@ export default function AddPlayerDialog({
   newPlayer,
   setNewPlayer,
 }: AddPlayerDialogProps) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Player to {selectedTeam?.name}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="player-name" className="text-right">
               Name <span className="text-red-500">*</span>
@@ -108,13 +113,13 @@ export default function AddPlayerDialog({
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" type="button">Cancel</Button>
-          </DialogClose>
-          <Button type="button" onClick={onSubmit}>Add Player</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" type="button">Cancel</Button>
+            </DialogClose>
+            <Button type="submit">Add Player</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

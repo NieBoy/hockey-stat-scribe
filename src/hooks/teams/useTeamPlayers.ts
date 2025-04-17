@@ -21,11 +21,16 @@ export function useTeamPlayers(refetchTeams: () => Promise<any>) {
       const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
         toast.error("You must be logged in to add players");
-        return;
+        return false;
       }
 
       if (!playerData.name) {
         toast.error("Player name is required");
+        return false;
+      }
+      
+      if (!playerData.number) {
+        toast.error("Player number is required");
         return false;
       }
       

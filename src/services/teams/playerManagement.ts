@@ -51,7 +51,7 @@ export const addPlayerToTeam = async (
           user_id: tempPlayerId,
           role: 'player',
           position: playerData.position || null,
-          line_number: playerData.number ? parseInt(playerData.number) : null
+          line_number: playerData.number ? parseInt(playerData.number, 10) : null
         });
         
       if (teamMemberError) {
