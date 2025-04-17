@@ -8,7 +8,6 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -20,78 +19,6 @@ import {
 import { MoreHorizontal, Mail, Trash, Edit } from "lucide-react";
 import { User, Team } from "@/types";
 import { toast } from "sonner";
-
-// Define columns for the data table
-const columns = [
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }: any) => {
-      const role = row.original.role?.[0] || "player";
-      return <span className="capitalize">{role}</span>;
-    },
-  },
-  {
-    accessorKey: "position",
-    header: "Position",
-  },
-  {
-    accessorKey: "number",
-    header: "#",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }: any) => {
-      const email = row.original.email;
-      return email ? (
-        <span>{email}</span>
-      ) : (
-        <span className="text-muted-foreground italic">No email</span>
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const member = row.original;
-      
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => console.log("Edit", member)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            {!member.email && (
-              <DropdownMenuItem onClick={() => console.log("Add email", member)}>
-                <Mail className="mr-2 h-4 w-4" />
-                Add email
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem 
-              onClick={() => console.log("Remove", member)}
-              className="text-red-600 hover:text-red-600 focus:text-red-600"
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
 
 interface TeamMembersTableProps {
   team: Team;
@@ -114,6 +41,16 @@ const TeamMembersTable = ({
     ...(team.coaches || []),
     ...(team.parents || [])
   ];
+
+  const handleSelectMember = (memberId: string) => {
+    setSelectedMembers(prev => {
+      if (prev.includes(memberId)) {
+        return prev.filter(id => id !== memberId);
+      } else {
+        return [...prev, memberId];
+      }
+    });
+  };
 
   const handleSendInvitations = () => {
     if (selectedMembers.length === 0) {
@@ -139,11 +76,99 @@ const TeamMembersTable = ({
         </Button>
       </div>
       
-      <DataTable 
-        columns={columns} 
-        data={allMembers} 
-        searchKey="name" 
-      />
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]">
+                <Input 
+                  type="checkbox" 
+                  className="h-4 w-4" 
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      const allMemberIds = allMembers.map(m => m.id);
+                      setSelectedMembers(allMemberIds);
+                    } else {
+                      setSelectedMembers([]);
+                    }
+                  }}
+                  checked={selectedMembers.length === allMembers.length && allMembers.length > 0}
+                />
+              </TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Position</TableHead>
+              <TableHead>#</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allMembers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                  No team members found
+                </TableCell>
+              </TableRow>
+            ) : (
+              allMembers.map(member => (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <Input 
+                      type="checkbox" 
+                      className="h-4 w-4" 
+                      checked={selectedMembers.includes(member.id)}
+                      onChange={() => handleSelectMember(member.id)}
+                    />
+                  </TableCell>
+                  <TableCell>{member.name}</TableCell>
+                  <TableCell>
+                    <span className="capitalize">{member.role?.[0] || "player"}</span>
+                  </TableCell>
+                  <TableCell>{member.position || "-"}</TableCell>
+                  <TableCell>{member.number || "-"}</TableCell>
+                  <TableCell>
+                    {member.email ? (
+                      <span>{member.email}</span>
+                    ) : (
+                      <span className="text-muted-foreground italic">No email</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEditMember && onEditMember(member)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        {!member.email && (
+                          <DropdownMenuItem onClick={() => onEditMember && onEditMember(member)}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Add email
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem 
+                          onClick={() => onRemoveMember && onRemoveMember(member)}
+                          className="text-red-600 hover:text-red-600 focus:text-red-600"
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

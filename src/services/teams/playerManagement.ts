@@ -22,16 +22,44 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
 
-    // Generate a unique player ID
-    const tempPlayerId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    // First, check if this player needs a user record
+    let userId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
-    // Add the player directly to team_members table without creating a user record
-    // This bypasses the RLS policy issue on the users table
+    // If we have an email, we can check if a user already exists with this email
+    if (playerData.email) {
+      const { data: existingUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', playerData.email)
+        .limit(1);
+      
+      if (existingUsers && existingUsers.length > 0) {
+        userId = existingUsers[0].id;
+        console.log(`Found existing user with email ${playerData.email}: ${userId}`);
+      } else {
+        // Create a new user record
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            name: playerData.name,
+            email: playerData.email
+          })
+          .select();
+        
+        if (userError) {
+          console.error("Error creating user:", userError);
+          // Don't throw here - we'll try to create the team member directly
+        }
+      }
+    }
+    
+    // Now add the team member
     const { data: teamMemberData, error: teamMemberError } = await supabase
       .from('team_members')
       .insert({
         team_id: teamId,
-        user_id: tempPlayerId, // Use the generated ID
+        user_id: userId,
         role: 'player',
         position: playerData.position || null,
         line_number: playerData.number ? parseInt(playerData.number, 10) : null
@@ -47,7 +75,7 @@ export const addPlayerToTeam = async (
     
     // Return a user object with the data we have
     return {
-      id: tempPlayerId,
+      id: userId,
       name: playerData.name,
       email: playerData.email,
       role: ['player'],
