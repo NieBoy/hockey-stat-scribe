@@ -28,15 +28,16 @@ export const addPlayerToTeam = async (
     // Get or create user
     const userId = await getOrCreatePlayerUser(playerData);
     
-    // Check if the user was successfully created
-    const userExistsNow = await supabase
+    // Double check the user exists in the database before proceeding
+    const { data: userExists, error: checkError } = await supabase
       .from('users')
       .select('id')
       .eq('id', userId)
-      .maybeSingle();
-    
-    if (!userExistsNow.data) {
-      throw new Error(`Failed to create user with ID ${userId}`);
+      .single();
+      
+    if (checkError || !userExists) {
+      console.error("Failed to verify user exists:", checkError);
+      throw new Error(`Could not verify user exists with ID ${userId}`);
     }
     
     // Add the team member

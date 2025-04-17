@@ -43,32 +43,32 @@ export const getOrCreatePlayerUser = async (playerData: {
       }
     }
 
-    // Generate a new UUID for the user
-    const userId = crypto.randomUUID();
+    // If no existing user is found, we create one directly in the users table
+    // First generate a unique ID using UUID v4
+    const newUserId = crypto.randomUUID();
     
     // Create email - either use provided one or generate a placeholder
     const email = playerData.email || 
-      `player_${userId.substring(0, 8)}@example.com`;
+      `player_${newUserId.substring(0, 8)}@example.com`;
     
-    console.log(`Creating new user with ID ${userId} and email ${email} using security definer function`);
+    console.log(`Creating new user directly in users table with ID ${newUserId} and email ${email}`);
     
-    // Use the security definer function to create the user
-    const { data, error } = await supabase.rpc(
-      'create_user_bypass_rls',
-      {
-        user_id: userId,
-        user_name: playerData.name,
-        user_email: email
-      }
-    );
+    // Insert directly into the users table
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: newUserId,
+        name: playerData.name,
+        email: email
+      });
     
-    if (error) {
-      console.error("Error creating user:", error);
-      throw error;
+    if (insertError) {
+      console.error("Error inserting user:", insertError);
+      throw insertError;
     }
     
-    console.log("Created new user with ID:", userId);
-    return userId;
+    console.log("Successfully created new user with ID:", newUserId);
+    return newUserId;
   } catch (error) {
     console.error("Error in getOrCreatePlayerUser:", error);
     throw error;
