@@ -15,39 +15,75 @@ const statTypes = ['goals', 'assists', 'penalties', 'shots', 'saves'] as const;
 export default function StatTrackerAssignment() {
   const { id: gameId } = useParams<{ id: string }>();
   const [game, setGame] = useState<any>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [selectedTrackers, setSelectedTrackers] = useState<{
     [key: string]: string | null
   }>({});
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadGameAndUsers = async () => {
+    const loadGameAndTeamMembers = async () => {
       if (!gameId) return;
       setLoading(true);
 
       try {
+        // Load game data
         const gameData = await fetchGameWithTeams(gameId);
         console.log('Fetched game data:', gameData);
         setGame(gameData);
 
+        // Get team IDs from the game
+        const teamIds = [gameData.home_team_id, gameData.away_team_id];
+        const uniqueTeamIds = [...new Set(teamIds)]; // Remove duplicates if same team plays itself
+        
+        // Fetch all team members for these teams
+        let allTeamMembers: any[] = [];
+        
+        for (const teamId of uniqueTeamIds) {
+          const { data: members, error } = await supabase
+            .from('team_members')
+            .select('id, name, email, role')
+            .eq('team_id', teamId);
+            
+          if (error) {
+            console.error(`Error fetching members for team ${teamId}:`, error);
+            continue;
+          }
+          
+          if (members && members.length > 0) {
+            console.log(`Found ${members.length} members for team ${teamId}`, members);
+            allTeamMembers = [...allTeamMembers, ...members];
+          }
+        }
+        
+        // Also include users from users table for backward compatibility
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*');
 
         if (userError) throw userError;
         
-        console.log('Fetched user data:', userData);
         const mappedUsers = userData.map(user => ({
           id: user.id,
           name: user.name,
           email: user.email,
-          role: ['player' as UserRole],
-          profileImage: user.avatar_url
+          role: 'user'
         }));
         
-        setUsers(mappedUsers);
+        // Combine and deduplicate by ID
+        const combinedMembers = [...allTeamMembers];
+        
+        // Only add users that aren't already in team members
+        mappedUsers.forEach(user => {
+          if (!combinedMembers.some(member => member.id === user.id)) {
+            combinedMembers.push(user);
+          }
+        });
+        
+        console.log('Combined team members:', combinedMembers);
+        setTeamMembers(combinedMembers);
 
         // Load existing assignments
         const { data: existingTrackers, error: trackersError } = await supabase
@@ -65,10 +101,10 @@ export default function StatTrackerAssignment() {
         setSelectedTrackers(currentAssignments);
 
       } catch (error) {
-        console.error('Error loading game or users:', error);
+        console.error('Error loading game or team members:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load game or users',
+          description: 'Failed to load game or team members',
           variant: 'destructive'
         });
       } finally {
@@ -76,12 +112,13 @@ export default function StatTrackerAssignment() {
       }
     };
 
-    loadGameAndUsers();
+    loadGameAndTeamMembers();
   }, [gameId, toast]);
 
   const handleTrackerAssignment = async () => {
     if (!gameId) return;
     setLoading(true);
+    setSaveSuccess(false);
 
     try {
       console.log('Starting stat tracker assignment process');
@@ -121,6 +158,7 @@ export default function StatTrackerAssignment() {
         }
       }
 
+      setSaveSuccess(true);
       toast({
         title: 'Success',
         description: 'Stat trackers assigned successfully'
@@ -177,9 +215,9 @@ export default function StatTrackerAssignment() {
                     className="w-full p-2 border rounded-md bg-background"
                   >
                     <option value="">Select Tracker</option>
-                    {users.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.name || user.email}
+                    {teamMembers.map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.name || member.email} {member.role ? `(${member.role})` : ''}
                       </option>
                     ))}
                   </select>
@@ -193,7 +231,7 @@ export default function StatTrackerAssignment() {
               size="lg"
               disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Assignments'}
+              {loading ? 'Saving...' : saveSuccess ? 'Saved Successfully' : 'Save Assignments'}
             </Button>
           </Card>
         </div>
