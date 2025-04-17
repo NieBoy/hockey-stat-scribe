@@ -1,4 +1,3 @@
-
 import {
   createBrowserRouter,
   RouterProvider,
@@ -75,6 +74,11 @@ function AppRoutes() {
       <Route path="/games/:id/track" element={
         <RequireAuth>
           <GameTracking />
+        </RequireAuth>
+      } />
+      <Route path="/games/:id/assign-trackers" element={
+        <RequireAuth>
+          <StatTrackerAssignment />
         </RequireAuth>
       } />
       <Route path="/teams" element={
