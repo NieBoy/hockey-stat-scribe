@@ -41,13 +41,16 @@ export const addPlayerToTeam = async (
 
     // Check if we need to create a new user record
     if (!playerData.email || !(await userExists(userId))) {
+      // Generate a placeholder email if none is provided
+      const userEmail = playerData.email || `player_${userId.split('-')[0]}@example.com`;
+      
       // Insert directly using RPC function to bypass RLS
       const { data: newUser, error: userError } = await supabase.rpc(
         'create_user_bypass_rls',
         { 
           user_id: userId,
           user_name: playerData.name,
-          user_email: playerData.email || null
+          user_email: userEmail
         }
       );
       
