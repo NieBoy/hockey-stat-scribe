@@ -43,7 +43,7 @@ export const getOrCreatePlayerUser = async (playerData: {
       }
     }
 
-    // If no existing user is found, we create one directly in the users table
+    // If no existing user is found, create a new one using the security definer function
     // First generate a unique ID using UUID v4
     const newUserId = crypto.randomUUID();
     
@@ -51,20 +51,21 @@ export const getOrCreatePlayerUser = async (playerData: {
     const email = playerData.email || 
       `player_${newUserId.substring(0, 8)}@example.com`;
     
-    console.log(`Creating new user directly in users table with ID ${newUserId} and email ${email}`);
+    console.log(`Creating new user with ID ${newUserId} and email ${email} using security definer function`);
     
-    // Insert directly into the users table
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: newUserId,
-        name: playerData.name,
-        email: email
-      });
+    // Use the security definer function to bypass RLS policies
+    const { data, error } = await supabase.rpc(
+      'create_user_bypass_rls',
+      {
+        user_id: newUserId,
+        user_name: playerData.name,
+        user_email: email
+      }
+    );
     
-    if (insertError) {
-      console.error("Error inserting user:", insertError);
-      throw insertError;
+    if (error) {
+      console.error("Error creating user with bypass function:", error);
+      throw error;
     }
     
     console.log("Successfully created new user with ID:", newUserId);

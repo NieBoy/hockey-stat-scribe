@@ -28,7 +28,7 @@ export const addPlayerToTeam = async (
     // Get or create user
     const userId = await getOrCreatePlayerUser(playerData);
     
-    // Double check the user exists in the database before proceeding
+    // Verify that the user exists in the database before proceeding
     const { data: userExists, error: checkError } = await supabase
       .from('users')
       .select('id')
@@ -49,13 +49,13 @@ export const addPlayerToTeam = async (
       playerData.number ? parseInt(playerData.number, 10) : null
     );
     
-    console.log(`Successfully added player ${playerData.name} to team ${teamId} in Supabase`);
+    console.log(`Successfully added player ${playerData.name} to team ${teamId}`);
     
     // Return a user object with the data we have
     return {
       id: userId,
       name: playerData.name,
-      email: playerData.email || `player_${userId.split('-')[0]}@example.com`,
+      email: playerData.email || `player_${userId.substring(0, 8)}@example.com`,
       role: ['player'],
       position: playerData.position as Position,
       number: playerData.number
