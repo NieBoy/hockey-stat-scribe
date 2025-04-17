@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -7,18 +8,20 @@ import { ChevronLeft, Save } from "lucide-react";
 import { mockGames } from "@/lib/mock-data";
 import { GameStat } from "@/types";
 import StatTracker from "@/components/stats/StatTracker";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TrackStats() {
   const { id } = useParams<{ id: string }>();
   const [gameStats, setGameStats] = useState<GameStat[]>([]);
+  const { user } = useAuth();
   
   // Find the game in mock data
   const game = mockGames.find(g => g.id === id) || mockGames[0];
   
   // Find which stat types this user is assigned to track
-  const userAssignment = game.statTrackers.find(
-    tracker => tracker.user.id === currentUser.id
-  );
+  const userAssignment = user ? game.statTrackers.find(
+    tracker => tracker.user.id === user.id
+  ) : undefined;
   
   const assignedStatTypes = userAssignment?.statTypes || [];
   
