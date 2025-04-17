@@ -12,7 +12,7 @@ export function useTeamData(teamId?: string) {
   });
 
   const teamQuery = teamId 
-    ? useQuery({
+    ? useQuery<Team | null>({
         queryKey: ['team', teamId],
         queryFn: () => getTeamById(teamId),
         enabled: !!teamId,
@@ -22,7 +22,7 @@ export function useTeamData(teamId?: string) {
         data: null,
         isLoading: false,
         error: null,
-        refetch: async () => ({ data: null })
+        refetch: async () => ({ data: null, isLoading: false, error: null })
       };
 
   return {
