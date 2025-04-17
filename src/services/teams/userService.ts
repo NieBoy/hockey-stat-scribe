@@ -50,16 +50,17 @@ export const getOrCreatePlayerUser = async (playerData: {
     const email = playerData.email || 
       `player_${userId.substring(0, 8)}@example.com`;
     
-    console.log(`Creating new user with ID ${userId} and email ${email}`);
+    console.log(`Creating new user with ID ${userId} and email ${email} using security definer function`);
     
-    // Insert directly into the users table
-    const { error } = await supabase
-      .from('users')
-      .insert({
-        id: userId,
-        name: playerData.name,
-        email: email
-      });
+    // Use the security definer function to create the user
+    const { data, error } = await supabase.rpc(
+      'create_user_bypass_rls',
+      {
+        user_id: userId,
+        user_name: playerData.name,
+        user_email: email
+      }
+    );
     
     if (error) {
       console.error("Error creating user:", error);
