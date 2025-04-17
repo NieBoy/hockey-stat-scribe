@@ -79,6 +79,11 @@ export default function TeamDetail() {
     );
   }
   
+  // This function will be passed to components that need to refresh team data
+  const handleTeamUpdate = () => {
+    refetchTeam();
+  };
+  
   return (
     <MainLayout>
       <div className="space-y-6">
