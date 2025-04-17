@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -11,7 +12,9 @@ import CoachesTabContent from "@/components/teams/CoachesTabContent";
 import StatsTabContent from "@/components/teams/StatsTabContent";
 import TeamMembersTable from "@/components/teams/TeamMembersTable";
 import { sendTeamInvitations } from "@/services/teams";
+import { deleteTeamMember } from "@/services/teams/teamMembershipService";
 import { toast } from "sonner";
+import { User } from "@/types";
 
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
