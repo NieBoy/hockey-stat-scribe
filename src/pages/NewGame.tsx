@@ -59,7 +59,11 @@ export default function NewGame() {
             <Button onClick={() => navigate("/teams/new")}>Create Team First</Button>
           </div>
         ) : (
-          <NewGameForm onSubmit={handleCreateGame} teams={teams || []} isSubmitting={loading} />
+          <NewGameForm 
+            onSubmit={handleCreateGame} 
+            teams={teams || []} 
+            isSubmitting={loading}
+          />
         )}
       </div>
     </MainLayout>

@@ -15,6 +15,8 @@ export const getPlayerStats = async (): Promise<PlayerStat[]> => {
 
   if (error) throw error;
   
+  if (!data) return [];
+  
   return data.map(stat => ({
     playerId: stat.player_id,
     statType: stat.stat_type as StatType,
@@ -36,6 +38,8 @@ export const getStatsByPlayerId = async (playerId: string): Promise<PlayerStat[]
     .eq('player_id', playerId);
 
   if (error) throw error;
+  
+  if (!data) return [];
   
   return data.map(stat => ({
     playerId: stat.player_id,

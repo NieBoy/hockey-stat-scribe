@@ -16,9 +16,10 @@ import { mockTeams } from "@/lib/mock-data";
 interface NewGameFormProps {
   onSubmit: (data: GameFormState) => void;
   teams: Team[];
+  isSubmitting?: boolean; // Added isSubmitting prop
 }
 
-export default function NewGameForm({ onSubmit, teams = mockTeams }: NewGameFormProps) {
+export default function NewGameForm({ onSubmit, teams = mockTeams, isSubmitting = false }: NewGameFormProps) {
   const [date, setDate] = useState<Date>(new Date());
   const [formData, setFormData] = useState<GameFormState>({
     date: new Date(),
@@ -147,7 +148,9 @@ export default function NewGameForm({ onSubmit, teams = mockTeams }: NewGameForm
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full">Create Game</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Game"}
+          </Button>
         </CardFooter>
       </form>
     </Card>

@@ -51,11 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
-      const { success, error } = await apiSignUp(email, password, name);
-      if (error) {
-        toast.error(error);
+      const success = await apiSignUp(email, password, name);
+      if (!success) {
+        toast.error("Failed to create account");
         return false;
       }
       

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hockey } from "lucide-react";
+import { PenTool } from "lucide-react"; // Changed from Hockey to PenTool
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SignIn() {
@@ -26,11 +26,8 @@ export default function SignIn() {
     setError(null);
 
     try {
-      const result = await signIn(email, password);
-      
-      if (result.error) {
-        setError(result.error);
-      }
+      await signIn(email, password);
+      // The redirect is handled in the useAuth hook
     } catch (err) {
       setError("An unexpected error occurred.");
       console.error(err);
@@ -44,7 +41,7 @@ export default function SignIn() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-2">
-            <Hockey className="h-12 w-12 text-primary" />
+            <PenTool className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Sign in to your account</CardTitle>
           <CardDescription className="text-center">

@@ -40,8 +40,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
     email: data.email,
     role: roles,
     teams: teamMembers?.map(tm => ({
-      id: tm.teams.id,
-      name: tm.teams.name,
+      id: tm.teams?.id || '',
+      name: tm.teams?.name || '',
       organizationId: '',
       players: [],
       coaches: [],
@@ -74,13 +74,13 @@ export const signUp = async (
   email: string,
   password: string,
   name: string
-): Promise<{ success: boolean; error: string | null }> => {
+): Promise<boolean> => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return false;
   
   if (data.user) {
     // Create the user in our users table
@@ -93,7 +93,7 @@ export const signUp = async (
       });
       
     if (createError) {
-      return { success: false, error: createError.message };
+      return false;
     }
     
     // Give default role
@@ -104,10 +104,10 @@ export const signUp = async (
         role: 'player'
       });
       
-    return { success: true, error: null };
+    return true;
   }
   
-  return { success: false, error: 'Failed to sign up' };
+  return false;
 };
 
 export const signOut = async (): Promise<void> => {

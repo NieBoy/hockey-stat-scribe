@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Team, User, Position, ForwardLine, DefenseLine, Lines } from "@/types";
@@ -10,9 +11,10 @@ import { Link } from "react-router-dom";
 interface TeamLineupEditorProps {
   team: Team;
   onSaveLineup: (lines: Lines) => void;
+  isSaving?: boolean; // Added isSaving prop
 }
 
-export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEditorProps) {
+export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false }: TeamLineupEditorProps) {
   const [lines, setLines] = useState<Lines>({
     forwards: [{ lineNumber: 1, leftWing: null, center: null, rightWing: null }],
     defense: [{ lineNumber: 1, leftDefense: null, rightDefense: null }],
@@ -257,9 +259,9 @@ export default function TeamLineupEditor({ team, onSaveLineup }: TeamLineupEdito
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">{team.name} - Lineup Editor</h2>
-          <Button onClick={handleSaveLineup} className="gap-2">
+          <Button onClick={handleSaveLineup} className="gap-2" disabled={isSaving}>
             <Save className="h-4 w-4" />
-            Save Lineup
+            {isSaving ? "Saving..." : "Save Lineup"}
           </Button>
         </div>
         
