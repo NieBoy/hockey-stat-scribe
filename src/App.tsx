@@ -3,6 +3,9 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
+  BrowserRouter,
+  Routes,
+  Route,
 } from "react-router-dom";
 import Index from "@/pages/Index";
 import Profile from "@/pages/Profile";
@@ -13,7 +16,7 @@ import TeamDetail from "@/pages/TeamDetail";
 import NewGame from "@/pages/NewGame";
 import GameDetail from "@/pages/GameDetail";
 import TrackStats from "@/pages/TrackStats";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import GameTracking from "@/pages/GameTracking";
@@ -38,91 +41,65 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children;
 }
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Index />,
-  },
-  {
-    path: "/signin",
-    element: <SignIn />,
-  },
-  {
-    path: "/signup",
-    element: <SignUp />,
-  },
-  {
-    path: "/profile",
-    element: (
-      <RequireAuth>
-        <Profile />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/games",
-    element: (
-      <RequireAuth>
-        <Games />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/games/new",
-    element: (
-      <RequireAuth>
-        <NewGame />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/games/:id",
-    element: (
-      <RequireAuth>
-        <GameDetail />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/games/:id/track",
-    element: (
-      <RequireAuth>
-        <GameTracking />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/teams",
-    element: (
-      <RequireAuth>
-        <Teams />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/teams/new",
-    element: (
-      <RequireAuth>
-        <TeamCreate />
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/teams/:id",
-    element: (
-      <RequireAuth>
-        <TeamDetail />
-      </RequireAuth>
-    ),
-  },
-]);
+// Define all the routes
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/profile" element={
+        <RequireAuth>
+          <Profile />
+        </RequireAuth>
+      } />
+      <Route path="/games" element={
+        <RequireAuth>
+          <Games />
+        </RequireAuth>
+      } />
+      <Route path="/games/new" element={
+        <RequireAuth>
+          <NewGame />
+        </RequireAuth>
+      } />
+      <Route path="/games/:id" element={
+        <RequireAuth>
+          <GameDetail />
+        </RequireAuth>
+      } />
+      <Route path="/games/:id/track" element={
+        <RequireAuth>
+          <GameTracking />
+        </RequireAuth>
+      } />
+      <Route path="/teams" element={
+        <RequireAuth>
+          <Teams />
+        </RequireAuth>
+      } />
+      <Route path="/teams/new" element={
+        <RequireAuth>
+          <TeamCreate />
+        </RequireAuth>
+      } />
+      <Route path="/teams/:id" element={
+        <RequireAuth>
+          <TeamDetail />
+        </RequireAuth>
+      } />
+    </Routes>
+  );
+}
 
 function App() {
   return (
-    <>
-      <RouterProvider router={router} />
-      <Toaster />
-    </>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+        <Toaster />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

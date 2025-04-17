@@ -2,7 +2,6 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { AuthProvider } from "@/hooks/useAuth";
 
 const rootElement = document.getElementById("root");
 
@@ -12,8 +11,4 @@ if (!rootElement) {
 }
 
 const root = createRoot(rootElement);
-root.render(
-  <AuthProvider>
-    <App />
-  </AuthProvider>
-);
+root.render(<App />);
