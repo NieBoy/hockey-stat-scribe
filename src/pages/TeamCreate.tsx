@@ -41,26 +41,32 @@ export default function TeamCreate() {
   });
 
   const onSubmit = async (data: TeamFormValues) => {
+    if (!user) {
+      toast.error("You must be logged in to create a team");
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const teamData = {
         name: data.name
       };
       
-      // In a real app, we would save to database here
-      await createTeam(teamData);
+      console.log("Creating team:", teamData);
+      const newTeam = await createTeam(teamData);
+      console.log("Team created response:", newTeam);
       
       // Force refresh the teams data
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      await queryClient.invalidateQueries({ queryKey: ['teams'] });
       
       toast.success("Team created successfully", {
         description: `${data.name} has been added`,
       });
       
-      // Navigate to profile page after successful team creation
+      // Immediately navigate to teams page to show the new team
       setTimeout(() => {
-        navigate(`/profile`);
-      }, 1000);
+        navigate(`/teams`);
+      }, 500);
     } catch (error) {
       console.error("Error creating team:", error);
       toast.error("Failed to create team", {

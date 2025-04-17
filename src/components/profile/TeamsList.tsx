@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { Team } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, User } from "lucide-react";
+import { Plus, Users, User, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 interface TeamsListProps {
   teams: Team[];
@@ -11,42 +13,76 @@ interface TeamsListProps {
 }
 
 export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  
+  // Auto refresh data on mount
+  useEffect(() => {
+    refreshTeams();
+  }, []);
+
+  const refreshTeams = async () => {
+    try {
+      setIsRefreshing(true);
+      await queryClient.invalidateQueries({ queryKey: ['teams'] });
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error("Failed to refresh teams:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const displayTeams = teams?.filter(Boolean) || [];
+  
   return (
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Teams</h2>
-        {(isAdmin || teams.length > 0) && (
-          <Button asChild>
-            <Link to="/teams/new">
-              <Plus className="mr-2 h-4 w-4" /> Add Team
-            </Link>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={refreshTeams}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
-        )}
+          {(isAdmin || displayTeams.length > 0) && (
+            <Button asChild>
+              <Link to="/teams/new">
+                <Plus className="mr-2 h-4 w-4" /> Add Team
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
       
-      {teams.length > 0 ? (
+      {displayTeams.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teams.map((team) => (
-            <Card key={team.id}>
+          {displayTeams.map((team) => (
+            <Card key={team.id} className="transition-all hover:shadow-md">
               <CardHeader className="pb-2">
                 <CardTitle>{team.name}</CardTitle>
                 <CardDescription>
-                  {team.players.length} players, {team.coaches.length} coaches
+                  {team.players?.length || 0} players, {team.coaches?.length || 0} coaches
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{team.players.length} Players</span>
+                    <span>{team.players?.length || 0} Players</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{team.coaches.length} Coaches</span>
+                    <span>{team.coaches?.length || 0} Coaches</span>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex gap-2">
                 <Button variant="outline" className="w-full" asChild>
                   <Link to={`/teams/${team.id}`}>View Team</Link>
                 </Button>

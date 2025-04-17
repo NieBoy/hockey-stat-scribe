@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/services/teams";
 import { useState, useEffect } from "react";
 import { Team, User } from "@/types";
+import { toast } from "sonner";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -26,8 +27,30 @@ export default function Profile() {
     // Force refetch when the component mounts
     refetchOnMount: true,
     // Refresh teams data when this component is active
-    refetchInterval: 3000
+    refetchInterval: 2000,
+    // Add retry logic for more resilience
+    retry: 3,
+    retryDelay: 1000,
+    // Better error handling
+    onError: (error) => {
+      console.error("Failed to fetch teams:", error);
+      toast.error("Failed to load teams data");
+    }
   });
+
+  // Manually refresh data when the component mounts or tab changes
+  useEffect(() => {
+    const refreshData = async () => {
+      console.log("Manual data refresh triggered");
+      try {
+        await refetch();
+      } catch (e) {
+        console.error("Manual refresh error:", e);
+      }
+    };
+    
+    refreshData();
+  }, [refetch, activeTab]);
 
   useEffect(() => {
     console.log("Profile loaded with user:", user);
@@ -41,6 +64,7 @@ export default function Profile() {
     if (teams && teams.length > 0) {
       const playersFromTeams: User[] = [];
       teams.forEach(team => {
+        console.log(`Processing team ${team.name} with ${team.players?.length || 0} players`);
         if (team.players && team.players.length > 0) {
           team.players.forEach(player => {
             // Add team information to player
@@ -60,6 +84,9 @@ export default function Profile() {
       });
       setAllPlayers(playersFromTeams);
       console.log("All players extracted:", playersFromTeams);
+    } else {
+      console.log("No teams available or teams is empty");
+      setAllPlayers([]);
     }
   }, [user, teams, teamsError]);
 
@@ -81,28 +108,28 @@ export default function Profile() {
   // Get teams for the current user
   const userTeams = teams.filter(team => {
     console.log("Filtering team:", team.id, team.name);
-    console.log("Team coaches:", team.coaches.map(c => c.id));
+    console.log("Team coaches:", team.coaches?.map(c => c.id));
     
     // Admin can see all teams
     if (isAdmin) return true;
     
     // Coach can see teams they coach
     if (isCoach) {
-      const isCoaching = team.coaches.some(coach => coach.id === user.id);
+      const isCoaching = team.coaches?.some(coach => coach.id === user.id);
       console.log("Is coaching this team:", isCoaching, "user.id:", user.id);
       return isCoaching;
     }
     
     // Player can see teams they play in
     if (isPlayer) {
-      const isPlaying = team.players.some(player => player.id === user.id);
+      const isPlaying = team.players?.some(player => player.id === user.id);
       console.log("Is player in this team:", isPlaying);
       return isPlaying;
     }
     
     // Parent can see teams their children play in
     if (isParent) {
-      const isParentInTeam = team.parents.some(parent => parent.id === user.id);
+      const isParentInTeam = team.parents?.some(parent => parent.id === user.id);
       console.log("Is parent in this team:", isParentInTeam);
       return isParentInTeam;
     }
@@ -150,16 +177,6 @@ export default function Profile() {
           )}
           {(isAdmin || isCoach || isParent) && (
             <TabsContent value="players" className="py-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Players</h2>
-                {(isAdmin || isCoach) && (
-                  <Button asChild>
-                    <Link to="/teams">
-                      <Plus className="mr-2 h-4 w-4" /> Add Player to Team
-                    </Link>
-                  </Button>
-                )}
-              </div>
               <PlayersList 
                 players={allPlayers} 
                 isParent={isParent} 
