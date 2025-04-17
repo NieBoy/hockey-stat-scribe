@@ -13,8 +13,7 @@ export const addTeamMember = async (
     email?: string,
     role?: string,
     position?: string,
-    lineNumber?: number | null,
-    userId?: string | null
+    lineNumber?: number | null
   }
 ): Promise<string> => {
   try {
@@ -29,7 +28,7 @@ export const addTeamMember = async (
       .insert({
         id: memberId,
         team_id: teamId,
-        user_id: memberData.userId || null, // This will be null for players without accounts
+        user_id: null, // This will be null for players without accounts
         role: memberData.role || 'player',
         position: memberData.position || null,
         line_number: memberData.lineNumber,

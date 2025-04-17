@@ -166,8 +166,10 @@ export type Database = {
       team_members: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           line_number: number | null
+          name: string | null
           position: string | null
           role: string | null
           team_id: string
@@ -175,8 +177,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           line_number?: number | null
+          name?: string | null
           position?: string | null
           role?: string | null
           team_id: string
@@ -184,8 +188,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           line_number?: number | null
+          name?: string | null
           position?: string | null
           role?: string | null
           team_id?: string
