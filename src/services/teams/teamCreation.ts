@@ -61,13 +61,13 @@ export const createTeam = async (teamData: {
     } catch (supabaseError) {
       console.log("Using mock implementation due to Supabase error");
       
-      // Mock implementation as fallback
-      // Generate a unique ID for the team
-      const newTeamId = `team-${Date.now()}`;
+      // Mock implementation as fallback - Use UUID format for better compatibility
+      // Generate a UUID-like string that will be compatible with our filtering
+      const mockUUID = crypto.randomUUID ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       
       // Create a new team object
       const newTeam: Team = {
-        id: newTeamId,
+        id: mockUUID,
         name: teamData.name,
         players: [],
         coaches: [],

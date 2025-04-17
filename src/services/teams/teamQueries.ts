@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { Team, User, Position, UserRole } from "@/types";
 import { mockTeams } from "@/lib/mock-data";
@@ -99,6 +98,16 @@ export const getTeams = async (): Promise<Team[]> => {
 
 export const getTeamById = async (id: string): Promise<Team | null> => {
   try {
+    // Check if the ID appears to be a mock ID (from mock data)
+    const isMockId = id.startsWith('team-');
+    
+    if (isMockId) {
+      console.log(`ID ${id} appears to be a mock ID, using mock data`);
+      const mockTeam = mockTeams.find(t => t.id === id);
+      return mockTeam || null;
+    }
+    
+    // Otherwise try to fetch from Supabase
     const { data, error } = await supabase
       .from('teams')
       .select(`

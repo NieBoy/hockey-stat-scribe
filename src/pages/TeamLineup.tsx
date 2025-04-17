@@ -36,7 +36,8 @@ export default function TeamLineup() {
       <MainLayout>
         <div className="space-y-6">
           <h1 className="text-3xl font-bold tracking-tight mb-1">Team Not Found</h1>
-          <p>The team you're looking for doesn't exist.</p>
+          <p>The team you're looking for doesn't exist or there was an error loading it.</p>
+          <p className="text-sm text-red-500">{error instanceof Error ? error.message : 'Unknown error'}</p>
           <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
         </div>
       </MainLayout>
