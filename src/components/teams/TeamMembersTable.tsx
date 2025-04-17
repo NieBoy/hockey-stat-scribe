@@ -1,19 +1,9 @@
 
-import { useState } from "react";
 import { User, Team } from "@/types";
-import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useTeamMembers } from "@/hooks/teams/useTeamMembers";
 import { TableHeader } from "./members/TableHeader";
 import { MembersTableContent } from "./members/MembersTableContent";
+import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -28,64 +18,20 @@ const TeamMembersTable = ({
   onEditMember,
   onRemoveMember
 }: TeamMembersTableProps) => {
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
-  const [allMembers, setAllMembers] = useState([
-    ...(team.players || []),
-    ...(team.coaches || []),
-    ...(team.parents || [])
-  ]);
+  const {
+    selectedMembers,
+    memberToDelete,
+    allMembers,
+    handleSelectMember,
+    handleSelectAll,
+    handleDeleteConfirm,
+    handleDelete,
+    setMemberToDelete
+  } = useTeamMembers(team, () => onRemoveMember?.(memberToDelete!));
   
-  const handleSelectMember = (memberId: string) => {
-    setSelectedMembers(prev => {
-      if (prev.includes(memberId)) {
-        return prev.filter(id => id !== memberId);
-      } else {
-        return [...prev, memberId];
-      }
-    });
-  };
-
   const handleSendInvitations = () => {
-    if (selectedMembers.length === 0) {
-      toast.error("No members selected");
-      return;
-    }
-    
     if (onSendInvitations) {
       onSendInvitations(selectedMembers);
-    }
-  };
-
-  const handleDeleteConfirm = (member: User) => {
-    setMemberToDelete(member);
-  };
-  
-  const handleDelete = async () => {
-    if (memberToDelete && onRemoveMember) {
-      // Optimistically remove the member from the local state
-      setAllMembers(prev => prev.filter(m => m.id !== memberToDelete.id));
-      
-      // Call the parent handler
-      await onRemoveMember(memberToDelete);
-      
-      // Clear selected member if they were selected
-      setSelectedMembers(prev => prev.filter(id => id !== memberToDelete.id));
-      
-      // Clear the deletion state
-      setMemberToDelete(null);
-      
-      // Show success message
-      toast.success(`${memberToDelete.name} has been removed from the team`);
-    }
-  };
-  
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allMemberIds = allMembers.map(m => m.id);
-      setSelectedMembers(allMemberIds);
-    } else {
-      setSelectedMembers([]);
     }
   };
   
@@ -105,33 +51,13 @@ const TeamMembersTable = ({
         onDelete={handleDeleteConfirm}
       />
 
-      <AlertDialog 
-        open={!!memberToDelete} 
-        onOpenChange={(open) => !open && setMemberToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete {memberToDelete?.name} from the team.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMemberToDelete(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteMemberDialog
+        member={memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
-}
+};
 
 export default TeamMembersTable;
