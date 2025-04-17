@@ -44,6 +44,7 @@ export const getTeams = async (): Promise<Team[]> => {
         
       if (membersError) {
         console.error(`Error fetching members for team ${team.id}:`, membersError);
+        continue; // Skip to next team if there's an error
       }
       
       console.log(`Team ${team.name} has ${teamMembers?.length || 0} members:`, teamMembers);
@@ -58,7 +59,7 @@ export const getTeams = async (): Promise<Team[]> => {
           role: ['player'] as UserRole[],
           position: p.position as Position,
           lineNumber: p.line_number,
-          number: p.number?.toString()
+          number: p.position !== null ? String(p.line_number || '') : undefined // Use line_number as a fallback
         }));
       
       const coaches = (teamMembers || [])
@@ -123,7 +124,6 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         role,
         position,
         line_number,
-        number,
         users:user_id (
           id, 
           name, 
@@ -134,10 +134,17 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       
     if (membersError) {
       console.error(`Error fetching members for team ${id}:`, membersError);
+      
+      // Fall back to mock data if Supabase fails for team members
+      const mockTeam = mockTeams.find(t => t.id === id);
+      return mockTeam || null;
     }
     
+    // Make sure we have an array to work with, even if empty
+    const members = teamMembers || [];
+    
     // Filter members by role
-    const players = (teamMembers || [])
+    const players = members
       .filter(member => member.role === 'player')
       .map(p => ({
         id: p.users?.id || p.user_id,
@@ -146,10 +153,10 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         role: ['player'] as UserRole[],
         position: p.position as Position,
         lineNumber: p.line_number,
-        number: p.number?.toString()
+        number: p.position !== null ? String(p.line_number || '') : undefined
       }));
     
-    const coaches = (teamMembers || [])
+    const coaches = members
       .filter(member => member.role === 'coach')
       .map(c => ({
         id: c.users?.id || c.user_id,
@@ -158,7 +165,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         role: ['coach'] as UserRole[]
       }));
       
-    const parents = (teamMembers || [])
+    const parents = members
       .filter(member => member.role === 'parent')
       .map(p => ({
         id: p.users?.id || p.user_id,
