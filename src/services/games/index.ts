@@ -63,38 +63,39 @@ export const getGameById = async (id: string): Promise<Game | null> => {
       return null;
     }
     
-    // Since we're using .single() in fetchGameWithTeams for a specific ID,
-    // data should be a GameDbResponse object, not an array
+    // The data is definitely a single GameDbResponse, not an array
+    // thanks to the .single() in fetchGameWithTeams
+    const gameData = data as GameDbResponse;
     
     // Get team members for both teams
     const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      fetchTeamMembers(data.home_team.id),
-      fetchTeamMembers(data.away_team.id)
+      fetchTeamMembers(gameData.home_team.id),
+      fetchTeamMembers(gameData.away_team.id)
     ]);
     
     // Transform the team data
     const homeTeam = transformTeamData(
-      data.home_team.id,
-      data.home_team.name,
+      gameData.home_team.id,
+      gameData.home_team.name,
       homeTeamMembers
     );
     
     const awayTeam = transformTeamData(
-      data.away_team.id,
-      data.away_team.name,
+      gameData.away_team.id,
+      gameData.away_team.name,
       awayTeamMembers
     );
     
     return {
-      id: data.id,
-      date: new Date(data.date),
+      id: gameData.id,
+      date: new Date(gameData.date),
       homeTeam,
       awayTeam,
-      location: data.location,
+      location: gameData.location,
       statTrackers: [],
-      periods: data.periods,
-      currentPeriod: data.current_period,
-      isActive: data.is_active,
+      periods: gameData.periods,
+      currentPeriod: gameData.current_period,
+      isActive: gameData.is_active,
       stats: []
     };
   } catch (error) {
@@ -124,35 +125,38 @@ export const createGame = async (gameData: {
       return null;
     }
     
+    // The response is a single game, not an array
+    const gameResponse = data as GameDbResponse;
+    
     // Get team members for both teams
     const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      fetchTeamMembers(data.home_team.id),
-      fetchTeamMembers(data.away_team.id)
+      fetchTeamMembers(gameResponse.home_team.id),
+      fetchTeamMembers(gameResponse.away_team.id)
     ]);
     
     // Transform the team data
     const homeTeam = transformTeamData(
-      data.home_team.id,
-      data.home_team.name,
+      gameResponse.home_team.id,
+      gameResponse.home_team.name,
       homeTeamMembers
     );
     
     const awayTeam = transformTeamData(
-      data.away_team.id,
-      data.away_team.name,
+      gameResponse.away_team.id,
+      gameResponse.away_team.name,
       awayTeamMembers
     );
     
     return {
-      id: data.id,
-      date: new Date(data.date),
+      id: gameResponse.id,
+      date: new Date(gameResponse.date),
       homeTeam,
       awayTeam,
-      location: data.location,
+      location: gameResponse.location,
       statTrackers: [],
-      periods: data.periods,
-      currentPeriod: data.current_period,
-      isActive: data.is_active,
+      periods: gameResponse.periods,
+      currentPeriod: gameResponse.current_period,
+      isActive: gameResponse.is_active,
       stats: []
     };
   } catch (error) {
