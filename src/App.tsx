@@ -1,3 +1,4 @@
+
 import {
   createBrowserRouter,
   RouterProvider,
@@ -18,17 +19,17 @@ import { Toaster } from "@/components/ui/toaster"
 import GameTracking from "@/pages/GameTracking";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    console.log('Auth State:', { isAuthenticated, isLoading });
-  }, [isAuthenticated, isLoading]);
+    console.log('Auth State:', { user, loading });
+  }, [user, loading]);
 
-  if (isLoading) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/" />;
   }
 
