@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 import { getOrCreatePlayerUser, updateUserInfo } from "./userService";
@@ -24,8 +25,8 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Create or get the user
-    console.log("Creating or fetching player user with redesigned approach...");
+    // Create or get the user with our improved method
+    console.log("Creating or fetching player user with RLS bypass...");
     const userId = await getOrCreatePlayerUser(playerData);
     
     if (!userId) {
@@ -34,7 +35,7 @@ export const addPlayerToTeam = async (
     
     console.log(`Received user ID ${userId}, adding as team member...`);
     
-    // Add the team member - we'll simplify this flow and add error handling
+    // Add the team member
     try {
       await addTeamMember(
         teamId, 

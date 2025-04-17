@@ -55,6 +55,8 @@ export const addTeamMember = async (
         } else if (teamMemberError.message.includes('team_members_team_id_fkey')) {
           throw new Error(`Cannot add player to team: Team ID ${teamId} does not exist`);
         }
+      } else if (teamMemberError.message.includes('violates row-level security policy')) {
+        throw new Error(`Row level security prevented adding team member. Please check permissions.`);
       }
       
       throw new Error(`Failed to add team member: ${teamMemberError.message}`);

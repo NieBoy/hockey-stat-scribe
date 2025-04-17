@@ -22,7 +22,7 @@ export const userExists = async (userId: string): Promise<boolean> => {
 
 /**
  * Gets or creates a user for a player
- * Uses a new approach that doesn't rely on auth.users
+ * Uses security definer function to bypass RLS
  */
 export const getOrCreatePlayerUser = async (playerData: {
   name: string;
@@ -44,50 +44,23 @@ export const getOrCreatePlayerUser = async (playerData: {
       }
     }
 
-    // Generate a random user ID - this is the key change from before
+    // Generate a random user ID
     const newUserId = crypto.randomUUID();
     console.log("Generated new user ID:", newUserId);
     
-    // Create a minimal user without relying on auth.users
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: newUserId,
-        name: playerData.name,
-        email: playerData.email || `player_${newUserId.substring(0, 8)}@example.com`
-      });
-
-    if (insertError) {
-      console.error("Error inserting new user:", insertError);
-      
-      // If there's a foreign key constraint issue, we need to handle it differently
-      if (insertError.code === '23503' && insertError.message.includes('users_id_fkey')) {
-        console.log("Direct insertion failed due to foreign key constraint. Using alternate approach...");
-        
-        // Let's try with the authenticated user creating the record instead
-        const { data: authData } = await supabase.auth.getSession();
-        if (!authData.session) {
-          throw new Error("Cannot create player user: No authenticated session available");
-        }
-        
-        // Try using the RPC function as a fallback
-        const { data: rpcResult, error: rpcError } = await supabase.rpc(
-          'create_player_user',
-          { 
-            player_name: playerData.name,
-            player_email: playerData.email || null
-          }
-        );
-        
-        if (rpcError) {
-          console.error("Error with RPC function:", rpcError);
-          throw rpcError;
-        }
-        
-        return rpcResult;
+    // Use the RLS bypass function to create the user
+    const { data, error } = await supabase.rpc(
+      'create_user_bypass_rls',
+      { 
+        user_id: newUserId,
+        user_name: playerData.name,
+        user_email: playerData.email || `player_${newUserId.substring(0, 8)}@example.com`
       }
-      
-      throw insertError;
+    );
+    
+    if (error) {
+      console.error("Error creating user with bypass function:", error);
+      throw error;
     }
     
     console.log("Successfully created user with ID:", newUserId);
