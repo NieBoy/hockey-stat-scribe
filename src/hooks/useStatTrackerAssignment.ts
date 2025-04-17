@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { fetchGameWithTeams } from '@/services/games/queries';
+import { useAuth } from '@/hooks/useAuth';
 
 export type StatAssignment = {
   [key: string]: string | null;
@@ -15,6 +16,7 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadGameAndTeamMembers = async () => {
@@ -104,18 +106,32 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
   }, [gameId, toast]);
 
   const handleTrackerAssignment = async () => {
-    if (!gameId) return;
+    if (!gameId || !user) {
+      toast({
+        title: 'Error',
+        description: 'User must be logged in to assign stat trackers',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     setLoading(true);
     setSaveSuccess(false);
 
     try {
+      console.log('Current user ID:', user.id);
+      console.log('Selected trackers:', selectedTrackers);
+      
       // Delete existing assignments
       const { error: deleteError } = await supabase
         .from('stat_trackers')
         .delete()
         .eq('game_id', gameId);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        throw deleteError;
+      }
       
       // Prepare new assignments
       const trackersToInsert = Object.entries(selectedTrackers)
@@ -123,15 +139,21 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         .map(([statType, userId]) => ({
           game_id: gameId,
           user_id: userId,
-          stat_type: statType
+          stat_type: statType,
+          created_at: new Date().toISOString()
         }));
+      
+      console.log('Inserting trackers:', trackersToInsert);
       
       if (trackersToInsert.length > 0) {
         const { error } = await supabase
           .from('stat_trackers')
           .insert(trackersToInsert);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
       }
 
       setSaveSuccess(true);
@@ -143,7 +165,7 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
       console.error('Error in handleTrackerAssignment:', error);
       toast({
         title: 'Error',
-        description: 'Failed to assign stat trackers',
+        description: 'Failed to assign stat trackers. Please check console for details.',
         variant: 'destructive'
       });
     } finally {
