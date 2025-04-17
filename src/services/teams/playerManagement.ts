@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 
@@ -21,12 +20,13 @@ export const addPlayerToTeam = async (
     if (!currentUserId) {
       throw new Error("User must be authenticated to add players to a team");
     }
-
-    // Generate a new UUID for the user
-    let userId = crypto.randomUUID() as `${string}-${string}-${string}-${string}-${string}`;
     
-    // First check if a user with this email already exists (if email provided)
+    // First, create a new user in the auth schema through a signup if email is provided
+    // Otherwise, create a record directly in the public.users table
+    let userId: string;
+    
     if (playerData.email) {
+      // Check if a user with this email already exists
       const { data: existingUsers } = await supabase
         .from('users')
         .select('id')
@@ -34,32 +34,48 @@ export const addPlayerToTeam = async (
         .maybeSingle();
       
       if (existingUsers) {
-        userId = existingUsers.id as `${string}-${string}-${string}-${string}-${string}`;
+        userId = existingUsers.id;
         console.log(`User with email ${playerData.email} already exists with ID ${userId}`);
-      }
-    }
-
-    // Check if we need to create a new user record
-    if (!playerData.email || !(await userExists(userId))) {
-      // Generate a placeholder email if none is provided
-      const userEmail = playerData.email || `player_${userId.split('-')[0]}@example.com`;
-      
-      // Insert directly using RPC function to bypass RLS
-      const { data: newUser, error: userError } = await supabase.rpc(
-        'create_user_bypass_rls',
-        { 
-          user_id: userId,
-          user_name: playerData.name,
-          user_email: userEmail
+      } else {
+        // Create a new user record directly in the users table
+        // Generate a random UUID for the user
+        userId = crypto.randomUUID();
+        
+        // Insert the user
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            name: playerData.name,
+            email: playerData.email
+          });
+        
+        if (userError) {
+          console.error("Error creating user:", userError);
+          throw userError;
         }
-      );
+        
+        console.log("Created new user with email:", userId);
+      }
+    } else {
+      // No email provided, create a user with a placeholder email
+      userId = crypto.randomUUID();
+      const placeholderEmail = `player_${userId.split('-')[0]}@example.com`;
+      
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          name: playerData.name,
+          email: placeholderEmail
+        });
       
       if (userError) {
-        console.error("Error creating user:", userError);
+        console.error("Error creating user with placeholder email:", userError);
         throw userError;
       }
       
-      console.log("Created new user:", newUser);
+      console.log("Created new user with placeholder email:", userId);
     }
     
     // Now add the team member
@@ -85,7 +101,7 @@ export const addPlayerToTeam = async (
     return {
       id: userId,
       name: playerData.name,
-      email: playerData.email,
+      email: playerData.email || `player_${userId.split('-')[0]}@example.com`,
       role: ['player'],
       position: playerData.position as Position,
       number: playerData.number
