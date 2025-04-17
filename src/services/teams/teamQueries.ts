@@ -24,7 +24,7 @@ export const getTeams = async (): Promise<Team[]> => {
     const teams: Team[] = [];
     
     for (const team of teamsData || []) {
-      // Get all team members with their user details
+      // Get all team members with their user details if they exist
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
         .select(`
@@ -33,6 +33,8 @@ export const getTeams = async (): Promise<Team[]> => {
           role,
           position,
           line_number,
+          name,
+          email,
           users:user_id (
             id, 
             name, 
@@ -50,11 +52,11 @@ export const getTeams = async (): Promise<Team[]> => {
       
       // Filter members by role
       const players = (teamMembers || [])
-        .filter(member => member.role === 'player' && member.users)
+        .filter(member => member.role === 'player')
         .map(p => ({
-          id: p.user_id,
-          name: p.users?.name || 'Unknown Player',
-          email: p.users?.email,
+          id: p.id, // Use the team_member id directly
+          name: p.name || p.users?.name || 'Unknown Player',
+          email: p.email || p.users?.email,
           role: ['player'] as UserRole[],
           position: p.position as Position,
           lineNumber: p.line_number,
@@ -62,20 +64,20 @@ export const getTeams = async (): Promise<Team[]> => {
         }));
       
       const coaches = (teamMembers || [])
-        .filter(member => member.role === 'coach' && member.users)
+        .filter(member => member.role === 'coach')
         .map(c => ({
-          id: c.user_id,
-          name: c.users?.name || 'Unknown Coach',
-          email: c.users?.email,
+          id: c.id, // Use the team_member id directly
+          name: c.name || c.users?.name || 'Unknown Coach',
+          email: c.email || c.users?.email,
           role: ['coach'] as UserRole[]
         }));
         
       const parents = (teamMembers || [])
-        .filter(member => member.role === 'parent' && member.users)
+        .filter(member => member.role === 'parent')
         .map(p => ({
-          id: p.user_id,
-          name: p.users?.name || 'Unknown Parent',
-          email: p.users?.email,
+          id: p.id, // Use the team_member id directly
+          name: p.name || p.users?.name || 'Unknown Parent',
+          email: p.email || p.users?.email,
           role: ['parent'] as UserRole[]
         }));
       
@@ -112,7 +114,7 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       throw error;
     }
     
-    // Get all team members with their user details
+    // Get all team members with their user details if they exist
     const { data: teamMembers, error: membersError } = await supabase
       .from('team_members')
       .select(`
@@ -121,6 +123,8 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         role,
         position,
         line_number,
+        name,
+        email,
         users:user_id (
           id, 
           name, 
@@ -141,11 +145,11 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     
     // Filter members by role
     const players = members
-      .filter(member => member.role === 'player' && member.users)
+      .filter(member => member.role === 'player')
       .map(p => ({
-        id: p.user_id,
-        name: p.users?.name || 'Unknown Player',
-        email: p.users?.email,
+        id: p.id, // Use the team_member id directly
+        name: p.name || p.users?.name || 'Unknown Player',
+        email: p.email || p.users?.email,
         role: ['player'] as UserRole[],
         position: p.position as Position,
         lineNumber: p.line_number,
@@ -153,20 +157,20 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       }));
     
     const coaches = members
-      .filter(member => member.role === 'coach' && member.users)
+      .filter(member => member.role === 'coach')
       .map(c => ({
-        id: c.user_id,
-        name: c.users?.name || 'Unknown Coach',
-        email: c.users?.email,
+        id: c.id, // Use the team_member id directly
+        name: c.name || c.users?.name || 'Unknown Coach',
+        email: c.email || c.users?.email,
         role: ['coach'] as UserRole[]
       }));
       
     const parents = members
-      .filter(member => member.role === 'parent' && member.users)
+      .filter(member => member.role === 'parent')
       .map(p => ({
-        id: p.user_id,
-        name: p.users?.name || 'Unknown Parent',
-        email: p.users?.email,
+        id: p.id, // Use the team_member id directly
+        name: p.name || p.users?.name || 'Unknown Parent',
+        email: p.email || p.users?.email,
         role: ['parent'] as UserRole[]
       }));
     
