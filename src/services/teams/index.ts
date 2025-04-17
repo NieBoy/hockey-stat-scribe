@@ -4,7 +4,13 @@
 
 import { getTeams, getTeamById } from './teamQueries';
 import { createTeam } from './teamCreation';
-import { addPlayerToTeam, removePlayerFromTeam, getTeamMembers, updatePlayerInfo, sendTeamInvitations } from './playerManagement';
+import { 
+  addPlayerToTeam, 
+  removePlayerFromTeam, 
+  getTeamMembers, 
+  updatePlayerInfo, 
+  sendTeamInvitations 
+} from './playerManagement';
 import { updateTeamLineup } from './lineupManagement';
 
 export {

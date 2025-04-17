@@ -1,5 +1,9 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
+import { getOrCreatePlayerUser, updateUserInfo } from "./userService";
+import { addTeamMember, removeTeamMember, updateTeamMemberInfo, getTeamMembers as fetchTeamMembers } from "./teamMembershipService";
+import { sendTeamInvitations as sendInvitations } from "./invitationService";
 
 export const addPlayerToTeam = async (
   teamId: string,
@@ -21,67 +25,17 @@ export const addPlayerToTeam = async (
       throw new Error("User must be authenticated to add players to a team");
     }
     
-    // Use our new SQL function to create a user (or get existing user ID)
-    let userId: string;
+    // Get or create user
+    const userId = await getOrCreatePlayerUser(playerData);
     
-    if (playerData.email) {
-      // Check if a user with this email already exists
-      const { data: existingUsers } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', playerData.email)
-        .maybeSingle();
-      
-      if (existingUsers) {
-        userId = existingUsers.id;
-        console.log(`User with email ${playerData.email} already exists with ID ${userId}`);
-      } else {
-        // Use our SQL function to create a new user with the provided email
-        const { data, error } = await supabase.rpc(
-          'create_player_user',
-          { player_name: playerData.name, player_email: playerData.email }
-        );
-        
-        if (error) {
-          console.error("Error creating user:", error);
-          throw error;
-        }
-        
-        userId = data;
-        console.log("Created new user with email:", userId);
-      }
-    } else {
-      // No email provided, use our SQL function to create a user with a placeholder email
-      const { data, error } = await supabase.rpc(
-        'create_player_user',
-        { player_name: playerData.name }
-      );
-      
-      if (error) {
-        console.error("Error creating user with placeholder email:", error);
-        throw error;
-      }
-      
-      userId = data;
-      console.log("Created new user with placeholder email:", userId);
-    }
-    
-    // Now add the team member
-    const { data: teamMemberData, error: teamMemberError } = await supabase
-      .from('team_members')
-      .insert({
-        team_id: teamId,
-        user_id: userId,
-        role: 'player',
-        position: playerData.position || null,
-        line_number: playerData.number ? parseInt(playerData.number, 10) : null
-      })
-      .select();
-      
-    if (teamMemberError) {
-      console.error("Error adding player to team:", teamMemberError);
-      throw teamMemberError;
-    }
+    // Add the team member
+    await addTeamMember(
+      teamId, 
+      userId, 
+      'player', 
+      playerData.position, 
+      playerData.number ? parseInt(playerData.number, 10) : null
+    );
     
     console.log(`Successfully added player ${playerData.name} to team ${teamId} in Supabase`);
     
@@ -100,22 +54,6 @@ export const addPlayerToTeam = async (
   }
 };
 
-// Helper function to check if user exists
-const userExists = async (userId: string): Promise<boolean> => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('id', userId)
-    .maybeSingle();
-  
-  if (error) {
-    console.error("Error checking if user exists:", error);
-    return false;
-  }
-  
-  return !!data;
-};
-
 export const removePlayerFromTeam = async (teamId: string, playerId: string): Promise<boolean> => {
   console.log(`Removing player ${playerId} from team ${teamId}`);
   
@@ -127,16 +65,7 @@ export const removePlayerFromTeam = async (teamId: string, playerId: string): Pr
       throw new Error("User must be authenticated to remove players from a team");
     }
 
-    const { error } = await supabase
-      .from('team_members')
-      .delete()
-      .eq('team_id', teamId)
-      .eq('user_id', playerId);
-      
-    if (error) {
-      console.error("Error removing player from team:", error);
-      throw error;
-    }
+    await removeTeamMember(teamId, playerId);
     
     console.log(`Successfully removed player ${playerId} from team ${teamId} in Supabase`);
     return true;
@@ -148,29 +77,7 @@ export const removePlayerFromTeam = async (teamId: string, playerId: string): Pr
 
 // Get all team members
 export const getTeamMembers = async (teamId: string): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('team_members')
-      .select(`
-        id,
-        user_id,
-        role,
-        position,
-        line_number
-      `)
-      .eq('team_id', teamId)
-      .order('role');
-      
-    if (error) {
-      console.error(`Error fetching team members for ${teamId}:`, error);
-      throw error;
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error("Error in getTeamMembers:", error);
-    throw error;
-  }
+  return await fetchTeamMembers(teamId);
 };
 
 // Update player information
@@ -194,44 +101,17 @@ export const updatePlayerInfo = async (
     
     // Update user information if provided
     if (playerData.name || playerData.email !== undefined) {
-      const updateUserData: any = {};
-      if (playerData.name) updateUserData.name = playerData.name;
-      if (playerData.email !== undefined) updateUserData.email = playerData.email;
-      
-      const { error: userUpdateError } = await supabase
-        .from('users')
-        .update(updateUserData)
-        .eq('id', playerId);
-        
-      if (userUpdateError) {
-        console.error("Error updating user information:", userUpdateError);
-        throw userUpdateError;
-      }
+      await updateUserInfo(playerId, {
+        name: playerData.name,
+        email: playerData.email
+      });
     }
     
     // Update team_members table
-    const updateData: any = {};
-    
-    if (playerData.position !== undefined) {
-      updateData.position = playerData.position;
-    }
-    
-    if (playerData.number !== undefined) {
-      updateData.line_number = playerData.number ? parseInt(playerData.number, 10) : null;
-    }
-    
-    if (Object.keys(updateData).length > 0) {
-      const { error: teamMemberError } = await supabase
-        .from('team_members')
-        .update(updateData)
-        .eq('team_id', teamId)
-        .eq('user_id', playerId);
-        
-      if (teamMemberError) {
-        console.error("Error updating player in team:", teamMemberError);
-        throw teamMemberError;
-      }
-    }
+    await updateTeamMemberInfo(teamId, playerId, {
+      position: playerData.position,
+      number: playerData.number
+    });
     
     return true;
   } catch (error) {
@@ -242,37 +122,5 @@ export const updatePlayerInfo = async (
 
 // Function to send batch invitations to team members
 export const sendTeamInvitations = async (teamId: string, memberIds: string[]): Promise<boolean> => {
-  try {
-    // Implementation for sending batch invitations would go here
-    // For now, we'll just log the action
-    console.log(`Sending invitations to ${memberIds.length} members of team ${teamId}`);
-    
-    // Fetch users to get their emails
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .in('id', memberIds);
-      
-    if (usersError) {
-      console.error("Error fetching users for invitations:", usersError);
-      throw usersError;
-    }
-    
-    // Filter out users without emails
-    const usersWithEmail = users?.filter(user => user.email) || [];
-    
-    if (usersWithEmail.length === 0) {
-      console.log("No users with emails to invite");
-      return false;
-    }
-    
-    console.log(`Would send emails to: ${usersWithEmail.map(u => u.email).join(', ')}`);
-    
-    // You would typically call an API endpoint or edge function here to send the emails
-    
-    return true;
-  } catch (error) {
-    console.error("Error sending team invitations:", error);
-    throw error;
-  }
+  return await sendInvitations(teamId, memberIds);
 };
