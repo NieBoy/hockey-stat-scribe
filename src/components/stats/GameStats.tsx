@@ -39,8 +39,16 @@ export default function GameStats({ gameId }: GameStatsProps) {
       player,
       goals: playerGameStats.filter(s => s.statType === 'goals').reduce((sum, s) => sum + s.value, 0),
       assists: playerGameStats.filter(s => s.statType === 'assists').reduce((sum, s) => sum + s.value, 0),
-      plusMinus: playerGameStats.filter(s => s.statType === 'plus' || s.statType === 'minus')
-        .reduce((sum, s) => sum + (s.statType === 'plus' ? s.value : -s.value), 0)
+      // Handle plus/minus separately since these aren't actual StatType values but custom tracking
+      plusMinus: playerGameStats.filter(s => s.statType === 'plusMinus' || s.details === 'plus' || s.details === 'minus')
+        .reduce((sum, s) => {
+          if (s.details === 'plus' || s.statType === 'plusMinus' && s.value > 0) {
+            return sum + s.value;
+          } else if (s.details === 'minus' || s.statType === 'plusMinus' && s.value < 0) {
+            return sum + s.value; // value is already negative
+          }
+          return sum;
+        }, 0)
     };
   });
 

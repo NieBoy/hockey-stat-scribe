@@ -1,3 +1,4 @@
+
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import GameStatsList from "@/components/stats/GameStatsList";
 import { useGameStats } from "@/hooks/useGameStats";
+import GameStats from "@/components/stats/GameStats";
 
 export default function TrackStats() {
   const { id = '' } = useParams<{ id: string }>();

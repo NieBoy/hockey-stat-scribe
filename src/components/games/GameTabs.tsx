@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ClipboardEdit, UserPlus, BarChart3 } from "lucide-react";
+import GameStats from "@/components/stats/GameStats";
 
 interface GameTabsProps {
   gameId: string;
