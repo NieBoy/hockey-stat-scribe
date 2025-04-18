@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Team, Lines } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -130,23 +131,6 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
               onPlayerSelect={handlePlayerSelect}
             />
           </TabsContent>
-          
-          <div className="mt-6">
-            <Button 
-              onClick={handleSaveRequest} 
-              className="w-full"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <span className="animate-spin mr-2">○</span>
-                  Saving Lineup...
-                </>
-              ) : (
-                "Save Lineup"
-              )}
-            </Button>
-          </div>
         </Tabs>
       )}
 
@@ -160,12 +144,10 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSaveLineup}>Save Lineup</AlertDialogAction>
+            <AlertDialogAction onClick={() => onSaveLineup(lines)}>Save Lineup</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
-};
-
-export default TeamLineupEditor;
+}
