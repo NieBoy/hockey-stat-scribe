@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 interface SimpleLineupEditorProps {
   team: Team;
-  onSaveLineup?: (lines: Lines) => Promise<boolean>;
+  onSaveLineup?: (lines: Lines) => Promise<boolean | void>;
 }
 
 export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorProps) {
@@ -31,8 +31,19 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   
-  const { isSaving, hasUnsavedChanges, handleSave } = useLineupSave({
-    onSaveLineup,
+  // Normalize onSaveLineup to always return a Promise<boolean>
+  const normalizedOnSaveLineup = async (lines: Lines): Promise<boolean> => {
+    if (!onSaveLineup) return false;
+    const result = await onSaveLineup(lines);
+    return result === undefined ? true : result;
+  };
+
+  const { 
+    isSaving, 
+    hasUnsavedChanges, 
+    handleSave 
+  } = useLineupSave({
+    onSaveLineup: normalizedOnSaveLineup,
     lines
   });
 
