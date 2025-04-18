@@ -34,8 +34,19 @@ export default function TeamLineup() {
     queryKey: ['team', id],
     queryFn: () => getTeamById(id!),
     enabled: !!id,
-    staleTime: 1000, // 1 second to ensure we don't fetch too frequently
+    // Use a very short staleTime to always get fresh data
+    staleTime: 0,
+    refetchInterval: 60000, // Refetch every minute in case lineup was updated elsewhere
   });
+
+  // Force refetch when component mounts
+  useEffect(() => {
+    if (id) {
+      console.log("TeamLineup - Component mounted, force refetching team data");
+      queryClient.invalidateQueries({ queryKey: ['team', id] });
+      refetch();
+    }
+  }, [id, queryClient, refetch]);
 
   const handleSaveLineup = async (lines: Lines) => {
     if (!id) {
@@ -53,7 +64,7 @@ export default function TeamLineup() {
         console.log("TeamLineup - Lineup saved successfully");
         toast.success("Lineup saved successfully");
         
-        // Invalidate the team query to ensure fresh data is loaded
+        // Important: Invalidate the team query to ensure fresh data is loaded
         queryClient.invalidateQueries({ queryKey: ['team', id] });
         
         // Manually trigger a refetch to get the latest team data

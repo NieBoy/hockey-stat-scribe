@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Team, Lines } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { updateTeamLineup } from '@/services/teams';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -21,23 +22,55 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   } = useLineupEditor(team);
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  // Use a ref to track if the component is mounted to prevent setState after unmount
+  const isMounted = useRef(true);
+  const queryClient = useQueryClient();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Set up cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Save whenever lines change
   useEffect(() => {
     if (!team?.id) return;
     
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
     const saveLines = async () => {
       try {
+        if (!isMounted.current) return;
+        
         setSaveStatus('saving');
         console.log("Saving lineup for team:", team.id);
         console.log("Lineup data to save:", JSON.stringify(lines, null, 2));
         
         const success = await updateTeamLineup(team.id, lines);
         
+        if (!isMounted.current) return;
+        
         if (success) {
           console.log("Successfully saved lineup changes");
           setSaveStatus('success');
-          toast.success("Lineup updated");
+          
+          // Invalidate the team query to ensure all components get fresh data
+          queryClient.invalidateQueries({ queryKey: ['team', team.id] });
+          
+          // Reset status after delay
+          if (isMounted.current) {
+            setTimeout(() => {
+              if (isMounted.current) setSaveStatus('idle');
+            }, 2000);
+          }
         } else {
           console.error("Failed to save lineup changes");
           setSaveStatus('error');
@@ -45,8 +78,10 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         }
       } catch (error) {
         console.error("Error saving lineup:", error);
-        setSaveStatus('error');
-        toast.error("Error saving lineup");
+        if (isMounted.current) {
+          setSaveStatus('error');
+          toast.error("Error saving lineup");
+        }
       }
     };
     
@@ -56,17 +91,16 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
                      lines.goalies.length > 0;
     
     // Add a small delay to prevent too frequent saves 
-    const timeoutId = setTimeout(() => {
-      if (hasPlayers) {
-        console.log("Auto-saving lineup changes");
+    if (hasPlayers) {
+      console.log("Auto-saving lineup changes");
+      saveTimeoutRef.current = setTimeout(() => {
         saveLines();
-      } else {
-        console.log("Skipping auto-save since lineup is empty");
-      }
-    }, 800);
+      }, 800);
+    } else {
+      console.log("Skipping auto-save since lineup is empty");
+    }
     
-    return () => clearTimeout(timeoutId);
-  }, [lines, team.id]);
+  }, [lines, team?.id, queryClient]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;

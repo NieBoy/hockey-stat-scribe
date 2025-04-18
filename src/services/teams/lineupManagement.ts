@@ -161,7 +161,7 @@ export const updateTeamLineup = async (
   }
 };
 
-// Add a function to fetch the current lineup data for the team
+// Enhance the getTeamLineup function to fetch more complete data
 export const getTeamLineup = async (teamId: string): Promise<any[]> => {
   try {
     if (!teamId) {
@@ -171,12 +171,13 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     console.log("Fetching team lineup for team:", teamId);
 
+    // Make sure we get ALL players with positions, even if position is null
+    // This ensures we have complete data for building the lineup
     const { data, error } = await supabase
       .from('team_members')
       .select('user_id, name, position, line_number')
       .eq('team_id', teamId)
-      .eq('role', 'player')
-      .not('position', 'is', null);
+      .eq('role', 'player');
 
     if (error) {
       console.error("Error fetching team lineup:", error);

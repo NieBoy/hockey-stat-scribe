@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Team, Lines } from "@/types";
 import { buildInitialLines } from "@/utils/lineupUtils";
 import { useAvailablePlayers } from "./lineup/useAvailablePlayers";
@@ -14,52 +14,58 @@ export function useLineupEditor(team: Team) {
     return buildInitialLines(team);
   });
   
+  // Track if the component has mounted to avoid unnecessary rebuilds
+  const hasMounted = useRef(false);
+  
   // Force rebuild lines whenever team data changes, including when team players' positions change
   useEffect(() => {
     console.log("Team data changed, rebuilding lines");
     
-    // Use the team data as is for immediate update
-    const initialLines = buildInitialLines(team);
-    setLines(initialLines);
-    
-    // Then fetch the latest lineup data from the database for comprehensive update
-    const fetchLatestLineup = async () => {
-      if (team?.id) {
-        console.log("Fetching latest lineup data for team:", team.id);
-        const lineupData = await getTeamLineup(team.id);
-        
-        if (lineupData.length > 0) {
-          console.log("Got latest lineup data from database:", lineupData);
+    const fetchAndBuildLines = async () => {
+      try {
+        if (team?.id) {
+          // Immediately build initial lines from current team data
+          const initialLines = buildInitialLines(team);
+          setLines(initialLines);
           
-          // Create a copy of the team with updated positions from the database
-          const updatedTeam = {
-            ...team,
-            players: team.players.map(player => {
-              // Find this player in the lineup data
-              const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
-              if (lineupPlayer) {
-                return {
-                  ...player,
-                  position: lineupPlayer.position,
-                  lineNumber: lineupPlayer.line_number
-                };
-              }
-              return player;
-            })
-          };
+          console.log("Fetching latest lineup data for team:", team.id);
+          const lineupData = await getTeamLineup(team.id);
           
-          // Rebuild lines with the updated team data
-          console.log("Rebuilding lines with fresh lineup data");
-          const refreshedLines = buildInitialLines(updatedTeam);
-          setLines(refreshedLines);
-        } else {
-          console.log("No lineup data found in database");
+          if (lineupData && lineupData.length > 0) {
+            console.log("Got latest lineup data from database:", lineupData);
+            
+            // Apply positions from database to the team players
+            const updatedTeam = {
+              ...team,
+              players: team.players.map(player => {
+                // Find this player in the lineup data
+                const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
+                if (lineupPlayer && lineupPlayer.position) {
+                  return {
+                    ...player,
+                    position: lineupPlayer.position,
+                    lineNumber: lineupPlayer.line_number
+                  };
+                }
+                return player;
+              })
+            };
+            
+            // Rebuild lines with the updated team data
+            console.log("Rebuilding lines with fresh lineup data");
+            const refreshedLines = buildInitialLines(updatedTeam);
+            setLines(refreshedLines);
+          } else {
+            console.log("No lineup data found in database, using initial lines");
+          }
         }
+      } catch (error) {
+        console.error("Error fetching lineup data:", error);
       }
     };
     
-    fetchLatestLineup();
-  }, [team]);
+    fetchAndBuildLines();
+  }, [team?.id, JSON.stringify(team?.players)]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
   const { addForwardLine, addDefenseLine } = useLineManagement(lines, setLines);
