@@ -31,13 +31,19 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         }
         setGame(gameData);
 
-        // Fetch all users directly - this ensures we get all valid potential trackers
+        // Fetch all users - debug logging to diagnose the issue
+        console.log('Fetching all users for stat tracking...');
         const { data: allUsers, error: usersError } = await supabase
           .from('users')
           .select('id, name, email');
           
-        if (usersError) throw usersError;
+        if (usersError) {
+          console.error('Error fetching users:', usersError);
+          throw usersError;
+        }
 
+        console.log('Retrieved users count:', allUsers?.length);
+        
         // Create a list of all users as potential trackers
         const availableTrackers = allUsers?.map(user => ({
           id: user.id,
@@ -106,26 +112,45 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         throw deleteError;
       }
       
-      // Prepare new assignments
-      const trackersToInsert = Object.entries(selectedTrackers)
-        .filter(([_, userId]) => userId !== null && userId !== '')
-        .map(([statType, userId]) => ({
-          game_id: gameId,
-          user_id: userId,
-          stat_type: statType,
-          created_at: new Date().toISOString()
-        }));
+      // Verify users exist before assigning
+      const userIds = Object.values(selectedTrackers)
+        .filter(userId => userId !== null && userId !== '');
       
-      console.log('Inserting trackers:', trackersToInsert);
-      
-      if (trackersToInsert.length > 0) {
-        const { error } = await supabase
-          .from('stat_trackers')
-          .insert(trackersToInsert);
+      if (userIds.length > 0) {
+        const { data: validUsers, error: validationError } = await supabase
+          .from('users')
+          .select('id')
+          .in('id', userIds);
+        
+        if (validationError) {
+          console.error('User validation error:', validationError);
+          throw validationError;
+        }
+        
+        console.log('Valid user IDs found:', validUsers?.map(u => u.id));
+        
+        // Prepare new assignments (only for valid users)
+        const trackersToInsert = Object.entries(selectedTrackers)
+          .filter(([_, userId]) => userId !== null && userId !== '')
+          .filter(([_, userId]) => validUsers?.some(u => u.id === userId))
+          .map(([statType, userId]) => ({
+            game_id: gameId,
+            user_id: userId,
+            stat_type: statType,
+            created_at: new Date().toISOString()
+          }));
+        
+        console.log('Inserting trackers:', trackersToInsert);
+        
+        if (trackersToInsert.length > 0) {
+          const { error } = await supabase
+            .from('stat_trackers')
+            .insert(trackersToInsert);
 
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
+          if (error) {
+            console.error('Insert error:', error);
+            throw error;
+          }
         }
       }
 
