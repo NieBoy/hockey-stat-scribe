@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Team, Lines } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EvenStrengthLines } from './lineup/EvenStrengthLines';
-import { buildInitialLines } from '@/utils/lineupUtils';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { getTeamLineup } from '@/services/teams/lineupManagement';
+import { buildInitialLines } from '@/utils/lineupUtils';
 import { useQueryClient } from '@tanstack/react-query';
+import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -57,19 +57,6 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     fetchLineup();
   }, [team]);
 
-  // Render empty slots for positions without players
-  const renderLines = () => {
-    return (
-      <div className="space-y-6">
-        <EvenStrengthLines 
-          lines={lines}
-          onAddForwardLine={() => {}}
-          onAddDefenseLine={() => {}}
-        />
-      </div>
-    );
-  };
-
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -88,7 +75,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {renderLines()}
+        <NonDraggableLineupView lines={lines} />
       </CardContent>
     </Card>
   );

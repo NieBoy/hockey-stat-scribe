@@ -54,6 +54,7 @@ export function PlayerCard({
     </Card>
   );
 
+  // Only wrap in Draggable if explicitly requested, dragId is provided, and a player exists
   if (isDraggable && dragId && player) {
     return (
       <Draggable draggableId={dragId} index={index}>
