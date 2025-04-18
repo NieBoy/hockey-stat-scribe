@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Team, User } from '@/types';
-import { SimplePlayerLinesView } from '../player-lines/SimplePlayerLinesView';
-import { Button } from '@/components/ui/button';
+import { PlayerList } from './player-selection/PlayerList';
+import { SkipButton } from './player-selection/SkipButton';
 
 interface PlayerSelectProps {
   team: Team;
@@ -26,17 +26,16 @@ export function PlayerSelect({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{title}</h3>
-      <SimplePlayerLinesView 
+      <PlayerList 
         team={team}
         onPlayerSelect={onPlayerSelect}
         selectedPlayers={selectedPlayers}
       />
       {allowSkip && (
-        <div className="flex justify-end mt-4">
-          <Button variant="ghost" onClick={() => onPlayerSelect(null)}>
-            {skipText || "Skip"}
-          </Button>
-        </div>
+        <SkipButton 
+          onSkip={() => onPlayerSelect(null)} 
+          text={skipText}
+        />
       )}
     </div>
   );
