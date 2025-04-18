@@ -26,9 +26,9 @@ export function PlayerCard({
   const renderCard = () => {
     if (!player) {
       return (
-        <div className="flex items-center justify-center p-1 rounded-md border border-dashed border-gray-300 h-16 bg-background">
+        <div className="flex items-center justify-center p-1 rounded-md border border-dashed border-gray-300 h-12 bg-background">
           <div className="flex flex-col items-center">
-            <UserCircle className="h-5 w-5 text-gray-400" />
+            <UserCircle className="h-4 w-4 text-gray-400" />
             <span className="text-xs text-gray-500">{position}</span>
           </div>
         </div>
@@ -38,7 +38,7 @@ export function PlayerCard({
     return (
       <div
         className={cn(
-          "flex items-center gap-2 h-16 w-full relative p-2 rounded-md border",
+          "flex items-center gap-2 h-12 w-full relative p-2 rounded-md border",
           isSelected ? "border-primary bg-primary/10" : "border-gray-200",
           isDraggable ? "cursor-grab active:cursor-grabbing" : "",
           onClick ? "hover:bg-accent" : ""
@@ -46,15 +46,14 @@ export function PlayerCard({
         onClick={onClick ? () => onClick(player) : undefined}
       >
         <div className="flex-shrink-0">
-          <UserCircle className="h-6 w-6" />
+          <UserCircle className="h-4 w-4" />
         </div>
         <div className="flex flex-col min-w-0">
           <div className="font-medium text-sm truncate">
             {player.name || "Unknown"}
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span>{position}</span>
-            {player.number && <span>#{player.number}</span>}
+          <div className="text-xs text-muted-foreground truncate">
+            {position}{player.number && ` #${player.number}`}
           </div>
         </div>
         {isSelected && (
