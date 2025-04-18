@@ -20,19 +20,19 @@ export function GoaliesSection({
   return (
     <div className="mt-4">
       <h4 className="text-sm font-medium mb-2">Goalies</h4>
-      <Droppable droppableId="goalies" direction="horizontal" isDropDisabled={!isDraggable}>
+      <Droppable droppableId="goalie" direction="horizontal" isDropDisabled={!isDraggable}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
               "grid grid-cols-2 gap-2",
-              snapshot.isDraggingOver && "bg-muted/50 rounded-md"
+              snapshot.isDraggingOver && "bg-primary/5 rounded-md p-2"
             )}
           >
             {goalies.length > 0 ? (
               goalies.map((goalie, index) => (
-                <div key={goalie.id} className="col-span-1">
+                <div key={goalie.id} className="col-span-1 min-h-[96px]">
                   <PlayerCard
                     player={goalie}
                     position="G"
@@ -40,16 +40,16 @@ export function GoaliesSection({
                     onClick={onPlayerClick}
                     isDraggable={isDraggable}
                     index={index}
-                    dragId={isDraggable ? `goalie-${goalie.id}` : undefined}
+                    dragId={isDraggable ? `goalie-1-G-${goalie.id}` : undefined}
                   />
                 </div>
               ))
             ) : (
               <>
-                <div className="col-span-1">
+                <div className="col-span-1 min-h-[96px]">
                   <PlayerCard player={null} position="G" isSelected={false} />
                 </div>
-                <div className="col-span-1">
+                <div className="col-span-1 min-h-[96px]">
                   <PlayerCard player={null} position="G" isSelected={false} />
                 </div>
               </>

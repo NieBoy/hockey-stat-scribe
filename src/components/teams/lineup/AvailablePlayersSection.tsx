@@ -20,7 +20,9 @@ export function AvailablePlayersSection({ availablePlayers }: AvailablePlayersSe
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2"
+              className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 ${
+                snapshot.isDraggingOver ? "bg-primary/5 rounded-md p-2" : ""
+              }`}
             >
               {availablePlayers.map((player, index) => (
                 <div key={player.id} className="col-span-1">

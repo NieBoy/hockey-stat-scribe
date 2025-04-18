@@ -29,8 +29,8 @@ export function DefensePairsSection({
     <div className="mt-4">
       <h4 className="text-sm font-medium mb-2">{title}</h4>
       {defensePairs.map((pair, pairIndex) => (
-        <div key={`defense-pair-${pairIndex}`} className="mb-2">
-          <p className="text-xs text-muted-foreground">Pair {pair.lineNumber}</p>
+        <div key={`defense-pair-${pairIndex}`} className="mb-4">
+          <p className="text-xs text-muted-foreground mb-1">Pair {pair.lineNumber}</p>
           <Droppable 
             droppableId={`defense-${pair.lineNumber}`} 
             direction="horizontal"
@@ -42,10 +42,10 @@ export function DefensePairsSection({
                 {...provided.droppableProps}
                 className={cn(
                   "grid grid-cols-2 gap-2",
-                  snapshot.isDraggingOver && "bg-muted/50 rounded-md"
+                  snapshot.isDraggingOver && "bg-primary/5 rounded-md p-2"
                 )}
               >
-                <div>
+                <div className="min-h-[96px]">
                   <PlayerCard
                     player={pair.leftDefense}
                     position="LD"
@@ -56,7 +56,7 @@ export function DefensePairsSection({
                     dragId={isDraggable && pair.leftDefense ? `defense-${pair.lineNumber}-LD-${pair.leftDefense.id}` : undefined}
                   />
                 </div>
-                <div>
+                <div className="min-h-[96px]">
                   <PlayerCard
                     player={pair.rightDefense}
                     position="RD"

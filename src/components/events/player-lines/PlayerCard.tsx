@@ -71,11 +71,12 @@ export function PlayerCard({
             {...provided.dragHandleProps}
             style={{
               ...provided.draggableProps.style,
-              cursor: 'grab',
+              opacity: snapshot.isDragging ? 0.6 : 1,
+              transform: snapshot.isDragging ? provided.draggableProps.style.transform + ' scale(1.05)' : provided.draggableProps.style.transform,
             }}
             className={cn(
-              "transition-shadow",
-              snapshot.isDragging && "shadow-lg"
+              "transition-all",
+              snapshot.isDragging && "shadow-xl z-50"
             )}
           >
             {renderCard()}

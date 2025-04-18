@@ -32,7 +32,10 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     const { source, destination, draggableId } = result;
     
     // Dropped outside a droppable area
-    if (!destination) return;
+    if (!destination) {
+      console.log("Dropped outside a droppable area");
+      return;
+    }
     
     console.log("Drag ended:", { source, destination, draggableId });
     

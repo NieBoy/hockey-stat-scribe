@@ -30,8 +30,8 @@ export function ForwardLinesSection({
     <div className="mt-4">
       <h4 className="text-sm font-medium mb-2">{title}</h4>
       {forwardLines.map((line, lineIndex) => (
-        <div key={`forward-line-${lineIndex}`} className="mb-2">
-          <p className="text-xs text-muted-foreground">Line {line.lineNumber}</p>
+        <div key={`forward-line-${lineIndex}`} className="mb-4">
+          <p className="text-xs text-muted-foreground mb-1">Line {line.lineNumber}</p>
           <Droppable 
             droppableId={`forward-${line.lineNumber}`} 
             direction="horizontal"
@@ -43,10 +43,10 @@ export function ForwardLinesSection({
                 {...provided.droppableProps}
                 className={cn(
                   "grid grid-cols-3 gap-2",
-                  snapshot.isDraggingOver && "bg-muted/50 rounded-md"
+                  snapshot.isDraggingOver && "bg-primary/5 rounded-md p-2"
                 )}
               >
-                <div>
+                <div className="min-h-[96px]">
                   <PlayerCard
                     player={line.leftWing}
                     position="LW"
@@ -57,7 +57,7 @@ export function ForwardLinesSection({
                     dragId={isDraggable && line.leftWing ? `forward-${line.lineNumber}-LW-${line.leftWing.id}` : undefined}
                   />
                 </div>
-                <div>
+                <div className="min-h-[96px]">
                   <PlayerCard
                     player={line.center}
                     position="C"
@@ -68,7 +68,7 @@ export function ForwardLinesSection({
                     dragId={isDraggable && line.center ? `forward-${line.lineNumber}-C-${line.center.id}` : undefined}
                   />
                 </div>
-                <div>
+                <div className="min-h-[96px]">
                   <PlayerCard
                     player={line.rightWing}
                     position="RW"
