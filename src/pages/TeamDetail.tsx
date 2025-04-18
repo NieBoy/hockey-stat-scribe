@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -67,6 +68,50 @@ export default function TeamDetail() {
     console.log("TeamDetail - Component mounted, forcing immediate lineup refresh");
     setLineupRefreshKey(Date.now());
   }, []);
+
+  // Add the missing function handlers here
+  const handleSendInvitations = async (memberIds: string[]) => {
+    if (!id || memberIds.length === 0) {
+      toast.error("No members selected for invitation");
+      return;
+    }
+    
+    try {
+      console.log(`TeamDetail - Sending invitations to ${memberIds.length} members`);
+      const success = await sendInvitationsToTeamMembers(id, memberIds);
+      
+      if (success) {
+        toast.success(`Invitations sent to ${memberIds.length} team members`);
+      } else {
+        toast.error("Failed to send invitations");
+      }
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+      toast.error("Error sending invitations");
+    }
+  };
+
+  const handleRemoveMember = async (member: User) => {
+    if (!member?.id) {
+      toast.error("Invalid member selected");
+      return;
+    }
+    
+    try {
+      console.log(`TeamDetail - Removing team member: ${member.name} (${member.id})`);
+      const success = await deleteTeamMember(member.id);
+      
+      if (success) {
+        toast.success(`${member.name} has been removed from the team`);
+        refetchTeam();
+      } else {
+        toast.error("Failed to remove team member");
+      }
+    } catch (error) {
+      console.error("Error removing team member:", error);
+      toast.error("Error removing team member");
+    }
+  };
 
   if (isLoadingTeam) {
     return (
