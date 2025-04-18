@@ -4,10 +4,10 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import EventTracker from "@/components/events/EventTracker";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Play, StopCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getGameById, startGame, endGame } from "@/services/games";
+import { getGameById } from "@/services/games";
 import { supabase } from "@/lib/supabase";
 
 export default function GameTracking() {
@@ -20,43 +20,6 @@ export default function GameTracking() {
     queryKey: ['games', id],
     queryFn: () => getGameById(id),
     enabled: !!id
-  });
-
-  const startGameMutation = useMutation({
-    mutationFn: () => startGame(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      toast({
-        title: "Game Started",
-        description: "The game is now active and ready for tracking."
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start the game. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const endGameMutation = useMutation({
-    mutationFn: () => endGame(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      toast({
-        title: "Game Ended",
-        description: "The game has been marked as completed."
-      });
-      navigate(`/games/${id}`);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to end the game. Please try again.",
-        variant: "destructive"
-      });
-    }
   });
 
   useEffect(() => {
@@ -121,24 +84,6 @@ export default function GameTracking() {
               {game.homeTeam.name} vs {game.awayTeam.name}
             </p>
           </div>
-          {!game.isActive ? (
-            <Button 
-              onClick={() => startGameMutation.mutate()}
-              disabled={startGameMutation.isPending}
-              className="gap-2"
-            >
-              <Play className="h-4 w-4" /> Start Game
-            </Button>
-          ) : (
-            <Button 
-              variant="destructive"
-              onClick={() => endGameMutation.mutate()}
-              disabled={endGameMutation.isPending}
-              className="gap-2"
-            >
-              <StopCircle className="h-4 w-4" /> End Game
-            </Button>
-          )}
         </div>
       </div>
 

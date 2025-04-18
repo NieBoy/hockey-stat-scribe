@@ -29,13 +29,14 @@ export default function GameControls({
   return (
     <div className="space-y-4 mb-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Period {period}</h3>
+        <h3 className="text-lg font-semibold bg-primary/10 px-4 py-2 rounded-md">
+          Period {period}
+        </h3>
         
         {gameStatus === 'not-started' && (
           <Button 
             onClick={onStartGame}
             size="lg"
-            className="w-full"
           >
             Start Game
           </Button>
@@ -46,7 +47,6 @@ export default function GameControls({
             onClick={onStopGame}
             size="lg"
             variant="destructive"
-            className="w-full"
           >
             Stop Game
           </Button>
