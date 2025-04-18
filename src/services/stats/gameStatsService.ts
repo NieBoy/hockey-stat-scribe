@@ -22,13 +22,21 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
 };
 
 export const fetchGameStats = async (gameId: string): Promise<GameStat[]> => {
+  console.log("Fetching game stats for game:", gameId);
+
   const { data, error } = await supabase
     .from('game_stats')
     .select('*')
     .eq('game_id', gameId)
     .order('timestamp', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching game stats:", error);
+    throw error;
+  }
+
+  console.log("Raw game stats data:", data);
+
   return (data || []).map(stat => ({
     id: stat.id,
     gameId: stat.game_id,
@@ -48,4 +56,33 @@ export const deleteGameStat = async (statId: string) => {
     .eq('id', statId);
 
   if (error) throw error;
+};
+
+// Add a helper function to record plus/minus for multiple players
+export const recordPlusMinusStats = async (
+  gameId: string, 
+  playerIds: string[], 
+  period: number, 
+  isPlus: boolean
+) => {
+  const statsToInsert = playerIds.map(playerId => ({
+    game_id: gameId,
+    player_id: playerId,
+    stat_type: 'plusMinus' as StatType,
+    period: period,
+    value: isPlus ? 1 : -1,
+    details: isPlus ? 'plus' : 'minus',
+    timestamp: new Date().toISOString()
+  }));
+
+  if (statsToInsert.length === 0) return;
+  
+  const { error } = await supabase
+    .from('game_stats')
+    .insert(statsToInsert);
+    
+  if (error) {
+    console.error("Error recording plus/minus stats:", error);
+    throw error;
+  }
 };
