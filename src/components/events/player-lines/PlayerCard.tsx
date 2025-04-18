@@ -23,13 +23,21 @@ export function PlayerCard({
   index = 0,
   dragId
 }: PlayerCardProps) {
+  const handleClick = () => {
+    if (onClick && player) {
+      onClick(player);
+    }
+  };
+
   const content = (
     <Card className={cn(
       "relative border",
       isSelected && "border-primary",
       !player && "border-dashed",
-      onClick && "cursor-pointer"
-    )}>
+      onClick && player && "cursor-pointer"
+    )}
+    onClick={handleClick}
+    >
       <CardContent className="p-3 text-center">
         {player ? (
           <>

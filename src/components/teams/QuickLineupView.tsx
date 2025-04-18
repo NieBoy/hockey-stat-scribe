@@ -7,6 +7,7 @@ import { buildInitialLines } from '@/utils/lineupUtils';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { getTeamLineup } from '@/services/teams/lineupManagement';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -15,6 +16,8 @@ interface QuickLineupViewProps {
 export function QuickLineupView({ team }: QuickLineupViewProps) {
   const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
   const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
+  // Get queryClient from context - this will help us check if it's available
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -54,6 +57,19 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     fetchLineup();
   }, [team]);
 
+  // Render empty slots for positions without players
+  const renderLines = () => {
+    return (
+      <div className="space-y-6">
+        <EvenStrengthLines 
+          lines={lines}
+          onAddForwardLine={() => {}}
+          onAddDefenseLine={() => {}}
+        />
+      </div>
+    );
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -72,13 +88,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          <EvenStrengthLines 
-            lines={lines}
-            onAddForwardLine={() => {}}
-            onAddDefenseLine={() => {}}
-          />
-        </div>
+        {renderLines()}
       </CardContent>
     </Card>
   );

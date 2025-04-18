@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -14,6 +15,10 @@ import { QuickLineupView } from "@/components/teams/QuickLineupView";
 import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 import { User } from "@/types";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+
+// Create a new QueryClient for this page to ensure it's properly initialized
+const queryClient = new QueryClient();
 
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
@@ -99,62 +104,65 @@ export default function TeamDetail() {
     refetchTeam();
   };
   
+  // Wrap the content in a QueryClientProvider to ensure React Query context is available
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <TeamHeader 
-          team={team}
-          onBackClick={() => navigate("/teams")}
-          onAddPlayerClick={handleAddPlayer}
+      <QueryClientProvider client={queryClient}>
+        <div className="space-y-6">
+          <TeamHeader 
+            team={team}
+            onBackClick={() => navigate("/teams")}
+            onAddPlayerClick={handleAddPlayer}
+          />
+
+          <QuickLineupView team={team} />
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
+              <TabsTrigger value="players">Players</TabsTrigger>
+              <TabsTrigger value="coaches">Coaches</TabsTrigger>
+              <TabsTrigger value="stats">Stats</TabsTrigger>
+              <TabsTrigger value="all-members">All Members</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="players" className="space-y-4">
+              <PlayersTabContent 
+                team={team} 
+                handleAddPlayer={handleAddPlayer} 
+                handleRemovePlayer={handleRemovePlayer} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="coaches" className="space-y-4">
+              <CoachesTabContent 
+                team={team} 
+                onCoachAdded={handleTeamUpdate} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="stats" className="space-y-4">
+              <StatsTabContent />
+            </TabsContent>
+            
+            <TabsContent value="all-members" className="space-y-4">
+              <TeamMembersTable 
+                team={team}
+                onSendInvitations={handleSendInvitations}
+                onRemoveMember={handleRemoveMember}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <AddPlayerDialog
+          isOpen={addPlayerDialogOpen}
+          onOpenChange={setAddPlayerDialogOpen}
+          selectedTeam={selectedTeam}
+          onSubmit={submitNewPlayer}
+          newPlayer={newPlayer}
+          setNewPlayer={setNewPlayer}
         />
-
-        <QuickLineupView team={team} />
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
-            <TabsTrigger value="players">Players</TabsTrigger>
-            <TabsTrigger value="coaches">Coaches</TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            <TabsTrigger value="all-members">All Members</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="players" className="space-y-4">
-            <PlayersTabContent 
-              team={team} 
-              handleAddPlayer={handleAddPlayer} 
-              handleRemovePlayer={handleRemovePlayer} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="coaches" className="space-y-4">
-            <CoachesTabContent 
-              team={team} 
-              onCoachAdded={handleTeamUpdate} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="stats" className="space-y-4">
-            <StatsTabContent />
-          </TabsContent>
-          
-          <TabsContent value="all-members" className="space-y-4">
-            <TeamMembersTable 
-              team={team}
-              onSendInvitations={handleSendInvitations}
-              onRemoveMember={handleRemoveMember}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <AddPlayerDialog
-        isOpen={addPlayerDialogOpen}
-        onOpenChange={setAddPlayerDialogOpen}
-        selectedTeam={selectedTeam}
-        onSubmit={submitNewPlayer}
-        newPlayer={newPlayer}
-        setNewPlayer={setNewPlayer}
-      />
+      </QueryClientProvider>
     </MainLayout>
   );
 }
