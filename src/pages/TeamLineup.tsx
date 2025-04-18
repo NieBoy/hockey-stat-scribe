@@ -7,13 +7,25 @@ import { Lines } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getTeamById, updateTeamLineup } from "@/services/teams";
+import { useTeams } from "@/hooks/useTeams";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  
+  const {
+    addPlayerDialogOpen,
+    setAddPlayerDialogOpen,
+    selectedTeam,
+    newPlayer,
+    setNewPlayer,
+    handleAddPlayer,
+    submitNewPlayer
+  } = useTeams(id);
   
   const { data: team, isLoading, error, refetch } = useQuery({
     queryKey: ['team', id],
@@ -64,16 +76,30 @@ export default function TeamLineup() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="gap-2" 
-          onClick={() => navigate(`/teams/${id}`)}
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Team
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2" 
+            onClick={() => navigate(`/teams/${id}`)}
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Team
+          </Button>
+          <Button onClick={() => setAddPlayerDialogOpen(true)}>
+            Add Player
+          </Button>
+        </div>
         
         <TeamLineupEditor team={team} onSaveLineup={handleSaveLineup} isSaving={saving} />
+
+        <AddPlayerDialog
+          isOpen={addPlayerDialogOpen}
+          onOpenChange={setAddPlayerDialogOpen}
+          selectedTeam={team}
+          onSubmit={submitNewPlayer}
+          newPlayer={newPlayer}
+          setNewPlayer={setNewPlayer}
+        />
       </div>
     </MainLayout>
   );
