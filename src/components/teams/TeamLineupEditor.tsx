@@ -42,6 +42,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
   useEffect(() => {
     const saveLines = async () => {
       try {
+        console.log("Auto-saving lineup from TeamLineupEditor", lines);
         await onSaveLineup(lines);
       } catch (error) {
         console.error("Error auto-saving lineup:", error);

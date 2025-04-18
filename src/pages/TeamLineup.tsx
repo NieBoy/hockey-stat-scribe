@@ -11,6 +11,7 @@ import { useTeams } from "@/hooks/useTeams";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
+import RosterDragDrop from "@/components/teams/RosterDragDrop";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function TeamLineup() {
     try {
       setSaving(true);
       await updateTeamLineup(id, lines);
+      console.log("Lineup saved successfully", lines);
       toast.success("Lineup saved successfully");
     } catch (error) {
       console.error("Error saving lineup:", error);
@@ -100,10 +102,10 @@ export default function TeamLineup() {
           </div>
         </div>
         
-        {editorMode === 'standard' ? (
-          <TeamLineupEditor 
+        {editorMode === 'drag-drop' ? (
+          <RosterDragDrop 
             team={team} 
-            onSaveLineup={handleSaveLineup}
+            onSave={handleSaveLineup}
             isSaving={saving}
           />
         ) : (

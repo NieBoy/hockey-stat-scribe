@@ -6,6 +6,8 @@ export const updateTeamLineup = async (
   teamId: string, 
   lines: Lines
 ): Promise<boolean> => {
+  console.log("Updating team lineup", { teamId, lines });
+  
   // First get all players for this team
   const { data: teamPlayers } = await supabase
     .from('team_members')
@@ -83,6 +85,8 @@ export const updateTeamLineup = async (
     });
   }
   
+  console.log("Updates to apply:", updates);
+  
   // Delete existing positions/lines
   await supabase
     .from('team_members')
@@ -95,7 +99,7 @@ export const updateTeamLineup = async (
     
   // Apply updates
   for (const update of updates) {
-    await supabase
+    const { error } = await supabase
       .from('team_members')
       .update({
         position: update.position,
@@ -103,6 +107,11 @@ export const updateTeamLineup = async (
       })
       .eq('team_id', update.team_id)
       .eq('user_id', update.user_id);
+      
+    if (error) {
+      console.error("Error updating player position:", error);
+      console.error("Failed update data:", update);
+    }
   }
   
   return true;

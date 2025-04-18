@@ -24,6 +24,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     const saveLines = async () => {
       try {
         await updateTeamLineup(team.id, lines);
+        console.log("Auto-saved lineup changes", lines);
       } catch (error) {
         console.error("Error auto-saving lineup:", error);
       }
@@ -40,11 +41,45 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     const { source, destination, draggableId } = result;
     
     if (!destination) return;
-    if (source.droppableId === destination.droppableId) return;
     
+    // Parse the draggableId to get player information
     const parts = draggableId.split('-');
     const playerId = parts[0] === 'roster' ? parts.slice(1).join('-') : parts.slice(3).join('-');
     
+    // Check if dragging to a position that already has a player
+    // If so, we'll want to swap players instead of just moving one
+    let swapPlayerId: string | null = null;
+    
+    // Different handling if moving between existing positions vs from roster
+    if (source.droppableId !== 'roster' && destination.droppableId !== 'roster') {
+      // Find if there's a player in the destination position
+      const destParts = destination.droppableId.split('-');
+      const lineType = destParts[0];
+      const lineNumber = parseInt(destParts[1], 10);
+      const position = destParts[2];
+      
+      if (lineType === 'forward') {
+        const line = lines.forwards[lineNumber - 1];
+        if (position === 'LW' && line.leftWing) swapPlayerId = line.leftWing.id;
+        else if (position === 'C' && line.center) swapPlayerId = line.center.id;
+        else if (position === 'RW' && line.rightWing) swapPlayerId = line.rightWing.id;
+      } else if (lineType === 'defense') {
+        const line = lines.defense[lineNumber - 1];
+        if (position === 'LD' && line.leftDefense) swapPlayerId = line.leftDefense.id;
+        else if (position === 'RD' && line.rightDefense) swapPlayerId = line.rightDefense.id;
+      }
+      
+      // If there's a player to swap, move them to the source position
+      if (swapPlayerId) {
+        handlePlayerMove({
+          playerId: swapPlayerId,
+          sourceId: destination.droppableId,
+          destinationId: source.droppableId
+        });
+      }
+    }
+    
+    // Move the dragged player to the destination
     handlePlayerMove({
       playerId,
       sourceId: source.droppableId,
