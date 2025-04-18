@@ -82,8 +82,8 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
         playerStat.goals += stat.value;
       } else if (stat.statType === "assists") {
         playerStat.assists += stat.value;
-      } else if (stat.statType === "plusMinus" || stat.statType === "plus" || stat.statType === "minus") {
-        // Handle plus/minus stats
+      } else if (stat.statType === "plusMinus") {
+        // Handle plus/minus stats based on the details field
         if (stat.details === "plus") {
           playerStat.plusMinus += stat.value;
         } else if (stat.details === "minus") {
