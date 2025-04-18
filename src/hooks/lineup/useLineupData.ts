@@ -1,10 +1,11 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Team, Lines } from '@/types';
 import { getTeamLineup } from '@/services/teams/lineup';
 import { buildInitialLines } from '@/utils/lineupUtils';
 import { toast } from 'sonner';
 
-export function useLineupData(team: Team, refreshKey: number) {
+export function useLineupData(team: Team, refreshKey: number = 0) {
   const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
   const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
@@ -63,25 +64,6 @@ export function useLineupData(team: Team, refreshKey: number) {
       
       const refreshedLines = buildInitialLines(updatedTeam);
       console.log("useLineupData - Built lines structure:", refreshedLines);
-      
-      const forwardCount = refreshedLines.forwards.reduce((count, line) => {
-        return count + 
-          (line.leftWing ? 1 : 0) + 
-          (line.center ? 1 : 0) + 
-          (line.rightWing ? 1 : 0);
-      }, 0);
-      
-      const defenseCount = refreshedLines.defense.reduce((count, pair) => {
-        return count + 
-          (pair.leftDefense ? 1 : 0) + 
-          (pair.rightDefense ? 1 : 0);
-      }, 0);
-      
-      console.log("useLineupData - Player counts in lines:", {
-        forwards: forwardCount,
-        defense: defenseCount,
-        goalies: refreshedLines.goalies.length
-      });
       
       setLines(refreshedLines);
       setLoadingState('success');

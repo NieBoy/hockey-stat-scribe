@@ -91,14 +91,6 @@ export function usePlayerMovement(
     // Examples: forward-1-LW, defense-2-RD, goalie-G
     const destParts = destinationId.split('-');
     
-    // If this is a special teams position, it will have more parts
-    // Example: pp-1-LW or pk-2-RD
-    if (destParts[0] === 'pp' || destParts[0] === 'pk') {
-      console.log("Special teams not fully implemented yet");
-      return;
-    }
-
-    // Handle goalie drops
     if (destParts[0] === 'goalie') {
       const newLines = { ...lines };
       if (!newLines.goalies.some(g => g.id === player?.id) && player) {

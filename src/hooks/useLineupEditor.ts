@@ -1,231 +1,55 @@
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { Team, Lines } from "@/types";
-import { buildInitialLines } from "@/utils/lineupUtils";
+import { useLineupData } from "./lineup/useLineupData";
 import { useAvailablePlayers } from "./lineup/useAvailablePlayers";
 import { useLineManagement } from "./lineup/useLineManagement";
 import { usePlayerMovement } from "./lineup/usePlayerMovement";
 import { usePlayerSelection } from "./lineup/usePlayerSelection";
-import { getTeamLineup } from "@/services/teams/lineup";
-import { toast } from "sonner";
-import { cloneDeep } from "lodash";
 
 export function useLineupEditor(team: Team) {
   console.log("useLineupEditor initializing with team:", team?.id);
   
-  const [lines, setLines] = useState<Lines>(() => {
-    console.log("Building initial lines from team data:", team);
-    return buildInitialLines(team);
-  });
+  const {
+    lines,
+    setLines,
+    loadingState,
+    error,
+    lastRefreshed,
+    hasPositionData,
+    refreshLineup,
+    lineupData
+  } = useLineupData(team);
+
+  const { 
+    availablePlayers, 
+    setAvailablePlayers, 
+    updateAvailablePlayers 
+  } = useAvailablePlayers(team, lines);
   
-  // Track if initial data has been loaded
-  const initialLoadComplete = useRef(false);
-  // Use a ref to track if fetch is in progress
-  const fetchInProgress = useRef(false);
-  // Track if there was an error during fetch
-  const fetchError = useRef<Error | null>(null);
-  // Store the raw lineup data
-  const lineupDataRef = useRef<any[]>([]);
-  // Store the last lines data to prevent loss
-  const lastLinesRef = useRef<Lines | null>(null);
-  
-  // Safe setLines function to prevent data loss
-  const safeSetLines = useCallback((newLines: Lines) => {
-    console.log("Safe setting lines:", JSON.stringify(newLines, null, 2));
-    
-    // First check if the new lines have any valid players (basic validation)
-    const hasForwardPlayers = newLines.forwards.some(line => 
-      line.leftWing || line.center || line.rightWing
-    );
-    
-    const hasDefensePlayers = newLines.defense.some(line =>
-      line.leftDefense || line.rightDefense
-    );
-    
-    const hasGoalies = newLines.goalies.length > 0;
-    
-    const hasAnyPlayers = hasForwardPlayers || hasDefensePlayers || hasGoalies;
-    
-    // If the new lines don't have ANY players and we had players before,
-    // this might be a data loss issue - check and prevent
-    if (!hasAnyPlayers && lastLinesRef.current) {
-      const lastHasPlayers = 
-        lastLinesRef.current.forwards.some(line => line.leftWing || line.center || line.rightWing) ||
-        lastLinesRef.current.defense.some(line => line.leftDefense || line.rightDefense) ||
-        lastLinesRef.current.goalies.length > 0;
-      
-      if (lastHasPlayers) {
-        console.warn("Prevented potential data loss - new lines had no players but previous lines did");
-        toast.error("Prevented potential data loss", { 
-          description: "An error occurred that would have removed all players from your lineup" 
-        });
-        return; // Don't update lines
-      }
-    }
-    
-    // Store the new lines in our ref
-    lastLinesRef.current = cloneDeep(newLines);
-    
-    // Actually update the state
-    setLines(cloneDeep(newLines));
-  }, []);
-  
-  // Function to force a refresh of lineup data
-  const refreshLineupData = useCallback(async () => {
-    if (!team?.id) {
-      console.error("Cannot refresh lineup - no team ID");
-      return null;
-    }
-    
-    try {
-      console.log("useLineupEditor - Forcing refresh of lineup data for team:", team.id);
-      fetchInProgress.current = true;
-      
-      const lineupData = await getTeamLineup(team.id);
-      console.log("useLineupEditor - Refreshed lineup data:", lineupData);
-      
-      // Store the raw data for reference
-      lineupDataRef.current = lineupData;
-      
-      // Apply positions from database to the team players
-      const updatedTeam = {
-        ...team,
-        players: team.players.map(player => {
-          const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
-          if (lineupPlayer && lineupPlayer.position) {
-            return {
-              ...player,
-              position: lineupPlayer.position,
-              lineNumber: lineupPlayer.line_number
-            };
-          }
-          return player;
-        })
-      };
-      
-      // Rebuild lines with the updated team data
-      const refreshedLines = buildInitialLines(updatedTeam);
-      console.log("useLineupEditor - Rebuilt lines with refreshed data:", refreshedLines);
-      safeSetLines(refreshedLines);
-      
-      // Add the lines directly to the team object for better accessibility
-      team.lines = refreshedLines;
-      
-      fetchInProgress.current = false;
-      initialLoadComplete.current = true;
-      
-      return refreshedLines;
-    } catch (error) {
-      console.error("useLineupEditor - Error refreshing lineup data:", error);
-      fetchError.current = error instanceof Error ? error : new Error('Unknown error refreshing lineup data');
-      fetchInProgress.current = false;
-      
-      toast.error("Failed to refresh lineup data");
-      return null;
-    }
-  }, [team, safeSetLines]);
-  
-  // Force rebuild lines whenever team data changes, including when team players' positions change
-  useEffect(() => {
-    if (!team?.id || fetchInProgress.current) return;
-    
-    console.log("Team data changed, rebuilding lines");
-    
-    const fetchAndBuildLines = async () => {
-      try {
-        fetchInProgress.current = true;
-        fetchError.current = null;
-        
-        // Immediately build initial lines from current team data
-        const initialLines = buildInitialLines(team);
-        safeSetLines(initialLines);
-        
-        console.log("Fetching latest lineup data for team:", team.id);
-        const lineupData = await getTeamLineup(team.id);
-        
-        // Store the raw data
-        lineupDataRef.current = lineupData;
-        
-        if (lineupData && lineupData.length > 0) {
-          console.log("Got latest lineup data from database:", lineupData);
-          
-          // Apply positions from database to the team players
-          const updatedTeam = {
-            ...team,
-            players: team.players.map(player => {
-              // Find this player in the lineup data
-              const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
-              if (lineupPlayer && lineupPlayer.position) {
-                console.log(`Applying position ${lineupPlayer.position} to player ${player.name}`);
-                return {
-                  ...player,
-                  position: lineupPlayer.position,
-                  lineNumber: lineupPlayer.line_number
-                };
-              }
-              return player;
-            })
-          };
-          
-          // Rebuild lines with the updated team data
-          console.log("Rebuilding lines with fresh lineup data");
-          const refreshedLines = buildInitialLines(updatedTeam);
-          console.log("Refreshed lines:", refreshedLines);
-          safeSetLines(refreshedLines);
-          
-          // Add the lines directly to the team object
-          team.lines = refreshedLines;
-          
-          // Check if we have any real position data
-          const hasPositions = refreshedLines.forwards.some(line => 
-            line.leftWing || line.center || line.rightWing
-          ) || refreshedLines.defense.some(pair =>
-            pair.leftDefense || pair.rightDefense
-          ) || refreshedLines.goalies.length > 0;
-          
-          if (!hasPositions) {
-            console.warn("No player positions found in the lineup data");
-            toast.info("No lineup positions found. Please set up your team's lineup.");
-          }
-        } else {
-          console.log("No lineup data found in database, using initial lines");
-          toast.info("No lineup data found. Please set up your team's lineup.");
-        }
-        
-        initialLoadComplete.current = true;
-      } catch (error) {
-        console.error("Error fetching lineup data:", error);
-        fetchError.current = error instanceof Error ? error : new Error('Unknown error');
-        initialLoadComplete.current = true; // Still mark as complete so UI can show error state
-        toast.error("Error loading lineup data", {
-          description: error instanceof Error ? error.message : "Unknown error"
-        });
-      } finally {
-        fetchInProgress.current = false;
-      }
-    };
-    
-    fetchAndBuildLines();
-  }, [team?.id, team, safeSetLines]);
-  
-  const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
   const { 
     addForwardLine, 
     addDefenseLine, 
     deleteForwardLine, 
     deleteDefenseLine 
-  } = useLineManagement(lines, safeSetLines);
-  const { handlePlayerMove } = usePlayerMovement(lines, safeSetLines, availablePlayers, setAvailablePlayers);
-  const { handlePlayerSelect } = usePlayerSelection(lines, safeSetLines, availablePlayers, setAvailablePlayers);
-
-  // Update available players when lines change
-  useEffect(() => {
-    updateAvailablePlayers(lines);
-  }, [lines, updateAvailablePlayers]);
+  } = useLineManagement(lines, setLines);
+  
+  const { handlePlayerMove } = usePlayerMovement(
+    lines, 
+    setLines, 
+    availablePlayers, 
+    setAvailablePlayers
+  );
+  
+  const { handlePlayerSelect } = usePlayerSelection(
+    lines, 
+    setLines, 
+    availablePlayers, 
+    setAvailablePlayers
+  );
 
   return {
     lines,
-    setLines: safeSetLines,
+    setLines,
     availablePlayers,
     setAvailablePlayers,
     handlePlayerSelect,
@@ -234,10 +58,10 @@ export function useLineupEditor(team: Team) {
     deleteForwardLine,
     deleteDefenseLine,
     handlePlayerMove,
-    isInitialLoadComplete: initialLoadComplete.current,
-    isLoading: fetchInProgress.current,
-    error: fetchError.current,
-    refreshLineupData,
-    lineupData: lineupDataRef.current
+    isInitialLoadComplete: loadingState === 'success',
+    isLoading: loadingState === 'loading',
+    error,
+    refreshLineupData: refreshLineup,
+    lineupData
   };
 }

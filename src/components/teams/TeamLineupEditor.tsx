@@ -28,7 +28,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
   } = useLineupEditor(team);
 
   // Normalize onSaveLineup to match the expected type
-  const normalizedSaveLineup = async (linesToSave: Lines): Promise<boolean | void> => {
+  const normalizedSaveLineup = async (linesToSave: Lines): Promise<boolean> => {
     try {
       await onSaveLineup(linesToSave);
       // Since onSaveLineup doesn't return a value, we'll return true to indicate success
