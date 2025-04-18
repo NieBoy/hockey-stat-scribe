@@ -85,7 +85,7 @@ export function useLineupEditor(team: Team) {
   }, [team?.id, JSON.stringify(team?.players)]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
-  const { addForwardLine, addDefenseLine } = useLineManagement(lines, setLines);
+  const { addForwardLine, addDefenseLine, deleteForwardLine, deleteDefenseLine } = useLineManagement(lines, setLines);
   const { handlePlayerMove } = usePlayerMovement(lines, setLines, availablePlayers, setAvailablePlayers);
   const { handlePlayerSelect } = usePlayerSelection(lines, setLines, availablePlayers, setAvailablePlayers);
 
@@ -106,6 +106,8 @@ export function useLineupEditor(team: Team) {
     handlePlayerSelect,
     addForwardLine,
     addDefenseLine,
+    deleteForwardLine,
+    deleteDefenseLine,
     handlePlayerMove,
     isInitialLoadComplete: initialLoadComplete.current,
     isLoading: fetchInProgress.current,

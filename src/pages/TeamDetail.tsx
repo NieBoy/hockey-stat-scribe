@@ -24,7 +24,8 @@ export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("players");
-  const [lineupRefreshKey, setLineupRefreshKey] = useState(0);
+  // This key will force the QuickLineupView component to completely re-render when needed
+  const [lineupRefreshKey, setLineupRefreshKey] = useState<number>(0);
   
   const { 
     addPlayerDialogOpen, 
@@ -50,10 +51,23 @@ export default function TeamDetail() {
     const intervalId = setInterval(() => {
       console.log("Periodic team data refresh");
       refetchTeam();
-      setLineupRefreshKey(prev => prev + 1); // Force lineup component to refresh too
+      // Force lineup component to completely re-render with fresh data
+      setLineupRefreshKey(prev => prev + 1);
     }, 30000); // Every 30 seconds
 
     return () => clearInterval(intervalId);
+  }, [refetchTeam]);
+
+  // Explicitly refresh lineup when returning from the lineup editor page
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("Window focused - refreshing team data");
+      refetchTeam();
+      setLineupRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [refetchTeam]);
   
   const handleSendInvitations = async (memberIds: string[]) => {
@@ -122,6 +136,11 @@ export default function TeamDetail() {
     setLineupRefreshKey(prev => prev + 1); // Force lineup refresh when team updates
   };
 
+  // Force lineup refresh immediately after returning from lineup editor page
+  const handleEditLineupClick = () => {
+    navigate(`/teams/${id}/lineup`);
+  };
+
   // Wrap the content in a QueryClientProvider to ensure React Query context is available
   return (
     <MainLayout>
@@ -136,7 +155,7 @@ export default function TeamDetail() {
           <QuickLineupView key={`lineup-${lineupRefreshKey}`} team={team} />
 
           <div className="flex justify-end mb-2">
-            <Button onClick={() => navigate(`/teams/${id}/lineup`)}>
+            <Button onClick={handleEditLineupClick}>
               Edit Lineup
             </Button>
           </div>

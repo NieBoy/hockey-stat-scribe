@@ -93,6 +93,11 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
                 Error Loading Lineup
               </Badge>
             )}
+            {loadingState === 'success' && lastRefreshed && (
+              <Badge variant="outline" className="text-xs">
+                Updated {lastRefreshed.toLocaleTimeString()}
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>

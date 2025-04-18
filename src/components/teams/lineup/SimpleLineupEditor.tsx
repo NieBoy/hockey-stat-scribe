@@ -13,9 +13,10 @@ import { PlayerSelectionModal } from "./PlayerSelectionModal";
 
 interface SimpleLineupEditorProps {
   team: Team;
+  onSaveLineup?: (lines: Lines) => Promise<boolean>;
 }
 
-export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
+export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorProps) {
   const {
     lines,
     setLines,
@@ -23,6 +24,8 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
     handlePlayerSelect,
     addForwardLine,
     addDefenseLine,
+    deleteForwardLine,
+    deleteDefenseLine,
     isInitialLoadComplete,
     isLoading,
     error
@@ -31,26 +34,6 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
   const [currentTab, setCurrentTab] = useState<'forwards' | 'defense' | 'goalies'>('forwards');
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
-
-  const deleteForwardLine = (lineIndex: number) => {
-    const newLines = { ...lines };
-    newLines.forwards = newLines.forwards.filter((_, index) => index !== lineIndex);
-    newLines.forwards = newLines.forwards.map((line, index) => ({
-      ...line,
-      lineNumber: index + 1
-    }));
-    setLines(newLines);
-  };
-
-  const deleteDefenseLine = (lineIndex: number) => {
-    const newLines = { ...lines };
-    newLines.defense = newLines.defense.filter((_, index) => index !== lineIndex);
-    newLines.defense = newLines.defense.map((line, index) => ({
-      ...line,
-      lineNumber: index + 1
-    }));
-    setLines(newLines);
-  };
 
   const handlePositionSelect = (lineIndex: number, position: Position) => {
     setSelectedLineIndex(lineIndex);
@@ -76,6 +59,20 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
       return lines.goalies[selectedLineIndex] || null;
     }
     return null;
+  };
+
+  // Save the lineup when requested
+  const handleSave = async () => {
+    if (onSaveLineup) {
+      try {
+        const success = await onSaveLineup(lines);
+        return success;
+      } catch (error) {
+        console.error("Error saving lineup:", error);
+        return false;
+      }
+    }
+    return false;
   };
 
   if (isLoading) {
@@ -162,8 +159,13 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
 
       {/* Preview of the current lineup */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Current Lineup</CardTitle>
+          {onSaveLineup && (
+            <Button onClick={handleSave}>
+              Save Lineup
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <NonDraggableLineupView lines={lines} />
