@@ -1,6 +1,7 @@
 
 import { Lines, User, Position } from "@/types";
 import { removePlayerFromCurrentPosition } from "@/utils/lineupUtils";
+import { usePlayerManagement } from "./usePlayerManagement";
 
 interface PlayerMoveParams {
   playerId: string;
@@ -18,70 +19,44 @@ export function usePlayerMovement(
   availablePlayers: User[],
   setAvailablePlayers: (players: User[]) => void
 ) {
+  const { updatePlayerPosition } = usePlayerManagement(lines, setLines, availablePlayers, setAvailablePlayers);
+
   const handlePlayerMove = ({
     playerId,
     sourceType,
-    sourceLineNumber,
-    sourcePosition,
     destType,
     destLineNumber,
     destPosition
   }: PlayerMoveParams) => {
-    const newLines = JSON.parse(JSON.stringify(lines)) as Lines;
-    let newAvailablePlayers = [...availablePlayers];
-    
     // Find the player
     let player: User | null = null;
     
     if (sourceType === 'roster') {
-      const playerIndex = newAvailablePlayers.findIndex(p => p.id === playerId);
+      const playerIndex = availablePlayers.findIndex(p => p.id === playerId);
       if (playerIndex >= 0) {
-        player = newAvailablePlayers[playerIndex];
-        if (destType !== 'remove') {
-          newAvailablePlayers.splice(playerIndex, 1);
-        }
+        player = availablePlayers[playerIndex];
       }
     } else {
-      removePlayerFromCurrentPosition(playerId, newLines);
+      removePlayerFromCurrentPosition(playerId, lines);
       player = availablePlayers.find(p => p.id === playerId) || null;
     }
     
     if (!player || destType === 'remove') {
-      setAvailablePlayers(newAvailablePlayers);
+      const newLines = { ...lines };
+      removePlayerFromCurrentPosition(playerId, newLines);
       setLines(newLines);
       return;
     }
 
-    // Add player to destination
-    if (destType === 'forward' && destPosition) {
-      const line = newLines.forwards[destLineNumber - 1];
-      if (destPosition === 'LW') {
-        if (line.leftWing) newAvailablePlayers.push(line.leftWing);
-        line.leftWing = { ...player, position: destPosition, lineNumber: destLineNumber };
-      } else if (destPosition === 'C') {
-        if (line.center) newAvailablePlayers.push(line.center);
-        line.center = { ...player, position: destPosition, lineNumber: destLineNumber };
-      } else if (destPosition === 'RW') {
-        if (line.rightWing) newAvailablePlayers.push(line.rightWing);
-        line.rightWing = { ...player, position: destPosition, lineNumber: destLineNumber };
-      }
-    } 
-    else if (destType === 'defense' && destPosition) {
-      const line = newLines.defense[destLineNumber - 1];
-      if (destPosition === 'LD') {
-        if (line.leftDefense) newAvailablePlayers.push(line.leftDefense);
-        line.leftDefense = { ...player, position: destPosition, lineNumber: destLineNumber };
-      } else if (destPosition === 'RD') {
-        if (line.rightDefense) newAvailablePlayers.push(line.rightDefense);
-        line.rightDefense = { ...player, position: destPosition, lineNumber: destLineNumber };
-      }
+    // Update player position using shared logic
+    if (destPosition && (destType === 'forward' || destType === 'defense' || destType === 'goalie')) {
+      updatePlayerPosition({
+        lineType: destType === 'forward' ? 'forwards' : destType === 'defense' ? 'defense' : 'goalies',
+        lineIndex: destLineNumber - 1,
+        position: destPosition,
+        player
+      });
     }
-    else if (destType === 'goalie') {
-      newLines.goalies.push({ ...player, position: 'G' });
-    }
-    
-    setLines(newLines);
-    setAvailablePlayers(newAvailablePlayers);
   };
 
   return {
