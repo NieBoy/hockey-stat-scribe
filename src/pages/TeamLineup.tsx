@@ -35,7 +35,8 @@ export default function TeamLineup() {
     enabled: !!id,
     // Use a very short staleTime to always get fresh data
     staleTime: 0,
-    refetchInterval: 30000, // Refetch every 30 seconds in case lineup was updated elsewhere
+    // Refetch every 30 seconds
+    refetchInterval: 30000, 
   });
 
   // Force refetch when component mounts
@@ -50,7 +51,7 @@ export default function TeamLineup() {
   const handleSaveLineup = async (lines: Lines) => {
     if (!team?.id) {
       toast.error("Unable to save lineup: team ID not available");
-      return;
+      return false;
     }
     
     try {
@@ -58,15 +59,23 @@ export default function TeamLineup() {
       const success = await updateTeamLineup(team.id, lines);
       
       if (success) {
-        // Invalidate the team data to ensure it gets refreshed
+        toast.success("Lineup saved successfully");
+        
+        // Invalidate all team data to ensure it gets refreshed everywhere
+        queryClient.invalidateQueries({ queryKey: ['team'] });
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        
+        // Specific invalidation for this team
         queryClient.invalidateQueries({ queryKey: ['team', team.id] });
+        
         return true;
       } else {
         throw new Error("Failed to update lineup");
       }
     } catch (error) {
       console.error("Error saving lineup:", error);
-      throw error;
+      toast.error("Failed to save lineup");
+      return false;
     }
   };
   

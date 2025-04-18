@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,21 @@ export default function TeamDetail() {
     teamError,
     refetchTeam
   } = useTeams(id);
+
+  // Refresh team data periodically to ensure we have latest lineup data
+  useEffect(() => {
+    // Initial refresh
+    refetchTeam();
+
+    // Set up periodic refresh
+    const intervalId = setInterval(() => {
+      console.log("Periodic team data refresh");
+      refetchTeam();
+      setLineupRefreshKey(prev => prev + 1); // Force lineup component to refresh too
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [refetchTeam]);
   
   const handleSendInvitations = async (memberIds: string[]) => {
     try {
@@ -102,10 +117,11 @@ export default function TeamDetail() {
   }
   
   const handleTeamUpdate = () => {
+    console.log("Team update detected, refreshing data");
     refetchTeam();
     setLineupRefreshKey(prev => prev + 1); // Force lineup refresh when team updates
   };
-  
+
   // Wrap the content in a QueryClientProvider to ensure React Query context is available
   return (
     <MainLayout>
@@ -117,7 +133,13 @@ export default function TeamDetail() {
             onAddPlayerClick={handleAddPlayer}
           />
 
-          <QuickLineupView team={team} />
+          <QuickLineupView key={`lineup-${lineupRefreshKey}`} team={team} />
+
+          <div className="flex justify-end mb-2">
+            <Button onClick={() => navigate(`/teams/${id}/lineup`)}>
+              Edit Lineup
+            </Button>
+          </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">

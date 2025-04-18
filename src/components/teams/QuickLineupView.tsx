@@ -20,6 +20,9 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   // Force refresh key to trigger a re-fetch when needed
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Add timestamp to track when data was last refreshed
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
   useEffect(() => {
     const fetchLineup = async () => {
       try {
@@ -49,6 +52,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         console.log("QuickLineupView - Built lines structure:", refreshedLines);
         setLines(refreshedLines);
         setLoadingState('success');
+        setLastRefreshed(new Date());
       } catch (error) {
         console.error("QuickLineupView - Error fetching lineup:", error);
         setLoadingState('error');
@@ -73,8 +77,10 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
               size="sm" 
               onClick={handleRefresh} 
               disabled={loadingState === 'loading'}
+              className="flex items-center gap-1"
             >
               <RefreshCw className="h-4 w-4" />
+              Refresh
             </Button>
             
             {loadingState === 'loading' && (

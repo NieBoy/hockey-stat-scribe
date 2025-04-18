@@ -74,6 +74,9 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
       
       if (success) {
         toast.success("Lineup saved successfully");
+        
+        // Force a page reload to ensure the team detail page gets fresh data
+        window.location.reload();
       } else {
         toast.error("Failed to save lineup");
       }
@@ -135,7 +138,7 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
   };
 
   // Delete a defense line
-  const defenseLine = (lineIndex: number) => {
+  const deleteDefenseLine = (lineIndex: number) => {
     const newLines = { ...lines };
     newLines.defense = newLines.defense.filter((_, index) => index !== lineIndex);
     
@@ -344,7 +347,7 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
                     variant="ghost" 
                     size="sm"
                     className="h-8 w-8 p-0 text-red-500"
-                    onClick={() => defenseLine(index)}
+                    onClick={() => deleteDefenseLine(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
