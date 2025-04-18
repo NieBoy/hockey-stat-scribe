@@ -127,7 +127,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
       <SaveLineupDialog
         isOpen={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
-        onConfirm={() => handleSave()}
+        onConfirm={handleSave}
       />
     </>
   );
