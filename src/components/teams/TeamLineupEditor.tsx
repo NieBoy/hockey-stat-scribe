@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Team, Lines } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,7 +25,7 @@ export interface TeamLineupEditorProps {
   isSaving?: boolean;
 }
 
-const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEditorProps) => {
+export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false }: TeamLineupEditorProps) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<'standard' | 'drag-drop'>('standard');
   
@@ -38,13 +37,13 @@ const TeamLineupEditor = ({ team, onSaveLineup, isSaving = false }: TeamLineupEd
     addDefenseLine
   } = useLineupEditor(team);
 
-  const handleSaveLineup = async () => {
-    await onSaveLineup(lines);
-  };
-
-  const handleSaveRequest = () => {
-    setIsConfirmDialogOpen(true);
-  };
+  // Auto-save whenever lines change
+  useEffect(() => {
+    const saveLines = async () => {
+      await onSaveLineup(lines);
+    };
+    saveLines();
+  }, [lines, onSaveLineup]);
 
   return (
     <>

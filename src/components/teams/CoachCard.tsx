@@ -1,7 +1,8 @@
+
 import React from "react";
 import { User } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { UserCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface CoachCardProps {
@@ -9,41 +10,25 @@ interface CoachCardProps {
 }
 
 const CoachCard = ({ coach }: CoachCardProps) => {
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {getUserInitials(coach.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle>
-              <Link 
-                to={`/players/${coach.id}`} 
-                className="hover:underline"
-              >
-                {coach.name}
-              </Link>
-            </CardTitle>
+      <CardContent className="p-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <UserCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <div className="min-w-0">
+            <Link 
+              to={`/players/${coach.id}`} 
+              className="font-medium text-sm hover:underline truncate block"
+            >
+              {coach.name}
+            </Link>
+            {coach.email && (
+              <div className="text-xs text-muted-foreground truncate">
+                {coach.email}
+              </div>
+            )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {coach.email && (
-          <div className="text-sm text-muted-foreground mb-2">
-            {coach.email}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

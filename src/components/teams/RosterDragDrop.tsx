@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Team, Lines, User } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,9 +15,7 @@ interface RosterDragDropProps {
   isSaving?: boolean;
 }
 
-export default function RosterDragDrop({ team, onSave, isSaving = false }: RosterDragDropProps) {
-  const [activeTab, setActiveTab] = useState('even-strength');
-  
+export default function RosterDragDrop({ team, onSave }: RosterDragDropProps) {
   const {
     lines,
     setLines,
@@ -27,6 +24,13 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     addForwardLine,
     addDefenseLine,
   } = useLineupEditor(team);
+
+  useEffect(() => {
+    const saveLines = async () => {
+      await onSave(lines);
+    };
+    saveLines();
+  }, [lines, onSave]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -57,29 +61,12 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     toast.success('Player position updated');
   };
 
-  const handleSaveLineup = async () => {
-    try {
-      await onSave(lines);
-      toast.success('Lineup saved successfully');
-    } catch (error) {
-      console.error('Error saving lineup:', error);
-      toast.error('Failed to save lineup');
-    }
-  };
-
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Team Roster</h2>
-          <Button onClick={handleSaveLineup} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Lineup'}
-          </Button>
-        </div>
-
         <AvailablePlayersSection availablePlayers={availablePlayers} />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="even-strength" className="w-full">
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="even-strength">Even Strength</TabsTrigger>
             <TabsTrigger value="power-play">Power Play</TabsTrigger>

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import TeamLineupEditor from "@/components/teams/TeamLineupEditor";
@@ -11,11 +10,13 @@ import { useTeams } from "@/hooks/useTeams";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
+import RosterDragDrop from "@/components/teams/RosterDragDrop";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [editorMode, setEditorMode] = useState<'standard' | 'drag-drop'>('standard');
   
   const {
     addPlayerDialogOpen,
@@ -32,6 +33,21 @@ export default function TeamLineup() {
     queryFn: () => getTeamById(id!),
     enabled: !!id
   });
+
+  const handleSaveLineup = async (lines: Lines) => {
+    if (!id) return;
+    
+    try {
+      setSaving(true);
+      await updateTeamLineup(id, lines);
+      refetch();
+    } catch (error) {
+      console.error("Error saving lineup:", error);
+      toast.error("Failed to save lineup");
+    } finally {
+      setSaving(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -56,22 +72,17 @@ export default function TeamLineup() {
     );
   }
 
-  const handleSaveLineup = async (lines: Lines) => {
-    if (!id) return;
-    
-    try {
-      setSaving(true);
-      await updateTeamLineup(id, lines);
-      toast.success("Team lineup saved successfully!");
-      // Refetch the team data to get the updated lineup
-      refetch();
-    } catch (error) {
-      console.error("Error saving lineup:", error);
-      toast.error("Failed to save lineup");
-    } finally {
-      setSaving(false);
-    }
-  };
+  if (!team) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Team Not Found</h1>
+          <p>The team you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -85,17 +96,38 @@ export default function TeamLineup() {
           >
             <ArrowLeft className="h-4 w-4" /> Back to Team
           </Button>
-          <Button onClick={() => setAddPlayerDialogOpen(true)}>
-            Add Player
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant={editorMode === 'standard' ? 'default' : 'outline'} 
+              onClick={() => setEditorMode('standard')}
+            >
+              Standard Editor
+            </Button>
+            <Button 
+              variant={editorMode === 'drag-drop' ? 'default' : 'outline'} 
+              onClick={() => setEditorMode('drag-drop')}
+            >
+              Drag & Drop Editor
+            </Button>
+          </div>
         </div>
         
-        <TeamLineupEditor team={team} onSaveLineup={handleSaveLineup} isSaving={saving} />
+        {editorMode === 'drag-drop' ? (
+          <RosterDragDrop 
+            team={team} 
+            onSave={handleSaveLineup}
+          />
+        ) : (
+          <TeamLineupEditor 
+            team={team} 
+            onSaveLineup={handleSaveLineup}
+          />
+        )}
 
         <AddPlayerDialog
           isOpen={addPlayerDialogOpen}
           onOpenChange={setAddPlayerDialogOpen}
-          selectedTeam={team}
+          selectedTeam={selectedTeam}
           onSubmit={submitNewPlayer}
           newPlayer={newPlayer}
           setNewPlayer={setNewPlayer}

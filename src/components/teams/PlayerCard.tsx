@@ -15,35 +15,33 @@ interface PlayerCardProps {
 const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserCircle className="h-5 w-5 text-muted-foreground" />
-            <div>
+      <CardContent className="p-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <UserCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="min-w-0">
               <Link 
                 to={`/players/${player.id}`} 
-                className="font-medium text-sm hover:underline truncate"
+                className="font-medium text-sm hover:underline truncate block"
               >
                 {player.name}
               </Link>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                {player.position && <span>{player.position}</span>}
-                {player.number && (
-                  <>
-                    {player.position && <span>•</span>}
-                    <span>#{player.number}</span>
-                  </>
-                )}
-              </div>
+              {(player.position || player.number) && (
+                <div className="text-xs text-muted-foreground truncate">
+                  {player.position}
+                  {player.position && player.number && " • "}
+                  {player.number && `#${player.number}`}
+                </div>
+              )}
             </div>
           </div>
           <Button 
             variant="ghost" 
             size="sm"
-            className="h-8 w-8 p-0 text-destructive"
+            className="h-6 w-6 p-0 text-destructive flex-shrink-0"
             onClick={() => onRemovePlayer(teamId, player.id, player.name)}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
             <span className="sr-only">Remove player</span>
           </Button>
         </div>
