@@ -1,76 +1,37 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Team } from '@/types';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { LineupHeader } from './lineup/LineupHeader';
-import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
-import { useLineupData } from '@/hooks/lineup/useLineupData';
-import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SimplePlayerList from './SimplePlayerList';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface QuickLineupViewProps {
   team: Team;
 }
 
 export function QuickLineupView({ team }: QuickLineupViewProps) {
-  const [refreshKey, setRefreshKey] = useState<number>(Date.now());
+  const navigate = useNavigate();
   
-  // Use custom hook for lineup data management
-  const { lines, loadingState, lastRefreshed, error, hasPositionData } = useLineupData(team, refreshKey);
-  
-  // Set up auto-refresh every 30 seconds
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      console.log("QuickLineupView - Auto-refreshing lineup data");
-      setRefreshKey(Date.now()); // Use timestamp for more reliable refresh
-    }, 30000);
-    
-    return () => clearInterval(intervalId);
-  }, []); 
+  // Sort players by number when possible
+  const sortedPlayers = [...team.players].sort((a, b) => {
+    const numA = a.number ? parseInt(a.number) : 999;
+    const numB = b.number ? parseInt(b.number) : 999;
+    return numA - numB;
+  });
 
-  // Show error toast if data loading fails
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load lineup data", {
-        description: error.message
-      });
-    }
-  }, [error]);
-
-  const handleRefresh = useCallback(() => {
-    console.log("QuickLineupView - Manual refresh triggered");
-    setRefreshKey(Date.now());
-    toast.success("Refreshing lineup data...");
-  }, []);
+  const handleEditClick = () => {
+    navigate(`/teams/${team.id}/lineup`);
+  };
 
   return (
     <Card className="mt-6">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <LineupHeader 
-            loadingState={loadingState}
-            lastRefreshed={lastRefreshed}
-            onRefresh={handleRefresh}
-          />
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleRefresh}
-            className="ml-auto gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
-        {!hasPositionData && loadingState === 'success' && (
-          <div className="mt-2 text-sm text-amber-500 bg-amber-50 p-2 rounded-md border border-amber-200">
-            No lineup data found. Please use the "Edit Lineup" button to set up your team lineup.
-          </div>
-        )}
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Team Roster</CardTitle>
+        <Button onClick={handleEditClick}>Edit</Button>
       </CardHeader>
       <CardContent>
-        <NonDraggableLineupView lines={lines} />
+        <SimplePlayerList players={sortedPlayers} />
       </CardContent>
     </Card>
   );
