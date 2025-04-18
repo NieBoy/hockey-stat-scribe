@@ -19,14 +19,20 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     handlePlayerMove,
   } = useLineupEditor(team);
 
-  // Auto-save whenever lines change
+  // Save whenever lines change
   useEffect(() => {
+    if (!team?.id) return;
+    
     const saveLines = async () => {
       try {
-        await updateTeamLineup(team.id, lines);
-        console.log("Auto-saved lineup changes", lines);
+        const success = await updateTeamLineup(team.id, lines);
+        if (success) {
+          console.log("Successfully saved lineup changes", lines);
+        } else {
+          console.error("Failed to save lineup changes");
+        }
       } catch (error) {
-        console.error("Error auto-saving lineup:", error);
+        console.error("Error saving lineup:", error);
       }
     };
     

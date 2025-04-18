@@ -9,11 +9,16 @@ export const updateTeamLineup = async (
   console.log("Updating team lineup", { teamId, lines });
   
   // First get all players for this team
-  const { data: teamPlayers } = await supabase
+  const { data: teamPlayers, error: fetchError } = await supabase
     .from('team_members')
     .select('user_id, position, line_number')
     .eq('team_id', teamId)
     .eq('role', 'player');
+    
+  if (fetchError) {
+    console.error("Error fetching team players:", fetchError);
+    return false;
+  }
     
   // Prepare batch updates
   const updates = [];
@@ -87,32 +92,44 @@ export const updateTeamLineup = async (
   
   console.log("Updates to apply:", updates);
   
-  // Delete existing positions/lines
-  await supabase
-    .from('team_members')
-    .update({
-      position: null,
-      line_number: null
-    })
-    .eq('team_id', teamId)
-    .eq('role', 'player');
-    
-  // Apply updates
-  for (const update of updates) {
-    const { error } = await supabase
+  try {
+    // First reset all positions to ensure clean slate
+    const { error: resetError } = await supabase
       .from('team_members')
       .update({
-        position: update.position,
-        line_number: update.line_number
+        position: null,
+        line_number: null
       })
-      .eq('team_id', update.team_id)
-      .eq('user_id', update.user_id);
+      .eq('team_id', teamId)
+      .eq('role', 'player');
       
-    if (error) {
-      console.error("Error updating player position:", error);
-      console.error("Failed update data:", update);
+    if (resetError) {
+      console.error("Error resetting positions:", resetError);
+      return false;
     }
+      
+    // Now apply all the updates
+    if (updates.length > 0) {
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('team_members')
+          .update({
+            position: update.position,
+            line_number: update.line_number
+          })
+          .eq('team_id', update.team_id)
+          .eq('user_id', update.user_id);
+          
+        if (error) {
+          console.error("Error updating player position:", error);
+          console.error("Failed update data:", update);
+        }
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating team lineup:", error);
+    return false;
   }
-  
-  return true;
 };
