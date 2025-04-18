@@ -1,206 +1,84 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { useState, useEffect } from 'react';
 import { Team, Lines } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { EvenStrengthLines } from './lineup/EvenStrengthLines';
-import { updateTeamLineup } from '@/services/teams';
-import { toast } from 'sonner';
+import { buildInitialLines } from '@/utils/lineupUtils';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { getTeamLineup } from '@/services/teams/lineupManagement';
 
 interface QuickLineupViewProps {
   team: Team;
 }
 
 export function QuickLineupView({ team }: QuickLineupViewProps) {
-  const {
-    lines,
-    handlePlayerMove,
-    isInitialLoadComplete
-  } = useLineupEditor(team);
-  
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-  const [lastSavedLineup, setLastSavedLineup] = useState<string>('');
-  // Use a ref to track if the component is mounted to prevent setState after unmount
-  const isMounted = useRef(true);
-  const queryClient = useQueryClient();
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Set up cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
+  const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
+  const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
 
-  // Save whenever lines change
   useEffect(() => {
-    if (!team?.id || !isInitialLoadComplete) {
-      console.log("QuickLineupView - Initial load not complete yet, skipping auto-save");
-      return;
-    }
-    
-    // Compare with last saved lineup to prevent unnecessary saves
-    const currentLineupString = JSON.stringify(lines);
-    if (currentLineupString === lastSavedLineup) {
-      console.log("QuickLineupView - Lineup hasn't changed, skipping auto-save");
-      return;
-    }
-    
-    // Clear any existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    const saveLines = async () => {
+    const fetchLineup = async () => {
       try {
-        if (!isMounted.current) return;
+        setLoadingState('loading');
+        console.log("QuickLineupView - Fetching lineup for team:", team.id);
         
-        setSaveStatus('saving');
-        console.log("QuickLineupView - Saving lineup for team:", team.id);
-        console.log("QuickLineupView - Lineup data to save:", JSON.stringify(lines, null, 2));
+        const lineupData = await getTeamLineup(team.id);
+        console.log("QuickLineupView - Retrieved lineup data:", lineupData);
         
-        const success = await updateTeamLineup(team.id, lines);
+        // Apply positions from database to the team players
+        const updatedTeam = {
+          ...team,
+          players: team.players.map(player => {
+            const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
+            if (lineupPlayer && lineupPlayer.position) {
+              return {
+                ...player,
+                position: lineupPlayer.position,
+                lineNumber: lineupPlayer.line_number
+              };
+            }
+            return player;
+          })
+        };
         
-        if (!isMounted.current) return;
-        
-        if (success) {
-          console.log("QuickLineupView - Successfully saved lineup changes");
-          setSaveStatus('success');
-          setLastSavedLineup(currentLineupString);
-          toast.success("Lineup updated");
-          
-          // Invalidate the team query to ensure all components get fresh data
-          queryClient.invalidateQueries({ queryKey: ['team', team.id] });
-          
-          // Reset status after delay
-          if (isMounted.current) {
-            setTimeout(() => {
-              if (isMounted.current) setSaveStatus('idle');
-            }, 2000);
-          }
-        } else {
-          console.error("QuickLineupView - Failed to save lineup changes");
-          setSaveStatus('error');
-          toast.error("Failed to save lineup");
-        }
+        const refreshedLines = buildInitialLines(updatedTeam);
+        console.log("QuickLineupView - Built lines structure:", refreshedLines);
+        setLines(refreshedLines);
+        setLoadingState('success');
       } catch (error) {
-        console.error("QuickLineupView - Error saving lineup:", error);
-        if (isMounted.current) {
-          setSaveStatus('error');
-          toast.error("Error saving lineup");
-        }
+        console.error("QuickLineupView - Error fetching lineup:", error);
+        setLoadingState('error');
       }
     };
-    
-    // Only save if there are players in the lineup
-    const hasPlayers = lines.forwards.some(line => line.leftWing || line.center || line.rightWing) || 
-                     lines.defense.some(line => line.leftDefense || line.rightDefense) || 
-                     lines.goalies.length > 0;
-    
-    // Add a small delay to prevent too frequent saves 
-    if (hasPlayers) {
-      saveTimeoutRef.current = setTimeout(() => {
-        saveLines();
-      }, 1000);
-    } else {
-      console.log("QuickLineupView - Skipping auto-save since lineup is empty");
-    }
-    
-  }, [lines, team?.id, queryClient, isInitialLoadComplete, lastSavedLineup]);
 
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result;
-    
-    if (!destination) return;
-    
-    // Parse the draggableId to get player information
-    const parts = draggableId.split('-');
-    const playerId = parts[0] === 'roster' ? parts.slice(1).join('-') : parts.slice(3).join('-');
-    
-    // Check if dragging to a position that already has a player
-    // If so, we'll want to swap players instead of just moving one
-    let swapPlayerId: string | null = null;
-    
-    // Different handling if moving between existing positions vs from roster
-    if (source.droppableId !== 'roster' && destination.droppableId !== 'roster') {
-      // Find if there's a player in the destination position
-      const destParts = destination.droppableId.split('-');
-      const lineType = destParts[0];
-      const lineNumber = parseInt(destParts[1], 10);
-      const position = destParts[2];
-      
-      if (lineType === 'forward') {
-        const line = lines.forwards[lineNumber - 1];
-        if (position === 'LW' && line.leftWing) swapPlayerId = line.leftWing.id;
-        else if (position === 'C' && line.center) swapPlayerId = line.center.id;
-        else if (position === 'RW' && line.rightWing) swapPlayerId = line.rightWing.id;
-      } else if (lineType === 'defense') {
-        const line = lines.defense[lineNumber - 1];
-        if (position === 'LD' && line.leftDefense) swapPlayerId = line.leftDefense.id;
-        else if (position === 'RD' && line.rightDefense) swapPlayerId = line.rightDefense.id;
-      }
-      
-      // If there's a player to swap, move them to the source position
-      if (swapPlayerId) {
-        console.log(`QuickLineupView - Swapping player ${swapPlayerId} to position ${source.droppableId}`);
-        handlePlayerMove({
-          playerId: swapPlayerId,
-          sourceId: destination.droppableId,
-          destinationId: source.droppableId
-        });
-      }
-    }
-    
-    // Move the dragged player to the destination
-    console.log(`QuickLineupView - Moving player ${playerId} from ${source.droppableId} to ${destination.droppableId}`);
-    handlePlayerMove({
-      playerId,
-      sourceId: source.droppableId,
-      destinationId: destination.droppableId
-    });
-    
-    toast.success('Player position updated');
-  };
+    fetchLineup();
+  }, [team]);
 
   return (
     <Card className="mt-6">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Current Lineup</CardTitle>
-          {saveStatus === 'saving' && (
+          {loadingState === 'loading' && (
             <Badge variant="outline" className="flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
             </Badge>
           )}
-          {saveStatus === 'success' && (
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              Saved
-            </Badge>
-          )}
-          {saveStatus === 'error' && (
+          {loadingState === 'error' && (
             <Badge variant="destructive">
-              Save Error
+              Error Loading Lineup
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="space-y-6">
-            <EvenStrengthLines 
-              lines={lines}
-              onAddForwardLine={() => {}}
-              onAddDefenseLine={() => {}}
-            />
-          </div>
-        </DragDropContext>
+        <div className="space-y-6">
+          <EvenStrengthLines 
+            lines={lines}
+            onAddForwardLine={() => {}}
+            onAddDefenseLine={() => {}}
+          />
+        </div>
       </CardContent>
     </Card>
   );

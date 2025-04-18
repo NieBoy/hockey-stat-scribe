@@ -1,13 +1,13 @@
 
 import { User } from '@/types';
-import { UserCircle, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Draggable } from '@hello-pangea/dnd';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface PlayerCardProps {
   player: User | null;
   position: string;
-  isSelected: boolean;
+  isSelected?: boolean;
   onClick?: (player: User) => void;
   isDraggable?: boolean;
   index?: number;
@@ -16,56 +16,37 @@ interface PlayerCardProps {
 
 export function PlayerCard({ 
   player, 
-  position, 
-  isSelected, 
-  onClick, 
-  isDraggable = false, 
+  position,
+  isSelected = false,
+  onClick,
+  isDraggable = false,
   index = 0,
   dragId
 }: PlayerCardProps) {
-  const renderCard = () => {
-    if (!player) {
-      return (
-        <div className="flex items-center justify-center p-1 rounded-md border border-dashed border-gray-300 h-12 bg-background">
-          <div className="flex flex-col items-center">
-            <UserCircle className="h-4 w-4 text-gray-400" />
-            <span className="text-xs text-gray-500">{position}</span>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-2 h-12 w-full relative p-2 rounded-md border",
-          isSelected ? "border-primary bg-primary/10" : "border-gray-200",
-          isDraggable ? "cursor-grab active:cursor-grabbing" : "",
-          onClick ? "hover:bg-accent" : ""
+  const content = (
+    <Card className={cn(
+      "relative border",
+      isSelected && "border-primary",
+      !player && "border-dashed",
+      onClick && "cursor-pointer"
+    )}>
+      <CardContent className="p-3 text-center">
+        {player ? (
+          <>
+            <p className="font-medium truncate">{player.name}</p>
+            <p className="text-xs text-muted-foreground">{position}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground">Empty</p>
+            <p className="text-xs text-muted-foreground">{position}</p>
+          </>
         )}
-        onClick={onClick ? () => onClick(player) : undefined}
-      >
-        <div className="flex-shrink-0">
-          <UserCircle className="h-4 w-4" />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <div className="font-medium text-sm truncate">
-            {player.name || "Unknown"}
-          </div>
-          <div className="text-xs text-muted-foreground truncate">
-            {position}{player.number && ` #${player.number}`}
-          </div>
-        </div>
-        {isSelected && (
-          <div className="absolute top-1 right-1">
-            <Check className="h-3 w-3 text-primary" />
-          </div>
-        )}
-      </div>
-    );
-  };
+      </CardContent>
+    </Card>
+  );
 
-  if (isDraggable && player && dragId) {
+  if (isDraggable && dragId && player) {
     return (
       <Draggable draggableId={dragId} index={index}>
         {(provided, snapshot) => (
@@ -73,21 +54,14 @@ export function PlayerCard({
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            style={{
-              ...provided.draggableProps.style,
-              opacity: snapshot.isDragging ? 0.6 : 1,
-            }}
-            className={cn(
-              "transition-all",
-              snapshot.isDragging && "shadow-xl z-50"
-            )}
+            className={cn(snapshot.isDragging && "opacity-50")}
           >
-            {renderCard()}
+            {content}
           </div>
         )}
       </Draggable>
     );
   }
 
-  return renderCard();
+  return content;
 }
