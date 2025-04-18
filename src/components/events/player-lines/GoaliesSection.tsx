@@ -20,44 +20,55 @@ export function GoaliesSection({
   return (
     <div className="mt-4">
       <h4 className="text-sm font-medium mb-2">Goalies</h4>
-      <Droppable droppableId="goalie" direction="horizontal" isDropDisabled={!isDraggable}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={cn(
-              "grid grid-cols-2 gap-2",
-              snapshot.isDraggingOver && "bg-primary/5 rounded-md p-2"
-            )}
-          >
-            {goalies.length > 0 ? (
-              goalies.map((goalie, index) => (
-                <div key={goalie.id} className="col-span-1 min-h-[96px]">
-                  <PlayerCard
-                    player={goalie}
-                    position="G"
-                    isSelected={selectedIds.has(goalie.id)}
-                    onClick={onPlayerClick}
-                    isDraggable={isDraggable}
-                    index={index}
-                    dragId={isDraggable ? `goalie-1-G-${goalie.id}` : undefined}
-                  />
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="col-span-1 min-h-[96px]">
-                  <PlayerCard player={null} position="G" isSelected={false} />
-                </div>
-                <div className="col-span-1 min-h-[96px]">
-                  <PlayerCard player={null} position="G" isSelected={false} />
-                </div>
-              </>
-            )}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+      <div className="grid grid-cols-2 gap-2">
+        <Droppable droppableId="goalie-G">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={cn(
+                "min-h-[96px]",
+                snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
+              )}
+            >
+              <PlayerCard
+                player={goalies[0] || null}
+                position="G"
+                isSelected={goalies[0] ? selectedIds.has(goalies[0].id) : false}
+                onClick={onPlayerClick}
+                isDraggable={isDraggable && !!goalies[0]}
+                index={0}
+                dragId={isDraggable && goalies[0] ? `goalie-G-${goalies[0].id}` : undefined}
+              />
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+        
+        <Droppable droppableId="goalie-G2">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={cn(
+                "min-h-[96px]",
+                snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
+              )}
+            >
+              <PlayerCard
+                player={goalies[1] || null}
+                position="G"
+                isSelected={goalies[1] ? selectedIds.has(goalies[1].id) : false}
+                onClick={onPlayerClick}
+                isDraggable={isDraggable && !!goalies[1]}
+                index={0}
+                dragId={isDraggable && goalies[1] ? `goalie-G2-${goalies[1].id}` : undefined}
+              />
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </div>
     </div>
   );
 }

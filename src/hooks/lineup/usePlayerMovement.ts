@@ -1,16 +1,11 @@
 
 import { Lines, User, Position } from "@/types";
 import { removePlayerFromCurrentPosition } from "@/utils/lineupUtils";
-import { usePlayerManagement } from "./usePlayerManagement";
 
 interface PlayerMoveParams {
   playerId: string;
-  sourceType: 'forward' | 'defense' | 'goalie' | 'roster';
-  sourceLineNumber: number;
-  sourcePosition: Position | null;
-  destType: 'forward' | 'defense' | 'goalie' | 'pp' | 'pk' | 'remove';
-  destLineNumber: number;
-  destPosition: Position | null;
+  sourceId: string;
+  destinationId: string;
 }
 
 export function usePlayerMovement(
@@ -19,41 +14,33 @@ export function usePlayerMovement(
   availablePlayers: User[],
   setAvailablePlayers: (players: User[]) => void
 ) {
-  const { updatePlayerPosition } = usePlayerManagement(lines, setLines, availablePlayers, setAvailablePlayers);
-
   const handlePlayerMove = ({
     playerId,
-    sourceType,
-    sourceLineNumber,
-    sourcePosition,
-    destType,
-    destLineNumber,
-    destPosition
+    sourceId,
+    destinationId,
   }: PlayerMoveParams) => {
     console.log("Handle player move:", {
       playerId,
-      sourceType,
-      sourceLineNumber,
-      sourcePosition,
-      destType,
-      destLineNumber,
-      destPosition
+      sourceId,
+      destinationId
     });
     
     // Find the player
     let player: User | null = null;
+    let newAvailablePlayers = [...availablePlayers];
     
-    if (sourceType === 'roster') {
-      // Find player in available players
+    // Check if player is in available players
+    if (sourceId === 'roster' || sourceId.startsWith('roster')) {
       player = availablePlayers.find(p => p.id === playerId) || null;
-      console.log("Found player in available players:", player);
+      if (player) {
+        newAvailablePlayers = availablePlayers.filter(p => p.id !== playerId);
+      }
     } else {
-      // Create a copy of the lines object to safely modify it
+      // Find player in lines
       const newLines = { ...lines };
       
-      // Before removing the player, find them in the current lineup
       // Check forwards
-      for (const line of lines.forwards) {
+      for (const line of newLines.forwards) {
         if (line.leftWing?.id === playerId) {
           player = line.leftWing;
         } else if (line.center?.id === playerId) {
@@ -66,7 +53,7 @@ export function usePlayerMovement(
       
       // Check defense
       if (!player) {
-        for (const line of lines.defense) {
+        for (const line of newLines.defense) {
           if (line.leftDefense?.id === playerId) {
             player = line.leftDefense;
           } else if (line.rightDefense?.id === playerId) {
@@ -78,14 +65,14 @@ export function usePlayerMovement(
       
       // Check goalies
       if (!player) {
-        player = lines.goalies.find(g => g.id === playerId) || null;
+        player = newLines.goalies.find(g => g.id === playerId) || null;
       }
-
-      console.log("Found player in lines:", player);
       
-      // Now remove the player from their current position
-      removePlayerFromCurrentPosition(playerId, newLines);
-      setLines(newLines);
+      // Remove player from current position
+      if (player) {
+        removePlayerFromCurrentPosition(playerId, newLines);
+        setLines(newLines);
+      }
     }
     
     if (!player) {
@@ -93,33 +80,60 @@ export function usePlayerMovement(
       return;
     }
 
-    if (destType === 'remove') {
-      console.log("Removing player from lineup");
+    // Handle returning player to roster
+    if (destinationId === 'roster') {
+      console.log("Moving player back to roster");
+      setAvailablePlayers([...newAvailablePlayers, player]);
+      return;
+    }
+
+    // Parse destination ID format: type-number-position
+    // Examples: forward-1-LW, defense-2-RD, goalie-G
+    const destParts = destinationId.split('-');
+    
+    // If this is a special teams position, it will have more parts
+    // Example: pp-1-LW or pk-2-RD
+    if (destParts[0] === 'pp' || destParts[0] === 'pk') {
+      console.log("Special teams not fully implemented yet");
+      return;
+    }
+
+    // Handle goalie drops
+    if (destParts[0] === 'goalie') {
       const newLines = { ...lines };
-      removePlayerFromCurrentPosition(playerId, newLines);
-      setLines(newLines);
-      
-      // Add player back to available players if not already there
-      if (!availablePlayers.some(p => p.id === playerId)) {
-        setAvailablePlayers([...availablePlayers, player]);
+      if (!newLines.goalies.some(g => g.id === player?.id) && player) {
+        newLines.goalies.push({...player, position: 'G'});
+        setLines(newLines);
       }
       return;
     }
 
-    // Update player position using shared logic
-    if (destPosition) {
-      console.log("Updating player position:", {
-        lineType: destType === 'forward' ? 'forwards' : destType === 'defense' ? 'defense' : 'goalies',
-        lineIndex: destLineNumber - 1,
-        position: destPosition,
-      });
-
-      updatePlayerPosition({
-        lineType: destType === 'forward' ? 'forwards' : destType === 'defense' ? 'defense' : 'goalies',
-        lineIndex: destLineNumber - 1,
-        position: destPosition,
-        player
-      });
+    // Handle forward and defense line drops
+    if (destParts[0] === 'forward' || destParts[0] === 'defense') {
+      const lineType = destParts[0];
+      const lineNumber = parseInt(destParts[1], 10);
+      const position = destParts[2] as Position;
+      
+      const newLines = { ...lines };
+      const lineIndex = lineNumber - 1;
+      
+      if (lineType === 'forward') {
+        const line = newLines.forwards[lineIndex];
+        if (line) {
+          if (position === 'LW') line.leftWing = {...player, position: 'LW'};
+          else if (position === 'C') line.center = {...player, position: 'C'};
+          else if (position === 'RW') line.rightWing = {...player, position: 'RW'};
+        }
+      } else if (lineType === 'defense') {
+        const line = newLines.defense[lineIndex];
+        if (line) {
+          if (position === 'LD') line.leftDefense = {...player, position: 'LD'};
+          else if (position === 'RD') line.rightDefense = {...player, position: 'RD'};
+        }
+      }
+      
+      setLines(newLines);
+      setAvailablePlayers(newAvailablePlayers);
     }
   };
 

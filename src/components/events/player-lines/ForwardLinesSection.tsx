@@ -29,24 +29,21 @@ export function ForwardLinesSection({
   return (
     <div className="mt-4">
       <h4 className="text-sm font-medium mb-2">{title}</h4>
-      {forwardLines.map((line, lineIndex) => (
-        <div key={`forward-line-${lineIndex}`} className="mb-4">
+      {forwardLines.map((line) => (
+        <div key={`forward-line-${line.lineNumber}`} className="mb-4">
           <p className="text-xs text-muted-foreground mb-1">Line {line.lineNumber}</p>
-          <Droppable 
-            droppableId={`forward-${line.lineNumber}`} 
-            direction="horizontal"
-            isDropDisabled={!isDraggable}
-          >
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className={cn(
-                  "grid grid-cols-3 gap-2",
-                  snapshot.isDraggingOver && "bg-primary/5 rounded-md p-2"
-                )}
-              >
-                <div className="min-h-[96px]">
+          <div className="grid grid-cols-3 gap-2">
+            {/* Left Wing */}
+            <Droppable droppableId={`forward-${line.lineNumber}-LW`}>
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={cn(
+                    "min-h-[96px]",
+                    snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
+                  )}
+                >
                   <PlayerCard
                     player={line.leftWing}
                     position="LW"
@@ -56,33 +53,61 @@ export function ForwardLinesSection({
                     index={0}
                     dragId={isDraggable && line.leftWing ? `forward-${line.lineNumber}-LW-${line.leftWing.id}` : undefined}
                   />
+                  {provided.placeholder}
                 </div>
-                <div className="min-h-[96px]">
+              )}
+            </Droppable>
+            
+            {/* Center */}
+            <Droppable droppableId={`forward-${line.lineNumber}-C`}>
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={cn(
+                    "min-h-[96px]",
+                    snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
+                  )}
+                >
                   <PlayerCard
                     player={line.center}
                     position="C"
                     isSelected={line.center ? selectedIds.has(line.center.id) : false}
                     onClick={onPlayerClick}
                     isDraggable={isDraggable && !!line.center}
-                    index={1}
+                    index={0}
                     dragId={isDraggable && line.center ? `forward-${line.lineNumber}-C-${line.center.id}` : undefined}
                   />
+                  {provided.placeholder}
                 </div>
-                <div className="min-h-[96px]">
+              )}
+            </Droppable>
+            
+            {/* Right Wing */}
+            <Droppable droppableId={`forward-${line.lineNumber}-RW`}>
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={cn(
+                    "min-h-[96px]",
+                    snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
+                  )}
+                >
                   <PlayerCard
                     player={line.rightWing}
                     position="RW"
                     isSelected={line.rightWing ? selectedIds.has(line.rightWing.id) : false}
                     onClick={onPlayerClick}
                     isDraggable={isDraggable && !!line.rightWing}
-                    index={2}
+                    index={0}
                     dragId={isDraggable && line.rightWing ? `forward-${line.lineNumber}-RW-${line.rightWing.id}` : undefined}
                   />
+                  {provided.placeholder}
                 </div>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
+              )}
+            </Droppable>
+          </div>
         </div>
       ))}
     </div>

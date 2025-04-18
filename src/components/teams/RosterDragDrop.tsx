@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Team, Lines, Position, User } from '@/types';
+import { Team, Lines, User } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -39,93 +39,34 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     
     console.log("Drag ended:", { source, destination, draggableId });
     
-    // Parse the draggable ID to get player details
-    // Format: [type]-[lineNumber]-[position]-[playerId]
-    const parts = draggableId.split('-');
+    // Prevent dropping onto self
+    if (source.droppableId === destination.droppableId) {
+      return;
+    }
     
-    // Handle the case where we have a roster draggable
-    let playerType: 'roster' | 'forward' | 'defense' | 'goalie';
-    let lineNumber: number;
-    let position: Position | null;
+    // Extract player ID from draggable ID
+    // Format can be one of:
+    // roster-[playerId]
+    // [type]-[lineNumber]-[position]-[playerId]
+    const parts = draggableId.split('-');
     let playerId: string;
     
     if (parts[0] === 'roster') {
-      playerType = 'roster';
-      lineNumber = 0;
-      position = null;
-      // Player ID is the last part
-      playerId = parts.slice(3).join('-');
+      playerId = parts.slice(1).join('-');
     } else {
-      playerType = parts[0] as 'forward' | 'defense' | 'goalie';
-      lineNumber = parseInt(parts[1], 10);
-      position = parts[2] as Position;
-      // Player ID is the last part
+      // The playerId is the last segment(s)
       playerId = parts.slice(3).join('-');
     }
     
-    console.log("Parsed draggable ID:", { playerType, lineNumber, position, playerId });
+    // Move the player using the simplified API
+    handlePlayerMove({
+      playerId,
+      sourceId: source.droppableId,
+      destinationId: destination.droppableId
+    });
     
-    // Parse destination ID to get drop details
-    // Format: [type]-[lineNumber]
-    const destParts = destination.droppableId.split('-');
-    const destType = destParts[0] as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk' | 'remove' | 'roster';
-    const destLineNumber = destParts.length > 1 ? parseInt(destParts[1], 10) : 0;
-    
-    console.log("Parsed destination:", { destType, destLineNumber });
-    
-    // Handle drops into roster
-    if (destination.droppableId === 'roster') {
-      handlePlayerMove({
-        playerId,
-        sourceType: playerType,
-        sourceLineNumber: lineNumber,
-        sourcePosition: position,
-        destType: 'remove',
-        destLineNumber: 0,
-        destPosition: null
-      });
-      toast.success('Player moved to roster');
-      return;
-    }
-
-    // Get destination position based on index (for forward and defense lines)
-    let destPosition: Position | null = null;
-    
-    if (destType === 'forward') {
-      // Map index to forward position
-      const positions: Position[] = ['LW', 'C', 'RW'];
-      destPosition = positions[destination.index];
-    } else if (destType === 'defense') {
-      // Map index to defense position
-      const positions: Position[] = ['LD', 'RD'];
-      destPosition = positions[destination.index];
-    } else if (destType === 'pp') {
-      // Power play positions
-      const positions: Position[] = ['LW', 'C', 'RW', 'LD', 'RD'];
-      destPosition = positions[destination.index];
-    } else if (destType === 'pk') {
-      // Penalty kill positions
-      const positions: Position[] = ['LF', 'RF', 'LD', 'RD'];
-      destPosition = positions[destination.index];
-    } else if (destType === 'goalie') {
-      destPosition = 'G';
-    }
-
-    console.log("Destination position:", destPosition);
-    
-    // Move player to new position
-    if (destPosition) {
-      handlePlayerMove({
-        playerId,
-        sourceType: playerType,
-        sourceLineNumber: lineNumber,
-        sourcePosition: position,
-        destType: destType === 'roster' ? 'remove' : destType, // Convert 'roster' to 'remove' for compatibility
-        destLineNumber: destLineNumber,
-        destPosition
-      });
-      toast.success(`Player moved to ${destType} line ${destLineNumber || ''} ${destPosition}`);
-    }
+    // Show success toast
+    toast.success('Player position updated');
   };
 
   const handleSaveLineup = async () => {

@@ -36,15 +36,14 @@ export function PlayerCard({
     }
 
     return (
-      <Button
-        variant="outline"
+      <div
         className={cn(
-          "flex flex-col items-center justify-center h-24 w-full relative p-0",
-          isSelected && "border-primary bg-primary/10",
-          isDraggable && "cursor-grab active:cursor-grabbing"
+          "flex flex-col items-center justify-center h-24 w-full relative p-2 rounded-md border",
+          isSelected ? "border-primary bg-primary/10" : "border-gray-200",
+          isDraggable ? "cursor-grab active:cursor-grabbing" : "",
+          onClick ? "hover:bg-accent" : ""
         )}
-        onClick={() => onClick?.(player)}
-        type="button"
+        onClick={onClick ? () => onClick(player) : undefined}
       >
         {isSelected && (
           <div className="absolute top-1 right-1">
@@ -57,7 +56,7 @@ export function PlayerCard({
           {player.name || "Unknown"}
         </div>
         {player.number && <div className="text-xs text-gray-500">#{player.number}</div>}
-      </Button>
+      </div>
     );
   };
 
@@ -72,7 +71,6 @@ export function PlayerCard({
             style={{
               ...provided.draggableProps.style,
               opacity: snapshot.isDragging ? 0.6 : 1,
-              transform: snapshot.isDragging ? provided.draggableProps.style.transform + ' scale(1.05)' : provided.draggableProps.style.transform,
             }}
             className={cn(
               "transition-all",
