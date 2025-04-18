@@ -61,6 +61,25 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     setCurrentStep('players-on-ice');
   };
 
+  // Validate that all player IDs exist in the database
+  const validatePlayers = () => {
+    // Create an array of all players from both teams for validation
+    const allValidPlayerIds = [...game.homeTeam.players, ...game.awayTeam.players].map(p => p.id);
+    
+    // Check that each selected player exists in the valid players array
+    for (const player of playersOnIce) {
+      if (!allValidPlayerIds.includes(player.id)) {
+        toast({
+          title: "Invalid Player",
+          description: `Player ${player.name} (${player.id}) is not valid in this game.`,
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handlePlayersOnIceSelect = (players: User[]) => {
     // Combine with already selected players (scorer and assists)
     const allPlayers = [...players];
@@ -94,6 +113,11 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
   const handleSubmit = async () => {
     if (!selectedTeam || !game.id) return;
 
+    // Validate player IDs before submission
+    if (!validatePlayers()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -120,11 +144,11 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
       });
 
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error recording goal:", error);
       toast({
         title: "Error",
-        description: "Failed to record goal event",
+        description: error.message || "Failed to record goal event",
         variant: "destructive"
       });
     } finally {

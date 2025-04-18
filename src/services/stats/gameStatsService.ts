@@ -65,24 +65,55 @@ export const recordPlusMinusStats = async (
   period: number, 
   isPlus: boolean
 ) => {
-  const statsToInsert = playerIds.map(playerId => ({
-    game_id: gameId,
-    player_id: playerId,
-    stat_type: 'plusMinus' as StatType,
-    period: period,
-    value: isPlus ? 1 : -1,
-    details: isPlus ? 'plus' : 'minus',
-    timestamp: new Date().toISOString()
-  }));
+  // Check if we have any players to record stats for
+  if (playerIds.length === 0) {
+    console.log("No players provided for plus/minus stats");
+    return;
+  }
 
-  if (statsToInsert.length === 0) return;
-  
-  const { error } = await supabase
-    .from('game_stats')
-    .insert(statsToInsert);
+  // Verify each player ID exists before trying to insert stats
+  try {
+    const { data: existingPlayers, error: playerCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .in('id', playerIds);
+
+    if (playerCheckError) {
+      console.error("Error checking player existence:", playerCheckError);
+      throw new Error(`Failed to verify player IDs: ${playerCheckError.message}`);
+    }
+
+    // Filter out any player IDs that don't exist in the database
+    const validPlayerIds = existingPlayers?.map(p => p.id) || [];
     
-  if (error) {
-    console.error("Error recording plus/minus stats:", error);
+    if (validPlayerIds.length === 0) {
+      console.warn("None of the provided player IDs exist in the database");
+      return;
+    }
+
+    // Only insert stats for valid players
+    const statsToInsert = validPlayerIds.map(playerId => ({
+      game_id: gameId,
+      player_id: playerId,
+      stat_type: 'plusMinus' as StatType,
+      period: period,
+      value: isPlus ? 1 : -1,
+      details: isPlus ? 'plus' : 'minus',
+      timestamp: new Date().toISOString()
+    }));
+  
+    if (statsToInsert.length === 0) return;
+    
+    const { error } = await supabase
+      .from('game_stats')
+      .insert(statsToInsert);
+      
+    if (error) {
+      console.error("Error recording plus/minus stats:", error);
+      throw new Error(`Failed to record plus/minus stats: ${error.message}`);
+    }
+  } catch (error) {
+    console.error("Error in recordPlusMinusStats:", error);
     throw error;
   }
 };

@@ -25,7 +25,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
         team_type: data.teamType,
       });
 
-    if (eventError) throw eventError;
+    if (eventError) throw new Error(`Event error: ${eventError.message}`);
 
     // 2. Record stats for the goal and assists
     if (data.teamType === 'home') {
@@ -43,7 +43,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
         
-        if (goalError) throw goalError;
+        if (goalError) throw new Error(`Goal stat error: ${goalError.message}`);
       }
       
       // Primary assist
@@ -60,7 +60,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
           
-        if (assistError) throw assistError;
+        if (assistError) throw new Error(`Primary assist error: ${assistError.message}`);
       }
       
       // Secondary assist
@@ -77,26 +77,30 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
           
-        if (assistError) throw assistError;
+        if (assistError) throw new Error(`Secondary assist error: ${assistError.message}`);
       }
       
       // 3. Record plus/minus for players on ice
       // Plus for home team players on ice
-      await recordPlusMinusStats(
-        data.gameId,
-        data.playersOnIce,
-        data.period,
-        true // isPlus = true for home team goal
-      );
+      if (data.playersOnIce.length > 0) {
+        await recordPlusMinusStats(
+          data.gameId,
+          data.playersOnIce,
+          data.period,
+          true // isPlus = true for home team goal
+        );
+      }
       
     } else if (data.teamType === 'away') {
       // For away team goals, record minus for home players on ice
-      await recordPlusMinusStats(
-        data.gameId,
-        data.playersOnIce,
-        data.period,
-        false // isPlus = false for away team goal
-      );
+      if (data.playersOnIce.length > 0) {
+        await recordPlusMinusStats(
+          data.gameId,
+          data.playersOnIce,
+          data.period,
+          false // isPlus = false for away team goal
+        );
+      }
     }
 
     return { success: true };
