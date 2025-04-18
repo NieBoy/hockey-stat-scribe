@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Team, Lines } from '@/types';
-import { getTeamLineup } from '@/services/teams/lineupManagement';
+import { getTeamLineup } from '@/services/teams/lineup';
 import { buildInitialLines } from '@/utils/lineupUtils';
 import { toast } from 'sonner';
 
@@ -12,13 +11,9 @@ export function useLineupData(team: Team, refreshKey: number) {
   const [error, setError] = useState<Error | null>(null);
   const [hasPositionData, setHasPositionData] = useState<boolean>(false);
   
-  // Cache the latest lineup data
   const lineupDataRef = useRef<any[]>([]);
-  
-  // Add a ref to track previous team ID to detect team changes
   const previousTeamIdRef = useRef<string | null>(null);
 
-  // Create a memoized fetchLineup function that we can call both in the effect and externally
   const fetchLineup = useCallback(async (forceRefresh = false) => {
     try {
       setLoadingState('loading');
@@ -27,16 +22,14 @@ export function useLineupData(team: Team, refreshKey: number) {
       const lineupData = await getTeamLineup(team.id);
       console.log("useLineupData - Retrieved lineup data:", lineupData);
       
-      // Store the lineup data in the ref for future use
       lineupDataRef.current = lineupData;
       
-      // Check if we have any position data at all
       const positionData = lineupData.filter(player => player.position !== null);
       setHasPositionData(positionData.length > 0);
       
       if (positionData.length === 0) {
         console.log("useLineupData - No position data found in lineup data");
-        if (!forceRefresh) {  // Only show toast on regular loads, not forced refreshes
+        if (!forceRefresh) {
           toast.info("No lineup data found. Please set up your lineup.", {
             id: 'no-lineup-data',
             duration: 3000,
@@ -53,7 +46,6 @@ export function useLineupData(team: Team, refreshKey: number) {
         return;
       }
       
-      // Apply positions from database to the team players
       const updatedTeam = {
         ...team,
         players: team.players.map(player => {
@@ -72,7 +64,6 @@ export function useLineupData(team: Team, refreshKey: number) {
       const refreshedLines = buildInitialLines(updatedTeam);
       console.log("useLineupData - Built lines structure:", refreshedLines);
       
-      // Count players in positions to verify the structure was built correctly
       const forwardCount = refreshedLines.forwards.reduce((count, line) => {
         return count + 
           (line.leftWing ? 1 : 0) + 
@@ -97,7 +88,6 @@ export function useLineupData(team: Team, refreshKey: number) {
       setLastRefreshed(new Date());
       setError(null);
       
-      // Add the line information directly to the team object for better accessibility
       team.lines = refreshedLines;
       
       return refreshedLines;
@@ -113,7 +103,6 @@ export function useLineupData(team: Team, refreshKey: number) {
   }, [team]);
 
   useEffect(() => {
-    // Determine if we should force a refresh based on team change
     const shouldForceRefresh = previousTeamIdRef.current !== team.id;
     if (shouldForceRefresh) {
       console.log(`useLineupData - Team changed from ${previousTeamIdRef.current} to ${team.id}, forcing refresh`);
@@ -130,7 +119,7 @@ export function useLineupData(team: Team, refreshKey: number) {
     error,
     setLines,
     hasPositionData,
-    refreshLineup: fetchLineup,  // Export the function to allow manual refreshes
-    lineupData: lineupDataRef.current  // Export the raw lineup data
+    refreshLineup: fetchLineup,
+    lineupData: lineupDataRef.current
   };
 }

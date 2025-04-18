@@ -1,3 +1,4 @@
 
-export * from './getTeamLineup';
-export * from './updateTeamLineup';
+export { getTeamLineup } from './getTeamLineup';
+export { updateTeamLineup } from './updateTeamLineup';
+export * from './lineupUtils';
