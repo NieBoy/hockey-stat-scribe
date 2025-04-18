@@ -12,6 +12,9 @@ interface SpecialTeamsUnitProps {
 }
 
 export function SpecialTeamsUnit({ title, units, positions, type }: SpecialTeamsUnitProps) {
+  // Determine the grid column class based on number of positions
+  const gridClass = `grid-cols-${positions.length}`;
+  
   return (
     <Card>
       <CardHeader>
@@ -27,9 +30,9 @@ export function SpecialTeamsUnit({ title, units, positions, type }: SpecialTeams
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={cn(
-                    `grid grid-cols-${positions.length} gap-2`,
+                    "grid gap-2",
                     snapshot.isDraggingOver && "bg-muted/50 rounded-md",
-                    "grid-cols-5"
+                    positions.length === 5 ? "grid-cols-5" : "grid-cols-4"
                   )}
                 >
                   {positions.map((pos, idx) => (
@@ -38,6 +41,8 @@ export function SpecialTeamsUnit({ title, units, positions, type }: SpecialTeams
                         player={null}
                         position={pos}
                         isSelected={false}
+                        isDraggable={false}
+                        index={idx}
                       />
                     </div>
                   ))}

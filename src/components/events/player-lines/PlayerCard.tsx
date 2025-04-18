@@ -69,6 +69,10 @@ export function PlayerCard({
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
+            style={{
+              ...provided.draggableProps.style,
+              cursor: 'grab',
+            }}
             className={cn(
               "transition-shadow",
               snapshot.isDragging && "shadow-lg"

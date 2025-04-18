@@ -41,7 +41,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     const parts = draggableId.split('-');
     
     // Handle the case where we have a roster draggable
-    let playerType: string;
+    let playerType: 'roster' | 'forward' | 'defense' | 'goalie';
     let lineNumber: number;
     let position: Position | null;
     let playerId: string;
@@ -50,13 +50,13 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       playerType = 'roster';
       lineNumber = 0;
       position = null;
-      // Player ID starts from index 3
+      // Player ID is the last part
       playerId = parts.slice(3).join('-');
     } else {
-      playerType = parts[0];
+      playerType = parts[0] as 'forward' | 'defense' | 'goalie';
       lineNumber = parseInt(parts[1], 10);
       position = parts[2] as Position;
-      // Player ID starts from index 3
+      // Player ID is the last part
       playerId = parts.slice(3).join('-');
     }
     
@@ -65,7 +65,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     // Parse destination ID to get drop details
     // Format: [type]-[lineNumber]
     const destParts = destination.droppableId.split('-');
-    const destType = destParts[0];
+    const destType = destParts[0] as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk' | 'remove';
     const destLineNumber = destParts.length > 1 ? parseInt(destParts[1], 10) : 0;
     
     console.log("Parsed destination:", { destType, destLineNumber });
@@ -74,7 +74,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     if (destination.droppableId === 'roster') {
       handlePlayerMove({
         playerId,
-        sourceType: playerType as 'forward' | 'defense' | 'goalie' | 'roster',
+        sourceType: playerType,
         sourceLineNumber: lineNumber,
         sourcePosition: position,
         destType: 'remove',
@@ -114,10 +114,10 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     if (destPosition) {
       handlePlayerMove({
         playerId,
-        sourceType: playerType as 'forward' | 'defense' | 'goalie' | 'roster', 
+        sourceType: playerType,
         sourceLineNumber: lineNumber,
         sourcePosition: position,
-        destType: destType as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk',
+        destType: destType,
         destLineNumber: destLineNumber,
         destPosition
       });

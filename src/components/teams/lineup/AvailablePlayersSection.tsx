@@ -26,7 +26,7 @@ export function AvailablePlayersSection({ availablePlayers }: AvailablePlayersSe
                 <div key={player.id} className="col-span-1">
                   <PlayerCard
                     player={player}
-                    position={player.position || 'Player'}
+                    position={player.position || 'P'}
                     isSelected={false}
                     isDraggable={true}
                     index={index}

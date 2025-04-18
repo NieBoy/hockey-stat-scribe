@@ -32,56 +32,45 @@ export function usePlayerMovement(
     let player: User | null = null;
     
     if (sourceType === 'roster') {
-      const playerIndex = availablePlayers.findIndex(p => p.id === playerId);
-      if (playerIndex >= 0) {
-        player = availablePlayers[playerIndex];
-      }
+      // Find player in available players
+      player = availablePlayers.find(p => p.id === playerId) || null;
     } else {
       // Create a copy of the lines object to safely modify it
       const newLines = { ...lines };
-      removePlayerFromCurrentPosition(playerId, newLines);
-      setLines(newLines);
       
-      // Now find the player in available players or add them back
-      player = availablePlayers.find(p => p.id === playerId) || null;
+      // Before removing the player, find them in the current lineup
+      // Check forwards
+      for (const line of lines.forwards) {
+        if (line.leftWing?.id === playerId) {
+          player = line.leftWing;
+        } else if (line.center?.id === playerId) {
+          player = line.center;
+        } else if (line.rightWing?.id === playerId) {
+          player = line.rightWing;
+        }
+        if (player) break;
+      }
       
-      // If player is not in available players, try to find them in the team's lines
+      // Check defense
       if (!player) {
-        // Check forwards
-        for (const line of lines.forwards) {
-          if (line.leftWing?.id === playerId) {
-            player = line.leftWing;
-            break;
+        for (const line of lines.defense) {
+          if (line.leftDefense?.id === playerId) {
+            player = line.leftDefense;
+          } else if (line.rightDefense?.id === playerId) {
+            player = line.rightDefense;
           }
-          if (line.center?.id === playerId) {
-            player = line.center;
-            break;
-          }
-          if (line.rightWing?.id === playerId) {
-            player = line.rightWing;
-            break;
-          }
-        }
-        
-        // Check defense
-        if (!player) {
-          for (const line of lines.defense) {
-            if (line.leftDefense?.id === playerId) {
-              player = line.leftDefense;
-              break;
-            }
-            if (line.rightDefense?.id === playerId) {
-              player = line.rightDefense;
-              break;
-            }
-          }
-        }
-        
-        // Check goalies
-        if (!player) {
-          player = lines.goalies.find(g => g.id === playerId) || null;
+          if (player) break;
         }
       }
+      
+      // Check goalies
+      if (!player) {
+        player = lines.goalies.find(g => g.id === playerId) || null;
+      }
+      
+      // Now remove the player from their current position
+      removePlayerFromCurrentPosition(playerId, newLines);
+      setLines(newLines);
     }
     
     if (!player || destType === 'remove') {
