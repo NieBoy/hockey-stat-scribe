@@ -88,13 +88,23 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     setIsSubmitting(true);
 
     try {
-      const goalData = {
+      // Create the goal data with the base properties
+      const goalData: {
+        gameId: string;
+        period: number;
+        teamType: 'home' | 'away';
+        playersOnIce: string[];
+        scorerId?: string;
+        primaryAssistId?: string;
+        secondaryAssistId?: string;
+      } = {
         gameId: game.id,
         period,
         teamType: selectedTeam,
         playersOnIce: playersOnIce.map(p => p.id)
       };
 
+      // Add optional properties conditionally
       if (selectedTeam === 'home') {
         if (selectedScorer) goalData.scorerId = selectedScorer.id;
         if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
