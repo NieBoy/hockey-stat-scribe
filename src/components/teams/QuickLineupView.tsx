@@ -18,6 +18,8 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     setLines,
     handlePlayerMove,
   } = useLineupEditor(team);
+  
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   // Save whenever lines change
   useEffect(() => {
@@ -25,14 +27,23 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     
     const saveLines = async () => {
       try {
+        setSaveStatus('saving');
+        console.log("Saving lineup for team:", team.id);
         const success = await updateTeamLineup(team.id, lines);
+        
         if (success) {
-          console.log("Successfully saved lineup changes", lines);
+          console.log("Successfully saved lineup changes");
+          setSaveStatus('success');
+          toast.success("Lineup saved");
         } else {
           console.error("Failed to save lineup changes");
+          setSaveStatus('error');
+          toast.error("Failed to save lineup");
         }
       } catch (error) {
         console.error("Error saving lineup:", error);
+        setSaveStatus('error');
+        toast.error("Error saving lineup");
       }
     };
     
@@ -77,6 +88,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
       
       // If there's a player to swap, move them to the source position
       if (swapPlayerId) {
+        console.log(`Swapping player ${swapPlayerId} to position ${source.droppableId}`);
         handlePlayerMove({
           playerId: swapPlayerId,
           sourceId: destination.droppableId,
@@ -86,6 +98,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     }
     
     // Move the dragged player to the destination
+    console.log(`Moving player ${playerId} from ${source.droppableId} to ${destination.droppableId}`);
     handlePlayerMove({
       playerId,
       sourceId: source.droppableId,
