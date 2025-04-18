@@ -26,7 +26,7 @@ export default function GameControls({
   onPeriodEnd,
   onStoppage
 }: GameControlsProps) {
-  console.log('GameControls rendering with period:', period, 'gameStatus:', gameStatus);
+  console.log('GameControls rendering with:', { period, gameStatus });
   
   return (
     <div className="space-y-4 mb-6">

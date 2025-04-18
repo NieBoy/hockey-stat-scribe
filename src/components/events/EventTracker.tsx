@@ -18,6 +18,7 @@ export default function EventTracker() {
   const { id: gameId } = useParams<{ id: string }>();
   const { toast } = useToast();
   const { 
+    isGameActive,
     currentPeriod, 
     teamType,
     gameStatus,
@@ -28,12 +29,22 @@ export default function EventTracker() {
     setTeamType,
   } = useGameControl(gameId);
 
-  console.log('EventTracker rendering with gameStatus:', gameStatus, 'period:', currentPeriod);
+  console.log('EventTracker rendering with:', { 
+    gameStatus, 
+    period: currentPeriod, 
+    isGameActive
+  });
 
   const handleEventSelect = async (eventType: EventType) => {
     if (!gameId || gameStatus !== 'in-progress') return;
 
     try {
+      console.log('Recording event:', { 
+        eventType, 
+        period: currentPeriod, 
+        team: teamType 
+      });
+      
       const { error: apiError } = await supabase
         .from('game_events')
         .insert({
@@ -51,7 +62,7 @@ export default function EventTracker() {
         description: `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} has been recorded for ${teamType} team in period ${currentPeriod}.`
       });
       
-      console.log('Event recorded:', { eventType, gameId, period: currentPeriod, team: teamType });
+      console.log('Event successfully recorded');
     } catch (err: any) {
       console.error('Error recording event:', err);
       toast({
