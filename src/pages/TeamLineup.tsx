@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import TeamLineupEditor from "@/components/teams/TeamLineupEditor";
@@ -45,11 +45,11 @@ export default function TeamLineup() {
     if (id) {
       console.log("TeamLineup - Component mounted, force refetching team data");
       queryClient.invalidateQueries({ queryKey: ['team', id] });
-      queryClient.refetchQueries({ queryKey: ['team', id] });
+      refetch();
     }
-  }, [id, queryClient]);
+  }, [id, queryClient, refetch]);
 
-  const handleSaveLineup = async (lines: Lines) => {
+  const handleSaveLineup = useCallback(async (lines: Lines) => {
     if (!id) {
       toast.error("No team ID available");
       return;
@@ -63,24 +63,25 @@ export default function TeamLineup() {
       const success = await updateTeamLineup(id, lines);
       if (success) {
         console.log("TeamLineup - Lineup saved successfully");
-        toast.success("Lineup saved successfully");
         
         // Important: Invalidate the team query to ensure fresh data is loaded
         await queryClient.invalidateQueries({ queryKey: ['team', id] });
         
         // Manually trigger a refetch to get the latest team data
         await refetch();
+        
+        return true;
       } else {
         console.error("TeamLineup - Error saving lineup");
-        toast.error("Failed to save lineup");
+        throw new Error("Failed to save lineup");
       }
     } catch (error) {
       console.error("TeamLineup - Error saving lineup:", error);
-      toast.error("Failed to save lineup");
+      throw error;
     } finally {
       setSaving(false);
     }
-  };
+  }, [id, queryClient, refetch]);
   
   if (isLoading) {
     return (

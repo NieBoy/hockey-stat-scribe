@@ -20,6 +20,8 @@ export function useLineupEditor(team: Team) {
   const initialLoadComplete = useRef(false);
   // Use a ref to track if fetch is in progress
   const fetchInProgress = useRef(false);
+  // Track if there was an error during fetch
+  const fetchError = useRef<Error | null>(null);
   
   // Force rebuild lines whenever team data changes, including when team players' positions change
   useEffect(() => {
@@ -30,6 +32,7 @@ export function useLineupEditor(team: Team) {
     const fetchAndBuildLines = async () => {
       try {
         fetchInProgress.current = true;
+        fetchError.current = null;
         
         // Immediately build initial lines from current team data
         const initialLines = buildInitialLines(team);
@@ -71,7 +74,8 @@ export function useLineupEditor(team: Team) {
         }
       } catch (error) {
         console.error("Error fetching lineup data:", error);
-        initialLoadComplete.current = true;
+        fetchError.current = error instanceof Error ? error : new Error('Unknown error');
+        initialLoadComplete.current = true; // Still mark as complete so UI can show error state
       } finally {
         fetchInProgress.current = false;
       }
@@ -103,6 +107,8 @@ export function useLineupEditor(team: Team) {
     addForwardLine,
     addDefenseLine,
     handlePlayerMove,
-    isInitialLoadComplete: initialLoadComplete.current
+    isInitialLoadComplete: initialLoadComplete.current,
+    isLoading: fetchInProgress.current,
+    error: fetchError.current
   };
 }

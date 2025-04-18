@@ -9,6 +9,7 @@ import ForwardLineEditor from "./ForwardLineEditor";
 import DefenseLineEditor from "./DefenseLineEditor";
 import GoaliesEditor from "./GoaliesEditor";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ export interface TeamLineupEditorProps {
 export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false }: TeamLineupEditorProps) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [lastSavedLineup, setLastSavedLineup] = useState<string>('');
   
   const {
     lines,
@@ -36,7 +38,9 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     handlePlayerSelect,
     addForwardLine,
     addDefenseLine,
-    isInitialLoadComplete
+    isInitialLoadComplete,
+    isLoading,
+    error
   } = useLineupEditor(team);
 
   // Auto-save with debounce timer whenever lines change
@@ -45,7 +49,17 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     let isMounted = true;
     
     // Don't try to save until initial load is complete
-    if (!isInitialLoadComplete) return;
+    if (!isInitialLoadComplete) {
+      console.log("TeamLineupEditor - Initial load not complete yet, skipping auto-save");
+      return;
+    }
+    
+    // Compare with last saved lineup to prevent unnecessary saves
+    const currentLineupString = JSON.stringify(lines);
+    if (currentLineupString === lastSavedLineup) {
+      console.log("TeamLineupEditor - Lineup hasn't changed, skipping auto-save");
+      return;
+    }
     
     const saveLines = async () => {
       try {
@@ -57,6 +71,9 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
         
         if (isMounted) {
           setSaveStatus('success');
+          setLastSavedLineup(currentLineupString);
+          toast.success("Lineup saved");
+          
           // Reset status after a delay
           setTimeout(() => {
             if (isMounted) setSaveStatus('idle');
@@ -66,6 +83,8 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
         console.error("TeamLineupEditor - Error auto-saving lineup:", error);
         if (isMounted) {
           setSaveStatus('error');
+          toast.error("Failed to save lineup");
+          
           // Reset error status after a longer delay
           setTimeout(() => {
             if (isMounted) setSaveStatus('idle');
@@ -83,7 +102,32 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [lines, onSaveLineup, isInitialLoadComplete]);
+  }, [lines, onSaveLineup, isInitialLoadComplete, lastSavedLineup]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading lineup data...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-800">
+        <h3 className="font-bold">Error loading lineup</h3>
+        <p className="text-sm mt-1">{error.message}</p>
+        <Button 
+          variant="outline" 
+          className="mt-3"
+          onClick={() => window.location.reload()}
+        >
+          Reload page
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -105,6 +149,12 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
               Save Error
             </Badge>
           )}
+          <Button 
+            variant="outline"
+            onClick={() => setIsConfirmDialogOpen(true)}
+          >
+            Save Lineup
+          </Button>
         </div>
       </div>
 
@@ -178,7 +228,24 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onSaveLineup(lines)}>Save Lineup</AlertDialogAction>
+            <AlertDialogAction onClick={async () => {
+              try {
+                setSaveStatus('saving');
+                await onSaveLineup(lines);
+                setLastSavedLineup(JSON.stringify(lines));
+                setSaveStatus('success');
+                toast.success("Lineup saved successfully");
+                setTimeout(() => {
+                  setSaveStatus('idle');
+                }, 2000);
+              } catch (error) {
+                setSaveStatus('error');
+                toast.error("Failed to save lineup");
+                setTimeout(() => {
+                  setSaveStatus('idle');
+                }, 3000);
+              }
+            }}>Save Lineup</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -23,6 +23,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   } = useLineupEditor(team);
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [lastSavedLineup, setLastSavedLineup] = useState<string>('');
   // Use a ref to track if the component is mounted to prevent setState after unmount
   const isMounted = useRef(true);
   const queryClient = useQueryClient();
@@ -40,7 +41,17 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
 
   // Save whenever lines change
   useEffect(() => {
-    if (!team?.id || !isInitialLoadComplete) return;
+    if (!team?.id || !isInitialLoadComplete) {
+      console.log("QuickLineupView - Initial load not complete yet, skipping auto-save");
+      return;
+    }
+    
+    // Compare with last saved lineup to prevent unnecessary saves
+    const currentLineupString = JSON.stringify(lines);
+    if (currentLineupString === lastSavedLineup) {
+      console.log("QuickLineupView - Lineup hasn't changed, skipping auto-save");
+      return;
+    }
     
     // Clear any existing timeout
     if (saveTimeoutRef.current) {
@@ -62,6 +73,8 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         if (success) {
           console.log("QuickLineupView - Successfully saved lineup changes");
           setSaveStatus('success');
+          setLastSavedLineup(currentLineupString);
+          toast.success("Lineup updated");
           
           // Invalidate the team query to ensure all components get fresh data
           queryClient.invalidateQueries({ queryKey: ['team', team.id] });
@@ -100,7 +113,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
       console.log("QuickLineupView - Skipping auto-save since lineup is empty");
     }
     
-  }, [lines, team?.id, queryClient, isInitialLoadComplete]);
+  }, [lines, team?.id, queryClient, isInitialLoadComplete, lastSavedLineup]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;

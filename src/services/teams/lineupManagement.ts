@@ -139,15 +139,14 @@ export const updateTeamLineup = async (
             line_number: update.line_number
           })
           .eq('team_id', update.team_id)
-          .eq('user_id', update.user_id)
-          .select();
+          .eq('user_id', update.user_id);
           
         if (error) {
           console.error("Error updating player position:", error);
           console.error("Failed update data:", update);
           errorCount++;
         } else {
-          console.log("Successfully updated player:", data);
+          console.log("Successfully updated player position");
           successCount++;
         }
       }
@@ -184,7 +183,7 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
       return [];
     }
 
-    console.log("Retrieved team lineup:", data);
+    console.log("Retrieved team lineup data:", data);
     return data || [];
   } catch (error) {
     console.error("Error in getTeamLineup:", error);
