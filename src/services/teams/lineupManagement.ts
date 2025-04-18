@@ -133,6 +133,22 @@ export const updateTeamLineup = async (
           continue;
         }
         
+        // Check if this is a valid team_member record
+        const { data: teamMember, error: checkError } = await supabase
+          .from('team_members')
+          .select('id')
+          .eq('team_id', update.team_id)
+          .eq('user_id', update.user_id)
+          .eq('role', 'player')
+          .single();
+          
+        if (checkError || !teamMember) {
+          console.error("Player not found in team_members:", update.user_id);
+          console.error("Error:", checkError);
+          errorCount++;
+          continue;
+        }
+        
         const { error } = await supabase
           .from('team_members')
           .update({
@@ -161,7 +177,7 @@ export const updateTeamLineup = async (
   }
 };
 
-// Enhanced getTeamLineup function to fetch more complete data
+// Enhanced getTeamLineup function to fetch more complete data and provide better logging
 export const getTeamLineup = async (teamId: string): Promise<any[]> => {
   try {
     if (!teamId) {
@@ -170,6 +186,20 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
     }
 
     console.log("Fetching team lineup for team:", teamId);
+
+    // First check if any players have position data set
+    const { data: positionCheck, error: checkError } = await supabase
+      .from('team_members')
+      .select('count(*)')
+      .eq('team_id', teamId)
+      .eq('role', 'player')
+      .not('position', 'is', null);
+      
+    if (checkError) {
+      console.error("Error checking for player positions:", checkError);
+    } else {
+      console.log("Players with positions:", positionCheck);
+    }
 
     // Make sure we get ALL players with positions, even if position is null
     // This ensures we have complete data for building the lineup
@@ -185,6 +215,21 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
     }
 
     console.log("Retrieved team lineup data:", data);
+    
+    // Log the breakdown of player positions
+    if (data && data.length > 0) {
+      const positions = data.reduce((acc, player) => {
+        if (player.position) {
+          acc[player.position] = (acc[player.position] || 0) + 1;
+        } else {
+          acc["unassigned"] = (acc["unassigned"] || 0) + 1;
+        }
+        return acc;
+      }, {});
+      
+      console.log("Position breakdown:", positions);
+    }
+    
     return data || [];
   } catch (error) {
     console.error("Error in getTeamLineup:", error);

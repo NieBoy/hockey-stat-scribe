@@ -6,6 +6,7 @@ import { LineupHeader } from './lineup/LineupHeader';
 import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
 import { useLineupData } from '@/hooks/lineup/useLineupData';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -15,7 +16,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   
   // Use custom hook for lineup data management
-  const { lines, loadingState, lastRefreshed, error } = useLineupData(team, refreshKey);
+  const { lines, loadingState, lastRefreshed, error, hasPositionData } = useLineupData(team, refreshKey);
   
   // Set up auto-refresh every 30 seconds
   useEffect(() => {
@@ -35,17 +36,34 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   }, [error]);
 
   const handleRefresh = () => {
+    console.log("QuickLineupView - Manual refresh triggered");
     setRefreshKey(prevKey => prevKey + 1);
+    toast.success("Refreshing lineup data...");
   };
 
   return (
     <Card className="mt-6">
       <CardHeader>
-        <LineupHeader 
-          loadingState={loadingState}
-          lastRefreshed={lastRefreshed}
-          onRefresh={handleRefresh}
-        />
+        <div className="flex items-center justify-between">
+          <LineupHeader 
+            loadingState={loadingState}
+            lastRefreshed={lastRefreshed}
+            onRefresh={handleRefresh}
+          />
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleRefresh}
+            className="ml-auto"
+          >
+            Refresh
+          </Button>
+        </div>
+        {!hasPositionData && loadingState === 'success' && (
+          <div className="mt-2 text-sm text-amber-500 bg-amber-50 p-2 rounded-md border border-amber-200">
+            No lineup data found. Please use the "Edit Lineup" button to set up your team lineup.
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <NonDraggableLineupView lines={lines} />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -17,14 +16,12 @@ import { toast } from "sonner";
 import { User } from "@/types";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
-// Create a new QueryClient for this page to ensure it's properly initialized
 const queryClient = new QueryClient();
 
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("players");
-  // This key will force the QuickLineupView component to completely re-render when needed
   const [lineupRefreshKey, setLineupRefreshKey] = useState<number>(0);
   
   const { 
@@ -42,26 +39,22 @@ export default function TeamDetail() {
     refetchTeam
   } = useTeams(id);
 
-  // Refresh team data periodically to ensure we have latest lineup data
   useEffect(() => {
-    // Initial refresh
+    console.log("TeamDetail - Initial refresh of team data");
     refetchTeam();
 
-    // Set up periodic refresh
     const intervalId = setInterval(() => {
-      console.log("Periodic team data refresh");
+      console.log("TeamDetail - Periodic team data refresh");
       refetchTeam();
-      // Force lineup component to completely re-render with fresh data
       setLineupRefreshKey(prev => prev + 1);
-    }, 30000); // Every 30 seconds
+    }, 30000);
 
     return () => clearInterval(intervalId);
   }, [refetchTeam]);
 
-  // Explicitly refresh lineup when returning from the lineup editor page
   useEffect(() => {
     const handleFocus = () => {
-      console.log("Window focused - refreshing team data");
+      console.log("TeamDetail - Window focused - refreshing team data");
       refetchTeam();
       setLineupRefreshKey(prev => prev + 1);
     };
@@ -69,32 +62,11 @@ export default function TeamDetail() {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [refetchTeam]);
-  
-  const handleSendInvitations = async (memberIds: string[]) => {
-    try {
-      if (!team) return;
-      await sendInvitationsToTeamMembers(team.id, memberIds);
-      toast.success(`Invitations sent to ${memberIds.length} team members`);
-    } catch (error) {
-      console.error("Error sending invitations:", error);
-      toast.error("Failed to send invitations");
-    }
-  };
 
-  const handleRemoveMember = async (member: User) => {
-    try {
-      if (!team) return;
-      
-      const success = await deleteTeamMember(member.id);
-      if (success) {
-        toast.success(`${member.name} has been removed from the team`);
-        refetchTeam();
-      }
-    } catch (error) {
-      console.error("Error removing member:", error);
-      toast.error("Failed to remove member");
-    }
-  };
+  useEffect(() => {
+    console.log("TeamDetail - Component mounted, forcing immediate lineup refresh");
+    setLineupRefreshKey(Date.now());
+  }, []);
 
   if (isLoadingTeam) {
     return (
@@ -133,15 +105,21 @@ export default function TeamDetail() {
   const handleTeamUpdate = () => {
     console.log("Team update detected, refreshing data");
     refetchTeam();
-    setLineupRefreshKey(prev => prev + 1); // Force lineup refresh when team updates
+    setLineupRefreshKey(prev => prev + 1);
   };
 
-  // Force lineup refresh immediately after returning from lineup editor page
   const handleEditLineupClick = () => {
+    console.log("TeamDetail - Navigating to lineup editor page");
     navigate(`/teams/${id}/lineup`);
   };
 
-  // Wrap the content in a QueryClientProvider to ensure React Query context is available
+  const handleRefreshLineup = () => {
+    console.log("TeamDetail - Manual lineup refresh requested");
+    refetchTeam();
+    setLineupRefreshKey(Date.now());
+    toast.success("Refreshing lineup data...");
+  };
+
   return (
     <MainLayout>
       <QueryClientProvider client={queryClient}>
@@ -154,7 +132,10 @@ export default function TeamDetail() {
 
           <QuickLineupView key={`lineup-${lineupRefreshKey}`} team={team} />
 
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-between items-center mb-2">
+            <Button variant="outline" onClick={handleRefreshLineup}>
+              Refresh Lineup
+            </Button>
             <Button onClick={handleEditLineupClick}>
               Edit Lineup
             </Button>
