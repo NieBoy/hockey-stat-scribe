@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Users } from 'lucide-react';
+import { User } from 'lucide-react';
 
 const statTypes = ['goals', 'assists', 'penalties', 'shots', 'saves'] as const;
 
@@ -46,12 +46,10 @@ export const StatTypeSelector = ({
                 </div>
               ) : (
                 teamMembers.map(member => (
-                  <SelectItem key={member.id} value={member.id} className="flex items-center gap-2">
+                  <SelectItem key={member.id} value={member.id}>
                     <div className="flex items-center gap-2">
-                      {member.role === 'user' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                      <span>
-                        {member.name || member.email} {member.role && member.role !== 'user' ? `(${member.role})` : ''}
-                      </span>
+                      <User className="h-4 w-4" />
+                      <span>{member.name || member.email}</span>
                     </div>
                   </SelectItem>
                 ))

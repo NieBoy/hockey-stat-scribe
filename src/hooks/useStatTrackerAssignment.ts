@@ -31,57 +31,23 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         }
         setGame(gameData);
 
-        // Get team IDs from the game
-        const teamIds = [gameData.home_team_id, gameData.away_team_id];
-        
-        // Fetch all team members from both teams
-        const { data: allMembers, error: membersError } = await supabase
-          .from('team_members')
-          .select('id, user_id, name, email, role')
-          .in('team_id', teamIds);
-        
-        if (membersError) throw membersError;
-        
-        // Fetch all available users (not just those connected to teams)
+        // Fetch all users directly - this ensures we get all valid potential trackers
         const { data: allUsers, error: usersError } = await supabase
           .from('users')
           .select('id, name, email');
           
         if (usersError) throw usersError;
+
+        // Create a list of all users as potential trackers
+        const availableTrackers = allUsers?.map(user => ({
+          id: user.id,
+          name: user.name || user.email,
+          email: user.email,
+          role: 'user'
+        })) || [];
         
-        // Create a map of users for quick lookup
-        const usersMap = new Map(allUsers?.map(user => [user.id, user]) || []);
-        
-        // Create a combined list of potential stat trackers
-        const validTrackers = [];
-        
-        // Add team members with valid user_id connections
-        for (const member of (allMembers || [])) {
-          if (member.user_id && usersMap.has(member.user_id)) {
-            const user = usersMap.get(member.user_id);
-            validTrackers.push({
-              id: member.user_id,
-              name: member.name || user?.name || 'Unknown',
-              email: member.email || user?.email || 'No email',
-              role: member.role || 'player'
-            });
-          }
-        }
-        
-        // Add users that aren't already in the list as potential trackers
-        for (const user of (allUsers || [])) {
-          if (!validTrackers.some(t => t.id === user.id)) {
-            validTrackers.push({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: 'user'
-            });
-          }
-        }
-        
-        console.log('Valid trackers for assignment:', validTrackers);
-        setTeamMembers(validTrackers);
+        console.log('Available users for stat tracking:', availableTrackers);
+        setTeamMembers(availableTrackers);
 
         // Load existing assignments
         const { data: existingTrackers, error: trackersError } = await supabase
@@ -98,10 +64,10 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         setSelectedTrackers(currentAssignments);
 
       } catch (error) {
-        console.error('Error loading game or team members:', error);
+        console.error('Error loading game or users:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load game or team members',
+          description: 'Failed to load game or users',
           variant: 'destructive'
         });
       } finally {
@@ -128,32 +94,6 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
     try {
       console.log('Current user ID:', user.id);
       console.log('Selected trackers:', selectedTrackers);
-      
-      // Verify all selected users exist in the users table
-      const userIds = Object.values(selectedTrackers).filter(Boolean) as string[];
-      if (userIds.length > 0) {
-        const { data: validUsers, error: validationError } = await supabase
-          .from('users')
-          .select('id')
-          .in('id', userIds);
-          
-        if (validationError) throw validationError;
-        
-        // Check if all selected users exist
-        const validUserIds = validUsers?.map(u => u.id) || [];
-        const invalidIds = userIds.filter(id => !validUserIds.includes(id));
-        
-        if (invalidIds.length > 0) {
-          console.error('Invalid user IDs detected:', invalidIds);
-          toast({
-            title: 'Error',
-            description: 'Some selected users are invalid. Please select valid users only.',
-            variant: 'destructive'
-          });
-          setLoading(false);
-          return;
-        }
-      }
       
       // Delete existing assignments
       const { error: deleteError } = await supabase
