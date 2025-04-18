@@ -114,7 +114,7 @@ export default function TeamLineup() {
           </Button>
         </div>
         
-        <SimpleLineupEditor team={team} />
+        <SimpleLineupEditor team={team} onSaveLineup={handleSaveLineup} />
 
         <AddPlayerDialog
           isOpen={addPlayerDialogOpen}

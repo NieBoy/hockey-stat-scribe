@@ -22,9 +22,33 @@ export function useLineManagement(lines: Lines, setLines: (lines: Lines) => void
     });
     setLines(newLines);
   };
+  
+  const deleteForwardLine = (lineIndex: number) => {
+    const newLines = { ...lines };
+    newLines.forwards = newLines.forwards.filter((_, index) => index !== lineIndex);
+    // Re-number the lines after deletion
+    newLines.forwards = newLines.forwards.map((line, index) => ({
+      ...line,
+      lineNumber: index + 1
+    }));
+    setLines(newLines);
+  };
+
+  const deleteDefenseLine = (lineIndex: number) => {
+    const newLines = { ...lines };
+    newLines.defense = newLines.defense.filter((_, index) => index !== lineIndex);
+    // Re-number the lines after deletion
+    newLines.defense = newLines.defense.map((line, index) => ({
+      ...line,
+      lineNumber: index + 1
+    }));
+    setLines(newLines);
+  };
 
   return {
     addForwardLine,
-    addDefenseLine
+    addDefenseLine,
+    deleteForwardLine,
+    deleteDefenseLine
   };
 }
