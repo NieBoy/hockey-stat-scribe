@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getTeamById, updateTeamLineup } from "@/services/teams";
 import { useTeams } from "@/hooks/useTeams";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import RosterDragDrop from "@/components/teams/RosterDragDrop";
@@ -16,6 +16,7 @@ import RosterDragDrop from "@/components/teams/RosterDragDrop";
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [editorMode, setEditorMode] = useState<'standard' | 'drag-drop'>('standard');
   
@@ -32,7 +33,8 @@ export default function TeamLineup() {
   const { data: team, isLoading, error, refetch } = useQuery({
     queryKey: ['team', id],
     queryFn: () => getTeamById(id!),
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 1000, // 1 second to ensure we don't fetch too frequently
   });
 
   const handleSaveLineup = async (lines: Lines) => {
@@ -50,7 +52,13 @@ export default function TeamLineup() {
       if (success) {
         console.log("TeamLineup - Lineup saved successfully");
         toast.success("Lineup saved successfully");
-        refetch(); // Refresh team data to get updated positions
+        
+        // Invalidate the team query to ensure fresh data is loaded
+        queryClient.invalidateQueries({ queryKey: ['team', id] });
+        
+        // Manually trigger a refetch to get the latest team data
+        await refetch();
+        
       } else {
         console.error("TeamLineup - Error saving lineup");
         toast.error("Failed to save lineup");

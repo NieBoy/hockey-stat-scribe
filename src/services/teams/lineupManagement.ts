@@ -17,7 +17,7 @@ export const updateTeamLineup = async (
     // First get all players for this team
     const { data: teamPlayers, error: fetchError } = await supabase
       .from('team_members')
-      .select('user_id, position, line_number')
+      .select('id, user_id, position, line_number')
       .eq('team_id', teamId)
       .eq('role', 'player');
       
@@ -125,6 +125,13 @@ export const updateTeamLineup = async (
       for (const update of updates) {
         console.log(`Updating player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
         
+        // Check if update.user_id exists and is not null/undefined
+        if (!update.user_id) {
+          console.error("Invalid user_id in update:", update);
+          errorCount++;
+          continue;
+        }
+        
         const { data, error } = await supabase
           .from('team_members')
           .update({
@@ -151,5 +158,35 @@ export const updateTeamLineup = async (
   } catch (error) {
     console.error("Error updating team lineup:", error);
     return false;
+  }
+};
+
+// Add a function to fetch the current lineup data for the team
+export const getTeamLineup = async (teamId: string): Promise<any[]> => {
+  try {
+    if (!teamId) {
+      console.error("No team ID provided for lineup fetch");
+      return [];
+    }
+
+    console.log("Fetching team lineup for team:", teamId);
+
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('user_id, name, position, line_number')
+      .eq('team_id', teamId)
+      .eq('role', 'player')
+      .not('position', 'is', null);
+
+    if (error) {
+      console.error("Error fetching team lineup:", error);
+      return [];
+    }
+
+    console.log("Retrieved team lineup:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getTeamLineup:", error);
+    return [];
   }
 };

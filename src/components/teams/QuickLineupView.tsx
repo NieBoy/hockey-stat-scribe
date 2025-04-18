@@ -17,7 +17,6 @@ interface QuickLineupViewProps {
 export function QuickLineupView({ team }: QuickLineupViewProps) {
   const {
     lines,
-    setLines,
     handlePlayerMove,
   } = useLineupEditor(team);
   
@@ -38,7 +37,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         if (success) {
           console.log("Successfully saved lineup changes");
           setSaveStatus('success');
-          toast.success("Lineup saved");
+          toast.success("Lineup updated");
         } else {
           console.error("Failed to save lineup changes");
           setSaveStatus('error');
@@ -51,9 +50,20 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
       }
     };
     
+    // Only save if there are players in the lineup
+    const hasPlayers = lines.forwards.some(line => line.leftWing || line.center || line.rightWing) || 
+                     lines.defense.some(line => line.leftDefense || line.rightDefense) || 
+                     lines.goalies.length > 0;
+    
+    // Add a small delay to prevent too frequent saves 
     const timeoutId = setTimeout(() => {
-      saveLines();
-    }, 500);
+      if (hasPlayers) {
+        console.log("Auto-saving lineup changes");
+        saveLines();
+      } else {
+        console.log("Skipping auto-save since lineup is empty");
+      }
+    }, 800);
     
     return () => clearTimeout(timeoutId);
   }, [lines, team.id]);
