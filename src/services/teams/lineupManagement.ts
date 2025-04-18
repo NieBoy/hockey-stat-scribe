@@ -13,91 +13,93 @@ export const updateTeamLineup = async (
     return false;
   }
   
-  // First get all players for this team
-  const { data: teamPlayers, error: fetchError } = await supabase
-    .from('team_members')
-    .select('user_id, position, line_number')
-    .eq('team_id', teamId)
-    .eq('role', 'player');
-    
-  if (fetchError) {
-    console.error("Error fetching team players:", fetchError);
-    return false;
-  }
-    
-  // Prepare batch updates
-  const updates = [];
-  
-  // Update forward lines
-  for (const line of lines.forwards) {
-    if (line.leftWing) {
-      updates.push({
-        team_id: teamId,
-        user_id: line.leftWing.id,
-        role: 'player',
-        position: 'LW',
-        line_number: line.lineNumber
-      });
-    }
-    
-    if (line.center) {
-      updates.push({
-        team_id: teamId,
-        user_id: line.center.id,
-        role: 'player',
-        position: 'C',
-        line_number: line.lineNumber
-      });
-    }
-    
-    if (line.rightWing) {
-      updates.push({
-        team_id: teamId,
-        user_id: line.rightWing.id,
-        role: 'player',
-        position: 'RW',
-        line_number: line.lineNumber
-      });
-    }
-  }
-  
-  // Update defense lines
-  for (const line of lines.defense) {
-    if (line.leftDefense) {
-      updates.push({
-        team_id: teamId,
-        user_id: line.leftDefense.id,
-        role: 'player',
-        position: 'LD',
-        line_number: line.lineNumber
-      });
-    }
-    
-    if (line.rightDefense) {
-      updates.push({
-        team_id: teamId,
-        user_id: line.rightDefense.id,
-        role: 'player',
-        position: 'RD',
-        line_number: line.lineNumber
-      });
-    }
-  }
-  
-  // Update goalies
-  for (const goalie of lines.goalies) {
-    updates.push({
-      team_id: teamId,
-      user_id: goalie.id,
-      role: 'player',
-      position: 'G',
-      line_number: null
-    });
-  }
-  
-  console.log("Updates to apply:", updates);
-  
   try {
+    // First get all players for this team
+    const { data: teamPlayers, error: fetchError } = await supabase
+      .from('team_members')
+      .select('user_id, position, line_number')
+      .eq('team_id', teamId)
+      .eq('role', 'player');
+      
+    if (fetchError) {
+      console.error("Error fetching team players:", fetchError);
+      return false;
+    }
+
+    console.log("Current team players:", teamPlayers);
+      
+    // Prepare batch updates
+    const updates = [];
+    
+    // Update forward lines
+    for (const line of lines.forwards) {
+      if (line.leftWing) {
+        updates.push({
+          team_id: teamId,
+          user_id: line.leftWing.id,
+          role: 'player',
+          position: 'LW',
+          line_number: line.lineNumber
+        });
+      }
+      
+      if (line.center) {
+        updates.push({
+          team_id: teamId,
+          user_id: line.center.id,
+          role: 'player',
+          position: 'C',
+          line_number: line.lineNumber
+        });
+      }
+      
+      if (line.rightWing) {
+        updates.push({
+          team_id: teamId,
+          user_id: line.rightWing.id,
+          role: 'player',
+          position: 'RW',
+          line_number: line.lineNumber
+        });
+      }
+    }
+    
+    // Update defense lines
+    for (const line of lines.defense) {
+      if (line.leftDefense) {
+        updates.push({
+          team_id: teamId,
+          user_id: line.leftDefense.id,
+          role: 'player',
+          position: 'LD',
+          line_number: line.lineNumber
+        });
+      }
+      
+      if (line.rightDefense) {
+        updates.push({
+          team_id: teamId,
+          user_id: line.rightDefense.id,
+          role: 'player',
+          position: 'RD',
+          line_number: line.lineNumber
+        });
+      }
+    }
+    
+    // Update goalies
+    for (const goalie of lines.goalies) {
+      updates.push({
+        team_id: teamId,
+        user_id: goalie.id,
+        role: 'player',
+        position: 'G',
+        line_number: null
+      });
+    }
+    
+    console.log("Updates to apply:", updates);
+    
     // First reset all positions to ensure clean slate
     const { error: resetError } = await supabase
       .from('team_members')

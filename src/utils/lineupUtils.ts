@@ -1,17 +1,34 @@
-
 import { Team, Lines, User, ForwardLine, DefenseLine } from "@/types";
 
 /**
  * Builds initial lines structure from team data
  */
 export function buildInitialLines(team: Team): Lines {
+  console.log("Building lines from team data", team);
+  
   const forwards: ForwardLine[] = [];
   const defense: DefenseLine[] = [];
   const goalies: User[] = [];
   
+  if (!team || !team.players) {
+    console.warn("No team data provided for building lines");
+    // Return default empty lines structure
+    return {
+      forwards: [{ lineNumber: 1, leftWing: null, center: null, rightWing: null }],
+      defense: [{ lineNumber: 1, leftDefense: null, rightDefense: null }],
+      goalies: [],
+      specialTeams: {
+        powerPlay: {},
+        penaltyKill: {}
+      }
+    };
+  }
+  
   // Find all players with positions and their line numbers
   team.players.forEach(player => {
     if (!player.position) return;
+    
+    console.log(`Processing player: ${player.name}, position: ${player.position}, line: ${player.lineNumber || 'none'}`);
     
     if (player.position === 'LW' || player.position === 'C' || player.position === 'RW') {
       const lineNumber = player.lineNumber || 1;
@@ -57,7 +74,7 @@ export function buildInitialLines(team: Team): Lines {
   }
   
   // Initialize with empty special teams
-  return { 
+  const result = { 
     forwards, 
     defense, 
     goalies,
@@ -66,6 +83,10 @@ export function buildInitialLines(team: Team): Lines {
       penaltyKill: {}
     }
   };
+  
+  console.log("Final lines structure:", result);
+  
+  return result;
 }
 
 /**

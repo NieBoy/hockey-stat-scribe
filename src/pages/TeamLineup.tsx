@@ -36,15 +36,27 @@ export default function TeamLineup() {
   });
 
   const handleSaveLineup = async (lines: Lines) => {
-    if (!id) return;
+    if (!id) {
+      toast.error("No team ID available");
+      return;
+    }
     
     try {
       setSaving(true);
-      await updateTeamLineup(id, lines);
-      console.log("Lineup saved successfully", lines);
-      toast.success("Lineup saved successfully");
+      console.log("TeamLineup - Saving lineup for team:", id);
+      console.log("TeamLineup - Lineup data to save:", JSON.stringify(lines, null, 2));
+      
+      const success = await updateTeamLineup(id, lines);
+      if (success) {
+        console.log("TeamLineup - Lineup saved successfully");
+        toast.success("Lineup saved successfully");
+        refetch(); // Refresh team data to get updated positions
+      } else {
+        console.error("TeamLineup - Error saving lineup");
+        toast.error("Failed to save lineup");
+      }
     } catch (error) {
-      console.error("Error saving lineup:", error);
+      console.error("TeamLineup - Error saving lineup:", error);
       toast.error("Failed to save lineup");
     } finally {
       setSaving(false);

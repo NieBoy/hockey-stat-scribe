@@ -8,7 +8,16 @@ import { usePlayerMovement } from "./lineup/usePlayerMovement";
 import { usePlayerSelection } from "./lineup/usePlayerSelection";
 
 export function useLineupEditor(team: Team) {
-  const [lines, setLines] = useState<Lines>(buildInitialLines(team));
+  const [lines, setLines] = useState<Lines>(() => {
+    console.log("Building initial lines from team data:", team);
+    return buildInitialLines(team);
+  });
+  
+  // Update lines when team data changes
+  useEffect(() => {
+    console.log("Team data changed, rebuilding lines");
+    setLines(buildInitialLines(team));
+  }, [team]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
   const { addForwardLine, addDefenseLine } = useLineManagement(lines, setLines);
@@ -18,7 +27,7 @@ export function useLineupEditor(team: Team) {
   // Update available players when lines change
   useEffect(() => {
     updateAvailablePlayers(lines);
-  }, [lines]);
+  }, [lines, updateAvailablePlayers]);
 
   return {
     lines,

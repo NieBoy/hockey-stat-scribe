@@ -7,6 +7,8 @@ import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { EvenStrengthLines } from './lineup/EvenStrengthLines';
 import { updateTeamLineup } from '@/services/teams';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -29,6 +31,8 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
       try {
         setSaveStatus('saving');
         console.log("Saving lineup for team:", team.id);
+        console.log("Lineup data to save:", JSON.stringify(lines, null, 2));
+        
         const success = await updateTeamLineup(team.id, lines);
         
         if (success) {
@@ -111,7 +115,24 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>Current Lineup</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Current Lineup</CardTitle>
+          {saveStatus === 'saving' && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+            </Badge>
+          )}
+          {saveStatus === 'success' && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              Saved
+            </Badge>
+          )}
+          {saveStatus === 'error' && (
+            <Badge variant="destructive">
+              Save Error
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <DragDropContext onDragEnd={onDragEnd}>
