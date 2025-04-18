@@ -36,9 +36,17 @@ export function useGameSubscription({
 
         if (data) {
           console.log("Initial game state loaded:", data);
-          setIsGameActive(data.is_active);
-          setCurrentPeriod(data.current_period || 1);
-          setGameStatus(data.is_active ? 'in-progress' : 'not-started');
+          
+          // Only update if we're not in a special state
+          if (gameStatus !== 'stopped') {
+            setIsGameActive(data.is_active);
+            // Only set current period if it's greater than 0 to avoid resetting UI
+            if (data.current_period > 0) {
+              setCurrentPeriod(data.current_period);
+            }
+            // Only update status if we're not in a stopped state
+            setGameStatus(data.is_active ? 'in-progress' : 'not-started');
+          }
         }
       } catch (err) {
         console.error("Exception in fetchGameState:", err);
@@ -62,12 +70,21 @@ export function useGameSubscription({
           console.log("Realtime update received:", newData);
           
           if (newData) {
-            setIsGameActive(newData.is_active);
-            setCurrentPeriod(newData.current_period || 1);
-            
+            // Important: Only sync certain states to prevent UI flickering
+            // Don't override local stopped state with DB updates
             if (gameStatus !== 'stopped') {
+              setIsGameActive(newData.is_active);
+              
+              // Only update period if it's a valid value (>0)
+              if (newData.current_period > 0) {
+                setCurrentPeriod(newData.current_period);
+              }
+              
+              // Only update game status if we're not in a special state
               setGameStatus(newData.is_active ? 'in-progress' : 'not-started');
               console.log("Updated game status to:", newData.is_active ? 'in-progress' : 'not-started');
+            } else {
+              console.log("Ignoring DB update because game is in stopped state:", gameStatus);
             }
           }
         }

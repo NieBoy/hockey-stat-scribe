@@ -14,6 +14,7 @@ export function useGameStatus(gameId?: string) {
     if (!gameId) return;
 
     try {
+      console.log("Starting game...");
       const { error } = await supabase
         .from('games')
         .update({ 
@@ -27,6 +28,7 @@ export function useGameStatus(gameId?: string) {
         throw error;
       }
       
+      // Important: Set local state AFTER database update succeeds
       setIsGameActive(true);
       setGameStatus('in-progress');
       
@@ -35,7 +37,7 @@ export function useGameStatus(gameId?: string) {
         description: "Period 1 has begun"
       });
       
-      console.log("Game started, updated state:", { isGameActive: true, currentPeriod: 1, gameStatus: 'in-progress' });
+      console.log("Game started, updated local state:", { isGameActive: true, currentPeriod: 1, gameStatus: 'in-progress' });
 
     } catch (err) {
       console.error("Exception in startGame:", err);
@@ -49,15 +51,45 @@ export function useGameStatus(gameId?: string) {
 
   const stopGame = useCallback(() => {
     console.log("Stopping game, setting status to 'stopped'");
+    // Important: Only update local state, don't update DB
+    // This preserves the stopped state which needs user input to proceed
     setGameStatus('stopped');
   }, []);
 
-  const handleStoppage = useCallback(() => {
+  const handleStoppage = useCallback(async () => {
     if (!gameId) return;
     
-    console.log("Resuming from stoppage, setting status back to 'in-progress'");
-    setGameStatus('in-progress');
-  }, [gameId]);
+    try {
+      console.log("Resuming from stoppage, setting status back to 'in-progress'");
+      
+      // Update the database to ensure game is still active
+      const { error } = await supabase
+        .from('games')
+        .update({ is_active: true })
+        .eq('id', gameId);
+        
+      if (error) {
+        console.error("Error resuming game after stoppage:", error);
+        throw error;
+      }
+      
+      // Update local state
+      setIsGameActive(true);
+      setGameStatus('in-progress');
+      
+      toast({
+        title: "Game Resumed",
+        description: "Game is now in progress"
+      });
+    } catch (err) {
+      console.error("Error handling stoppage:", err);
+      toast({
+        title: "Error",
+        description: "Failed to resume game",
+        variant: "destructive"
+      });
+    }
+  }, [gameId, toast]);
 
   return {
     isGameActive,

@@ -29,14 +29,19 @@ export default function EventTracker() {
     setTeamType,
   } = useGameControl(gameId);
 
+  // Improved logging to track component state
   console.log('EventTracker rendering with:', { 
     gameStatus, 
     period: currentPeriod, 
-    isGameActive
+    isGameActive,
+    teamType
   });
 
   const handleEventSelect = async (eventType: EventType) => {
-    if (!gameId || gameStatus !== 'in-progress') return;
+    if (!gameId || gameStatus !== 'in-progress') {
+      console.log("Cannot record event - game not in progress:", gameStatus);
+      return;
+    }
 
     try {
       console.log('Recording event:', { 

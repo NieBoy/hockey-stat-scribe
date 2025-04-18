@@ -25,13 +25,22 @@ export function useGameControl(gameId?: string) {
 
   const { teamType, setTeamType } = useTeamControl();
 
-  // Use the new subscription hook
+  // Use the subscription hook with more defensive handling
   useGameSubscription({
     gameId,
     setIsGameActive,
     setCurrentPeriod,
     setGameStatus,
     gameStatus
+  });
+
+  // Debug the overall game control state for better visibility
+  console.log("useGameControl state:", {
+    isGameActive,
+    currentPeriod,
+    gameStatus,
+    stopReason,
+    teamType
   });
 
   return {
