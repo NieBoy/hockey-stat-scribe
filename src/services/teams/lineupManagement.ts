@@ -170,6 +170,17 @@ export const updateTeamLineup = async (
     }
     
     console.log(`Lineup update complete: ${successCount} successful, ${errorCount} failed`);
+    
+    // For better traceability, log a summary of what was saved
+    if (successCount > 0) {
+      console.log(`Saved lineup structure for ${teamId}:`, {
+        forwards: lines.forwards.length,
+        defense: lines.defense.length,
+        goalies: lines.goalies.length,
+        totalUpdatedPositions: successCount
+      });
+    }
+    
     return errorCount === 0;
   } catch (error) {
     console.error("Error updating team lineup:", error);

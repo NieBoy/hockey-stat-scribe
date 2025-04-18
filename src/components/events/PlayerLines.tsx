@@ -21,6 +21,7 @@ interface PlayerLinesProps {
   onComplete?: () => void;
   completeText?: string;
   maxSelections?: number;
+  forceRefresh?: boolean;
 }
 
 export default function PlayerLines({
@@ -35,12 +36,19 @@ export default function PlayerLines({
   allowComplete = false,
   onComplete,
   completeText = "Complete",
-  maxSelections
+  maxSelections,
+  forceRefresh = false
 }: PlayerLinesProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(selectedPlayers.map(p => p.id))
   );
-  const lines = buildInitialLines(team);
+  const [lines, setLines] = useState(() => buildInitialLines(team));
+
+  // Update lines when team or forceRefresh changes
+  useEffect(() => {
+    console.log("PlayerLines - Rebuilding lines due to team or forceRefresh change");
+    setLines(buildInitialLines(team));
+  }, [team, forceRefresh]);
 
   useEffect(() => {
     setSelectedIds(new Set(selectedPlayers.map(p => p.id)));
@@ -116,12 +124,12 @@ export default function PlayerLines({
       <div className="mt-4 flex gap-2 justify-end">
         {allowSkip && onSkip && (
           <Button type="button" variant="ghost" onClick={onSkip}>
-            {skipText}
+            {skipText || "Skip"}
           </Button>
         )}
         {allowComplete && onComplete && (
           <Button type="button" onClick={onComplete}>
-            {completeText}
+            {completeText || "Complete"}
           </Button>
         )}
       </div>

@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lines, Team, Position } from "@/types";
-import { Loader2, SaveIcon } from "lucide-react";
+import { Loader2, SaveIcon, RefreshCw } from "lucide-react";
 import { NonDraggableLineupView } from "./NonDraggableLineupView";
 import { useLineupEditor } from "@/hooks/useLineupEditor";
 import { ForwardsTab } from "./tabs/ForwardsTab";
@@ -18,6 +18,7 @@ interface SimpleLineupEditorProps {
 }
 
 export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorProps) {
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   const {
     lines,
     availablePlayers,
@@ -28,7 +29,8 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
     deleteDefenseLine,
     isInitialLoadComplete,
     isLoading,
-    error
+    error,
+    refreshLineupData
   } = useLineupEditor(team);
 
   const [currentTab, setCurrentTab] = useState<'forwards' | 'defense' | 'goalies'>('forwards');
@@ -42,6 +44,12 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   // Track if lines have changed since last save
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const previousLinesRef = useRef<string>(JSON.stringify(lines));
+
+  // Force refresh from database when component mounts
+  useEffect(() => {
+    console.log("SimpleLineupEditor - Initial component mount, forcing refresh");
+    setRefreshKey(Date.now());
+  }, []);
 
   // Detect changes in the lineup
   useEffect(() => {
@@ -78,6 +86,20 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
     return null;
   };
 
+  // Function to manually refresh lineup data from database
+  const handleRefresh = useCallback(async () => {
+    console.log("SimpleLineupEditor - Manual refresh requested");
+    toast.info("Refreshing lineup data...");
+    try {
+      await refreshLineupData();
+      setRefreshKey(Date.now());
+      toast.success("Lineup data refreshed successfully");
+    } catch (error) {
+      console.error("Error refreshing lineup data:", error);
+      toast.error("Failed to refresh lineup data");
+    }
+  }, [refreshLineupData]);
+
   // Save the lineup when requested
   const handleSave = async () => {
     if (onSaveLineup) {
@@ -92,6 +114,10 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
         if (success) {
           toast.success("Lineup saved successfully");
           setHasUnsavedChanges(false);
+          
+          // Force a refresh from the database to make sure we have the latest data
+          console.log("SimpleLineupEditor - Save successful, refreshing data");
+          setRefreshKey(Date.now());
         } else {
           toast.error("Failed to save lineup");
         }
@@ -140,17 +166,29 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Team Lineup Editor</CardTitle>
-          {onSaveLineup && (
+          <div className="flex space-x-2">
             <Button 
-              onClick={handleSave} 
-              disabled={isSaving}
-              variant={hasUnsavedChanges ? "default" : "outline"}
+              onClick={handleRefresh}
+              variant="outline"
               className="flex items-center gap-2"
+              disabled={isLoading}
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <SaveIcon className="h-4 w-4" />}
-              {hasUnsavedChanges ? "Save Changes" : "Save Lineup"}
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
-          )}
+            
+            {onSaveLineup && (
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                variant={hasUnsavedChanges ? "default" : "outline"}
+                className="flex items-center gap-2"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <SaveIcon className="h-4 w-4" />}
+                {hasUnsavedChanges ? "Save Changes" : "Save Lineup"}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {/* Tab navigation */}

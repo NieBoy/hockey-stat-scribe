@@ -11,6 +11,7 @@ interface PlayerSelectProps {
   selectedPlayers: User[];
   allowSkip?: boolean;
   skipText?: string;
+  showLineups?: boolean;
 }
 
 export function PlayerSelect({
@@ -19,7 +20,8 @@ export function PlayerSelect({
   onPlayerSelect,
   selectedPlayers,
   allowSkip,
-  skipText
+  skipText,
+  showLineups = false
 }: PlayerSelectProps) {
   return (
     <div className="space-y-4">

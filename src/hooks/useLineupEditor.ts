@@ -23,6 +23,63 @@ export function useLineupEditor(team: Team) {
   const fetchInProgress = useRef(false);
   // Track if there was an error during fetch
   const fetchError = useRef<Error | null>(null);
+  // Store the raw lineup data
+  const lineupDataRef = useRef<any[]>([]);
+  
+  // Function to force a refresh of lineup data
+  const refreshLineupData = useCallback(async () => {
+    if (!team?.id) {
+      console.error("Cannot refresh lineup - no team ID");
+      return null;
+    }
+    
+    try {
+      console.log("useLineupEditor - Forcing refresh of lineup data for team:", team.id);
+      fetchInProgress.current = true;
+      
+      const lineupData = await getTeamLineup(team.id);
+      console.log("useLineupEditor - Refreshed lineup data:", lineupData);
+      
+      // Store the raw data for reference
+      lineupDataRef.current = lineupData;
+      
+      // Apply positions from database to the team players
+      const updatedTeam = {
+        ...team,
+        players: team.players.map(player => {
+          const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
+          if (lineupPlayer && lineupPlayer.position) {
+            return {
+              ...player,
+              position: lineupPlayer.position,
+              lineNumber: lineupPlayer.line_number
+            };
+          }
+          return player;
+        })
+      };
+      
+      // Rebuild lines with the updated team data
+      const refreshedLines = buildInitialLines(updatedTeam);
+      console.log("useLineupEditor - Rebuilt lines with refreshed data:", refreshedLines);
+      setLines(refreshedLines);
+      
+      // Add the lines directly to the team object for better accessibility
+      team.lines = refreshedLines;
+      
+      fetchInProgress.current = false;
+      initialLoadComplete.current = true;
+      
+      return refreshedLines;
+    } catch (error) {
+      console.error("useLineupEditor - Error refreshing lineup data:", error);
+      fetchError.current = error instanceof Error ? error : new Error('Unknown error refreshing lineup data');
+      fetchInProgress.current = false;
+      
+      toast.error("Failed to refresh lineup data");
+      return null;
+    }
+  }, [team]);
   
   // Force rebuild lines whenever team data changes, including when team players' positions change
   useEffect(() => {
@@ -41,6 +98,9 @@ export function useLineupEditor(team: Team) {
         
         console.log("Fetching latest lineup data for team:", team.id);
         const lineupData = await getTeamLineup(team.id);
+        
+        // Store the raw data
+        lineupDataRef.current = lineupData;
         
         if (lineupData && lineupData.length > 0) {
           console.log("Got latest lineup data from database:", lineupData);
@@ -68,6 +128,9 @@ export function useLineupEditor(team: Team) {
           const refreshedLines = buildInitialLines(updatedTeam);
           console.log("Refreshed lines:", refreshedLines);
           setLines(refreshedLines);
+          
+          // Add the lines directly to the team object
+          team.lines = refreshedLines;
           
           // Check if we have any real position data
           const hasPositions = refreshedLines.forwards.some(line => 
@@ -129,6 +192,8 @@ export function useLineupEditor(team: Team) {
     handlePlayerMove,
     isInitialLoadComplete: initialLoadComplete.current,
     isLoading: fetchInProgress.current,
-    error: fetchError.current
+    error: fetchError.current,
+    refreshLineupData,
+    lineupData: lineupDataRef.current
   };
 }
