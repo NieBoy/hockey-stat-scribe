@@ -14,7 +14,7 @@ interface GoaliesSectionProps {
 export function GoaliesSection({ 
   goalies, 
   selectedIds = new Set(), 
-  onPlayerClick, 
+  onPlayerClick,
   isDraggable = false 
 }: GoaliesSectionProps) {
   return (
