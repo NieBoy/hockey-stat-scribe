@@ -30,38 +30,45 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
           throw new Error('Invalid game data received');
         }
         setGame(gameData);
+        
+        console.log('Game data loaded:', gameData);
 
-        // Get ALL users from the database with detailed logging
-        console.log('Fetching ALL users for stat tracking assignment...');
-        const { data: allUsers, error: usersError } = await supabase
-          .from('users')
-          .select('*');
+        // Get team members from both teams for this game
+        const { data: homeTeamMembers, error: homeError } = await supabase
+          .from('team_members')
+          .select('id, user_id, name, email, role')
+          .eq('team_id', gameData.home_team.id);
           
-        if (usersError) {
-          console.error('Error fetching users:', usersError);
-          throw usersError;
-        }
-
-        console.log('Retrieved users (detailed):', allUsers);
-        console.log('Current logged in user ID:', user?.id);
-        
-        // Make sure we're getting an array of users
-        if (!Array.isArray(allUsers)) {
-          console.error('Users data is not an array:', allUsers);
-          throw new Error('Invalid users data format');
+        if (homeError) {
+          console.error('Error fetching home team members:', homeError);
+          throw homeError;
         }
         
-        console.log('Retrieved users count:', allUsers.length);
+        const { data: awayTeamMembers, error: awayError } = await supabase
+          .from('team_members')
+          .select('id, user_id, name, email, role')
+          .eq('team_id', gameData.away_team.id);
+          
+        if (awayError) {
+          console.error('Error fetching away team members:', awayError);
+          throw awayError;
+        }
         
-        // Create a list of all users as potential trackers
-        const availableTrackers = allUsers.map(user => ({
-          id: user.id,
-          name: user.name || user.email,
-          email: user.email,
-          role: 'user'
+        // Combine team members and coaches from both teams
+        const allTeamMembers = [...(homeTeamMembers || []), ...(awayTeamMembers || [])];
+        
+        console.log('Retrieved team members count:', allTeamMembers.length);
+        console.log('Team members:', allTeamMembers);
+        
+        // Format team members for display
+        const availableTrackers = allTeamMembers.map(member => ({
+          id: member.user_id || member.id, // Use user_id if available, otherwise use team_member id
+          name: member.name || member.email || 'Unknown',
+          email: member.email,
+          role: member.role || 'member'
         }));
         
-        console.log('Available users for stat tracking:', availableTrackers);
+        console.log('Available trackers for stat tracking:', availableTrackers);
         setTeamMembers(availableTrackers);
 
         // Load existing assignments
@@ -76,13 +83,15 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         existingTrackers?.forEach(tracker => {
           currentAssignments[tracker.stat_type] = tracker.user_id;
         });
+        
+        console.log('Current stat tracker assignments:', currentAssignments);
         setSelectedTrackers(currentAssignments);
 
       } catch (error) {
-        console.error('Error loading game or users:', error);
+        console.error('Error loading game or team members:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load game or users',
+          description: 'Failed to load game or team members',
           variant: 'destructive'
         });
       } finally {
@@ -121,45 +130,26 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         throw deleteError;
       }
       
-      // Verify users exist before assigning
-      const userIds = Object.values(selectedTrackers)
-        .filter(userId => userId !== null && userId !== '');
+      // Prepare new assignments
+      const trackersToInsert = Object.entries(selectedTrackers)
+        .filter(([_, userId]) => userId !== null && userId !== "")
+        .map(([statType, userId]) => ({
+          game_id: gameId,
+          user_id: userId,
+          stat_type: statType,
+          created_at: new Date().toISOString()
+        }));
       
-      if (userIds.length > 0) {
-        const { data: validUsers, error: validationError } = await supabase
-          .from('users')
-          .select('id')
-          .in('id', userIds);
-        
-        if (validationError) {
-          console.error('User validation error:', validationError);
-          throw validationError;
-        }
-        
-        console.log('Valid user IDs found:', validUsers?.map(u => u.id));
-        
-        // Prepare new assignments (only for valid users)
-        const trackersToInsert = Object.entries(selectedTrackers)
-          .filter(([_, userId]) => userId !== null && userId !== '')
-          .filter(([_, userId]) => validUsers?.some(u => u.id === userId))
-          .map(([statType, userId]) => ({
-            game_id: gameId,
-            user_id: userId,
-            stat_type: statType,
-            created_at: new Date().toISOString()
-          }));
-        
-        console.log('Inserting trackers:', trackersToInsert);
-        
-        if (trackersToInsert.length > 0) {
-          const { error } = await supabase
-            .from('stat_trackers')
-            .insert(trackersToInsert);
+      console.log('Inserting trackers:', trackersToInsert);
+      
+      if (trackersToInsert.length > 0) {
+        const { error } = await supabase
+          .from('stat_trackers')
+          .insert(trackersToInsert);
 
-          if (error) {
-            console.error('Insert error:', error);
-            throw error;
-          }
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
         }
       }
 
@@ -172,7 +162,7 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
       console.error('Error in handleTrackerAssignment:', error);
       toast({
         title: 'Error',
-        description: 'Failed to assign stat trackers. Please check console for details.',
+        description: 'Failed to assign stat trackers',
         variant: 'destructive'
       });
     } finally {
