@@ -1,4 +1,3 @@
-
 import {
   createBrowserRouter,
   RouterProvider,
@@ -27,8 +26,8 @@ import StatTrackerAssignment from "@/pages/StatTrackerAssignment";
 import PlayerDetail from "@/pages/PlayerDetail";
 import PlayerStats from "@/pages/PlayerStats";
 import NotFound from "@/pages/NotFound";
+import Stats from "@/pages/Stats";
 
-// Create a client
 const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -49,7 +48,6 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children;
 }
 
-// Define all the routes
 function AppRoutes() {
   return (
     <Routes>
@@ -106,7 +104,6 @@ function AppRoutes() {
           <TeamDetail />
         </RequireAuth>
       } />
-      {/* New Player routes */}
       <Route path="/players/:id" element={
         <RequireAuth>
           <PlayerDetail />
@@ -117,7 +114,11 @@ function AppRoutes() {
           <PlayerStats />
         </RequireAuth>
       } />
-      {/* 404 route */}
+      <Route path="/stats" element={
+        <RequireAuth>
+          <Stats />
+        </RequireAuth>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
