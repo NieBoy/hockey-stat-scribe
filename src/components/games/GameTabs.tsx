@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -79,30 +78,24 @@ export function GameTabs({ gameId, isCoach, isStatTracker, assignedStatTypes }: 
             <CardTitle>Game Stats</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Track detailed player statistics for this game.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              {isStatTracker ? (
-                <Button variant="default" asChild>
-                  <Link to={`/stats/track/${gameId}`}>
-                    <BarChart3 className="mr-2 h-4 w-4" /> Track Your Stats ({assignedStatTypes.join(', ')})
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" asChild>
-                  <Link to={`/stats/track/${gameId}`}>
-                    <BarChart3 className="mr-2 h-4 w-4" /> View Stats
-                  </Link>
-                </Button>
-              )}
-              {isCoach && (
-                <Button variant="outline" asChild>
-                  <Link to={`/games/${gameId}/assign-trackers`}>
-                    <UserPlus className="mr-2 h-4 w-4" /> Assign Stat Trackers
-                  </Link>
-                </Button>
-              )}
+            <div className="space-y-6">
+              <GameStats gameId={gameId} />
+              <div className="flex flex-col sm:flex-row gap-2">
+                {isStatTracker ? (
+                  <Button variant="default" asChild>
+                    <Link to={`/stats/track/${gameId}`}>
+                      <BarChart3 className="mr-2 h-4 w-4" /> Track Additional Stats
+                    </Link>
+                  </Button>
+                ) : null}
+                {isCoach && (
+                  <Button variant="outline" asChild>
+                    <Link to={`/games/${gameId}/assign-trackers`}>
+                      <UserPlus className="mr-2 h-4 w-4" /> Assign Stat Trackers
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

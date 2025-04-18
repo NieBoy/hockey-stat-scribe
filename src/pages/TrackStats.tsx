@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -61,7 +60,7 @@ export default function TrackStats() {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Tracking Stats</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Game Stats</h1>
             <p className="text-muted-foreground">
               {game.homeTeam.name} vs {game.awayTeam.name}
             </p>
@@ -69,35 +68,29 @@ export default function TrackStats() {
         </div>
       </div>
 
-      {assignedStatTypes.length > 0 ? (
-        <>
-          <StatTracker 
-            game={game}
-            statTypes={assignedStatTypes}
-            onStatRecorded={handleStatRecorded}
-            existingStats={gameStats}
-          />
-          <GameStatsList 
-            gameStats={gameStats}
-            game={game}
-            onDelete={handleStatDeleted}
-          />
-        </>
-      ) : (
+      <div className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>No Stat Tracking Assignment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You haven't been assigned to track any stats for this game. Contact the coach to get assigned.
-            </p>
-            <Button asChild>
-              <Link to={`/games/${id}`}>Return to Game</Link>
-            </Button>
+          <CardContent className="pt-6">
+            <GameStats gameId={id} />
           </CardContent>
         </Card>
-      )}
+
+        {assignedStatTypes.length > 0 && (
+          <>
+            <StatTracker 
+              game={game}
+              statTypes={assignedStatTypes}
+              onStatRecorded={handleStatRecorded}
+              existingStats={gameStats}
+            />
+            <GameStatsList 
+              gameStats={gameStats}
+              game={game}
+              onDelete={handleStatDeleted}
+            />
+          </>
+        )}
+      </div>
     </MainLayout>
   );
 }
