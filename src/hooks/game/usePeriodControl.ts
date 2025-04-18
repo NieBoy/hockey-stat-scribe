@@ -42,11 +42,12 @@ export function usePeriodControl(gameId?: string) {
       const nextPeriod = currentPeriod + 1;
       console.log("Advancing to next period:", nextPeriod);
       
+      // First update the database
       const { error } = await supabase
         .from('games')
         .update({ 
           current_period: nextPeriod,
-          is_active: true
+          is_active: true  // This ensures the game stays active after period change
         })
         .eq('id', gameId);
 
@@ -55,6 +56,7 @@ export function usePeriodControl(gameId?: string) {
         throw error;
       }
 
+      // Then update local state
       setCurrentPeriod(nextPeriod);
       
       console.log("Period advanced, new state:", { currentPeriod: nextPeriod });
