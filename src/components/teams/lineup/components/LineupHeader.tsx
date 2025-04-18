@@ -4,6 +4,7 @@ import { CardTitle, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
+import { Lines } from '@/types';
 
 interface LineupHeaderProps {
   onSave: () => Promise<boolean>;

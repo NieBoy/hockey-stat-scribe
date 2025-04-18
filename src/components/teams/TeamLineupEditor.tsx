@@ -29,7 +29,14 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
 
   // Normalize onSaveLineup to match the expected type
   const normalizedSaveLineup = async (linesToSave: Lines): Promise<boolean | void> => {
-    return await onSaveLineup(linesToSave);
+    try {
+      await onSaveLineup(linesToSave);
+      // Since onSaveLineup doesn't return a value, we'll return true to indicate success
+      return true;
+    } catch (error) {
+      console.error("Error in normalized save function:", error);
+      return false;
+    }
   };
 
   const {
