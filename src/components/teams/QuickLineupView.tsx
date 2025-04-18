@@ -19,6 +19,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   const {
     lines,
     handlePlayerMove,
+    isInitialLoadComplete
   } = useLineupEditor(team);
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -39,7 +40,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
 
   // Save whenever lines change
   useEffect(() => {
-    if (!team?.id) return;
+    if (!team?.id || !isInitialLoadComplete) return;
     
     // Clear any existing timeout
     if (saveTimeoutRef.current) {
@@ -51,15 +52,15 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         if (!isMounted.current) return;
         
         setSaveStatus('saving');
-        console.log("Saving lineup for team:", team.id);
-        console.log("Lineup data to save:", JSON.stringify(lines, null, 2));
+        console.log("QuickLineupView - Saving lineup for team:", team.id);
+        console.log("QuickLineupView - Lineup data to save:", JSON.stringify(lines, null, 2));
         
         const success = await updateTeamLineup(team.id, lines);
         
         if (!isMounted.current) return;
         
         if (success) {
-          console.log("Successfully saved lineup changes");
+          console.log("QuickLineupView - Successfully saved lineup changes");
           setSaveStatus('success');
           
           // Invalidate the team query to ensure all components get fresh data
@@ -72,12 +73,12 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
             }, 2000);
           }
         } else {
-          console.error("Failed to save lineup changes");
+          console.error("QuickLineupView - Failed to save lineup changes");
           setSaveStatus('error');
           toast.error("Failed to save lineup");
         }
       } catch (error) {
-        console.error("Error saving lineup:", error);
+        console.error("QuickLineupView - Error saving lineup:", error);
         if (isMounted.current) {
           setSaveStatus('error');
           toast.error("Error saving lineup");
@@ -92,15 +93,14 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     
     // Add a small delay to prevent too frequent saves 
     if (hasPlayers) {
-      console.log("Auto-saving lineup changes");
       saveTimeoutRef.current = setTimeout(() => {
         saveLines();
-      }, 800);
+      }, 1000);
     } else {
-      console.log("Skipping auto-save since lineup is empty");
+      console.log("QuickLineupView - Skipping auto-save since lineup is empty");
     }
     
-  }, [lines, team?.id, queryClient]);
+  }, [lines, team?.id, queryClient, isInitialLoadComplete]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -136,7 +136,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
       
       // If there's a player to swap, move them to the source position
       if (swapPlayerId) {
-        console.log(`Swapping player ${swapPlayerId} to position ${source.droppableId}`);
+        console.log(`QuickLineupView - Swapping player ${swapPlayerId} to position ${source.droppableId}`);
         handlePlayerMove({
           playerId: swapPlayerId,
           sourceId: destination.droppableId,
@@ -146,7 +146,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     }
     
     // Move the dragged player to the destination
-    console.log(`Moving player ${playerId} from ${source.droppableId} to ${destination.droppableId}`);
+    console.log(`QuickLineupView - Moving player ${playerId} from ${source.droppableId} to ${destination.droppableId}`);
     handlePlayerMove({
       playerId,
       sourceId: source.droppableId,

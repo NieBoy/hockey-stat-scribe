@@ -154,14 +154,14 @@ export const updateTeamLineup = async (
     }
     
     console.log(`Lineup update complete: ${successCount} successful, ${errorCount} failed`);
-    return errorCount === 0;
+    return errorCount === 0 && successCount > 0;
   } catch (error) {
     console.error("Error updating team lineup:", error);
     return false;
   }
 };
 
-// Enhance the getTeamLineup function to fetch more complete data
+// Enhanced getTeamLineup function to fetch more complete data
 export const getTeamLineup = async (teamId: string): Promise<any[]> => {
   try {
     if (!teamId) {

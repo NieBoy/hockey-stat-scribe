@@ -35,7 +35,8 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     availablePlayers,
     handlePlayerSelect,
     addForwardLine,
-    addDefenseLine
+    addDefenseLine,
+    isInitialLoadComplete
   } = useLineupEditor(team);
 
   // Auto-save with debounce timer whenever lines change
@@ -43,12 +44,15 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     // Track if component is mounted to prevent calling setState after unmount
     let isMounted = true;
     
+    // Don't try to save until initial load is complete
+    if (!isInitialLoadComplete) return;
+    
     const saveLines = async () => {
       try {
         if (!isMounted) return;
         
         setSaveStatus('saving');
-        console.log("Auto-saving lineup from TeamLineupEditor", lines);
+        console.log("TeamLineupEditor - Auto-saving lineup", JSON.stringify(lines, null, 2));
         await onSaveLineup(lines);
         
         if (isMounted) {
@@ -59,7 +63,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
           }, 2000);
         }
       } catch (error) {
-        console.error("Error auto-saving lineup:", error);
+        console.error("TeamLineupEditor - Error auto-saving lineup:", error);
         if (isMounted) {
           setSaveStatus('error');
           // Reset error status after a longer delay
@@ -79,7 +83,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [lines, onSaveLineup]);
+  }, [lines, onSaveLineup, isInitialLoadComplete]);
 
   return (
     <>

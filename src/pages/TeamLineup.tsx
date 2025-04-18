@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import RosterDragDrop from "@/components/teams/RosterDragDrop";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +37,7 @@ export default function TeamLineup() {
     enabled: !!id,
     // Use a very short staleTime to always get fresh data
     staleTime: 0,
-    refetchInterval: 60000, // Refetch every minute in case lineup was updated elsewhere
+    refetchInterval: 30000, // Refetch every 30 seconds in case lineup was updated elsewhere
   });
 
   // Force refetch when component mounts
@@ -44,9 +45,9 @@ export default function TeamLineup() {
     if (id) {
       console.log("TeamLineup - Component mounted, force refetching team data");
       queryClient.invalidateQueries({ queryKey: ['team', id] });
-      refetch();
+      queryClient.refetchQueries({ queryKey: ['team', id] });
     }
-  }, [id, queryClient, refetch]);
+  }, [id, queryClient]);
 
   const handleSaveLineup = async (lines: Lines) => {
     if (!id) {
@@ -65,11 +66,10 @@ export default function TeamLineup() {
         toast.success("Lineup saved successfully");
         
         // Important: Invalidate the team query to ensure fresh data is loaded
-        queryClient.invalidateQueries({ queryKey: ['team', id] });
+        await queryClient.invalidateQueries({ queryKey: ['team', id] });
         
         // Manually trigger a refetch to get the latest team data
         await refetch();
-        
       } else {
         console.error("TeamLineup - Error saving lineup");
         toast.error("Failed to save lineup");
@@ -85,9 +85,7 @@ export default function TeamLineup() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }
