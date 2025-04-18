@@ -16,6 +16,8 @@ export default function GameDetail() {
   const { id } = useParams<{ id: string }>();
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isStatTracker, setIsStatTracker] = useState(false);
+  const [assignedStatTypes, setAssignedStatTypes] = useState<string[]>([]);
   const { user } = useAuth();
   const isCoach = user?.role.includes('coach');
   
@@ -25,7 +27,34 @@ export default function GameDetail() {
     const fetchedGame = mockGames.find(g => g.id === id);
     setGame(fetchedGame || null);
     setLoading(false);
-  }, [id]);
+    
+    // Check if current user is assigned as a stat tracker for this game
+    const checkStatTrackerStatus = async () => {
+      if (!id || !user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('stat_trackers')
+          .select('stat_type')
+          .eq('game_id', id)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          console.error('Error checking stat tracker status:', error);
+          return;
+        }
+        
+        const statTypes = data?.map(item => item.stat_type) || [];
+        setIsStatTracker(statTypes.length > 0);
+        setAssignedStatTypes(statTypes);
+        console.log('Stat tracker status:', { isTracker: statTypes.length > 0, statTypes });
+      } catch (error) {
+        console.error('Error in checkStatTrackerStatus:', error);
+      }
+    };
+    
+    checkStatTrackerStatus();
+  }, [id, user]);
 
   if (loading) {
     return (
@@ -68,6 +97,13 @@ export default function GameDetail() {
               <Button variant="outline" className="gap-2" asChild>
                 <Link to={`/games/${id}/assign-trackers`}>
                   <UserPlus className="h-4 w-4" /> Assign Stat Trackers
+                </Link>
+              </Button>
+            )}
+            {isStatTracker && (
+              <Button variant="secondary" className="gap-2" asChild>
+                <Link to={`/stats/track/${id}`}>
+                  <BarChart3 className="h-4 w-4" /> Track Stats
                 </Link>
               </Button>
             )}
@@ -156,6 +192,13 @@ export default function GameDetail() {
                       </Link>
                     </Button>
                   )}
+                  {isStatTracker && (
+                    <Button variant="secondary" asChild>
+                      <Link to={`/stats/track/${id}`}>
+                        <BarChart3 className="mr-2 h-4 w-4" /> Track Your Stats ({assignedStatTypes.join(', ')})
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -187,11 +230,19 @@ export default function GameDetail() {
                   Track detailed player statistics for this game.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button variant="outline" asChild>
-                    <Link to={`/stats/track/${id}`}>
-                      <BarChart3 className="mr-2 h-4 w-4" /> Track Stats
-                    </Link>
-                  </Button>
+                  {isStatTracker ? (
+                    <Button variant="default" asChild>
+                      <Link to={`/stats/track/${id}`}>
+                        <BarChart3 className="mr-2 h-4 w-4" /> Track Your Stats ({assignedStatTypes.join(', ')})
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" asChild>
+                      <Link to={`/stats/track/${id}`}>
+                        <BarChart3 className="mr-2 h-4 w-4" /> Track Stats
+                      </Link>
+                    </Button>
+                  )}
                   {isCoach && (
                     <Button variant="outline" asChild>
                       <Link to={`/games/${id}/assign-trackers`}>

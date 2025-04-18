@@ -31,26 +31,35 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
         }
         setGame(gameData);
 
-        // Fetch all users - debug logging to diagnose the issue
-        console.log('Fetching all users for stat tracking...');
+        // Get ALL users from the database with detailed logging
+        console.log('Fetching ALL users for stat tracking assignment...');
         const { data: allUsers, error: usersError } = await supabase
           .from('users')
-          .select('id, name, email');
+          .select('*');
           
         if (usersError) {
           console.error('Error fetching users:', usersError);
           throw usersError;
         }
 
-        console.log('Retrieved users count:', allUsers?.length);
+        console.log('Retrieved users (detailed):', allUsers);
+        console.log('Current logged in user ID:', user?.id);
+        
+        // Make sure we're getting an array of users
+        if (!Array.isArray(allUsers)) {
+          console.error('Users data is not an array:', allUsers);
+          throw new Error('Invalid users data format');
+        }
+        
+        console.log('Retrieved users count:', allUsers.length);
         
         // Create a list of all users as potential trackers
-        const availableTrackers = allUsers?.map(user => ({
+        const availableTrackers = allUsers.map(user => ({
           id: user.id,
           name: user.name || user.email,
           email: user.email,
           role: 'user'
-        })) || [];
+        }));
         
         console.log('Available users for stat tracking:', availableTrackers);
         setTeamMembers(availableTrackers);
@@ -82,7 +91,7 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
     };
 
     loadGameAndTeamMembers();
-  }, [gameId, toast]);
+  }, [gameId, toast, user?.id]);
 
   const handleTrackerAssignment = async () => {
     if (!gameId || !user) {

@@ -24,6 +24,12 @@ export const StatTypeSelector = ({
   teamMembers,
   onSelect
 }: StatTypeSelectorProps) => {
+  console.log('Rendering StatTypeSelector with:', { 
+    selectedTrackers, 
+    teamMembersCount: teamMembers.length,
+    teamMembers: teamMembers.map(m => ({ id: m.id, name: m.name })) 
+  });
+  
   return (
     <div className="grid gap-6">
       {statTypes.map(statType => (
@@ -40,6 +46,7 @@ export const StatTypeSelector = ({
               <SelectValue placeholder="Select Tracker" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
+              <SelectItem value="">None Selected</SelectItem>
               {teamMembers.length === 0 ? (
                 <div className="px-2 py-4 text-center text-sm text-muted-foreground">
                   No available users for tracking
