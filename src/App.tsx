@@ -1,3 +1,4 @@
+
 import {
   createBrowserRouter,
   RouterProvider,
@@ -12,6 +13,7 @@ import Games from "@/pages/Games";
 import Teams from "@/pages/Teams";
 import TeamCreate from "@/pages/TeamCreate";
 import TeamDetail from "@/pages/TeamDetail";
+import TeamLineup from "@/pages/TeamLineup";
 import NewGame from "@/pages/NewGame";
 import GameDetail from "@/pages/GameDetail";
 import TrackStats from "@/pages/TrackStats";
@@ -102,6 +104,11 @@ function AppRoutes() {
       <Route path="/teams/:id" element={
         <RequireAuth>
           <TeamDetail />
+        </RequireAuth>
+      } />
+      <Route path="/teams/:id/lineup" element={
+        <RequireAuth>
+          <TeamLineup />
         </RequireAuth>
       } />
       <Route path="/players/:id" element={
