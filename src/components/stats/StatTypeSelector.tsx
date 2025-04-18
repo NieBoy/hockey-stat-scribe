@@ -39,14 +39,14 @@ export const StatTypeSelector = ({
           </Label>
           
           <Select
-            value={selectedTrackers[statType] || ""}
-            onValueChange={(value) => onSelect(statType, value)}
+            value={selectedTrackers[statType] || "none"}
+            onValueChange={(value) => onSelect(statType, value === "none" ? "" : value)}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select Tracker" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
-              <SelectItem value="">None Selected</SelectItem>
+              <SelectItem value="none">None Selected</SelectItem>
               {teamMembers.length === 0 ? (
                 <div className="px-2 py-4 text-center text-sm text-muted-foreground">
                   No available users for tracking
