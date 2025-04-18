@@ -72,6 +72,8 @@ export function useGameControl(gameId?: string) {
           if (newData) {
             setIsGameActive(newData.is_active);
             setCurrentPeriod(newData.current_period || 1);
+            // Update game status based on the active state
+            setGameStatus(newData.is_active ? 'in-progress' : gameStatus);
           }
         }
       )
@@ -80,7 +82,7 @@ export function useGameControl(gameId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameId, toast]);
+  }, [gameId, toast, gameStatus]);
 
   const startGame = useCallback(async () => {
     if (!gameId) return;
@@ -95,6 +97,8 @@ export function useGameControl(gameId?: string) {
         .eq('id', gameId);
 
       if (error) throw error;
+      
+      setCurrentPeriod(1);
       setGameStatus('in-progress');
       
       toast({
@@ -123,7 +127,8 @@ export function useGameControl(gameId?: string) {
         const { error } = await supabase
           .from('games')
           .update({ 
-            is_active: false 
+            is_active: false,
+            current_period: currentPeriod // Ensure the final period is saved
           })
           .eq('id', gameId);
 
@@ -138,20 +143,25 @@ export function useGameControl(gameId?: string) {
         return;
       }
 
+      const nextPeriod = currentPeriod + 1;
+      
       const { error } = await supabase
         .from('games')
         .update({ 
-          current_period: currentPeriod + 1,
+          current_period: nextPeriod,
           is_active: true
         })
         .eq('id', gameId);
 
       if (error) throw error;
 
+      // Update local state
+      setCurrentPeriod(nextPeriod);
       setGameStatus('in-progress');
+      
       toast({
         title: "Period Advanced",
-        description: `Period ${currentPeriod + 1} has begun`
+        description: `Period ${nextPeriod} has begun`
       });
 
     } catch (err) {

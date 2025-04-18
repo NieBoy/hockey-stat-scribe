@@ -28,8 +28,8 @@ export default function GameControls({
 }: GameControlsProps) {
   return (
     <div className="space-y-4 mb-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold bg-primary/10 px-4 py-2 rounded-md">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <h3 className="text-lg font-semibold bg-primary/10 px-4 py-2 rounded-md w-auto">
           Period {period}
         </h3>
         
