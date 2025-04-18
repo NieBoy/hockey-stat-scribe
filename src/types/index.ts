@@ -1,3 +1,4 @@
+
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
 
@@ -77,7 +78,7 @@ export interface StatTracker {
 }
 
 // Stat Types
-export type StatType = 'goals' | 'assists' | 'faceoffs' | 'hits' | 'penalties' | 'saves';
+export type StatType = 'goals' | 'assists' | 'faceoffs' | 'hits' | 'penalties' | 'saves' | 'plusMinus';
 
 export interface GameStat {
   id: string;

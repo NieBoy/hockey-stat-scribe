@@ -78,16 +78,17 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
 
       const playerStat = playerStats.get(key);
 
-      switch (stat.statType) {
-        case "goals":
-          playerStat.goals += stat.value;
-          break;
-        case "assists":
-          playerStat.assists += stat.value;
-          break;
-        case "plusMinus":
-          playerStat.plusMinus += stat.details === "plus" ? stat.value : -stat.value;
-          break;
+      if (stat.statType === "goals") {
+        playerStat.goals += stat.value;
+      } else if (stat.statType === "assists") {
+        playerStat.assists += stat.value;
+      } else if (stat.statType === "plusMinus" || stat.statType === "plus" || stat.statType === "minus") {
+        // Handle plus/minus stats
+        if (stat.details === "plus") {
+          playerStat.plusMinus += stat.value;
+        } else if (stat.details === "minus") {
+          playerStat.plusMinus -= stat.value;
+        }
       }
     });
 
@@ -120,7 +121,10 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
                 <SelectItem value="plusMinus">Plus/Minus</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={teamFilter} onValueChange={setTeamFilter}>
+            <Select 
+              value={teamFilter} 
+              onValueChange={(value: "all" | "home" | "away") => setTeamFilter(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by team" />
               </SelectTrigger>
