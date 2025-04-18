@@ -11,7 +11,7 @@ import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SimpleLineupEditor } from "@/components/teams/lineup/SimpleLineupEditor";
 import { Lines } from "@/types";
-import { updateTeamLineup } from "@/services/teams/lineupManagement";
+import { updateTeamLineup } from "@/services/teams/lineup";
 import { toast } from "sonner";
 
 export default function TeamLineup() {

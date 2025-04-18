@@ -8,7 +8,7 @@ export { updateTeamMemberInfo } from './memberUpdateService';
 export * from './playerManagement';
 export * from './teamCreation';
 export * from './teamQueries';
-export * from './lineupManagement';
+export * from './lineup';  // Updated to use the new lineup path
 
 // Export with specific naming to avoid conflicts
 export {

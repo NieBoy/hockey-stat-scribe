@@ -6,7 +6,7 @@ import { useAvailablePlayers } from "./lineup/useAvailablePlayers";
 import { useLineManagement } from "./lineup/useLineManagement";
 import { usePlayerMovement } from "./lineup/usePlayerMovement";
 import { usePlayerSelection } from "./lineup/usePlayerSelection";
-import { getTeamLineup } from "@/services/teams/lineupManagement";
+import { getTeamLineup } from "@/services/teams/lineup";
 import { toast } from "sonner";
 
 export function useLineupEditor(team: Team) {
