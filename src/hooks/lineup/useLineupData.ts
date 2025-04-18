@@ -8,6 +8,7 @@ export function useLineupData(team: Team, refreshKey: number) {
   const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
   const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -23,6 +24,7 @@ export function useLineupData(team: Team, refreshKey: number) {
           setLines(buildInitialLines(team));
           setLoadingState('success');
           setLastRefreshed(new Date());
+          setError(null);
           return;
         }
         
@@ -47,9 +49,11 @@ export function useLineupData(team: Team, refreshKey: number) {
         setLines(refreshedLines);
         setLoadingState('success');
         setLastRefreshed(new Date());
+        setError(null);
       } catch (error) {
         console.error("useLineupData - Error fetching lineup:", error);
         setLoadingState('error');
+        setError(error instanceof Error ? error : new Error('Unknown error fetching lineup data'));
       }
     };
     
@@ -60,6 +64,7 @@ export function useLineupData(team: Team, refreshKey: number) {
     lines,
     loadingState,
     lastRefreshed,
+    error,
     setLines
   };
 }

@@ -1,8 +1,8 @@
 
 import { Lines } from '@/types';
-import { GoaliesSection } from '@/components/events/player-lines/GoaliesSection';
-import { ForwardLinesSection } from '@/components/events/player-lines/ForwardLinesSection';
-import { DefensePairsSection } from '@/components/events/player-lines/DefensePairsSection';
+import { GoaliesSection } from './sections/NonDraggableGoaliesSection';
+import { ForwardLinesSection } from './sections/NonDraggableForwardLinesSection';
+import { DefensePairsSection } from './sections/NonDraggableDefensePairsSection';
 
 interface NonDraggableLineupViewProps {
   lines: Lines;
