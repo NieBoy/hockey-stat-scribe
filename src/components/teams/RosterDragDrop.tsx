@@ -65,7 +65,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     // Parse destination ID to get drop details
     // Format: [type]-[lineNumber]
     const destParts = destination.droppableId.split('-');
-    const destType = destParts[0] as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk' | 'remove';
+    const destType = destParts[0] as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk' | 'remove' | 'roster';
     const destLineNumber = destParts.length > 1 ? parseInt(destParts[1], 10) : 0;
     
     console.log("Parsed destination:", { destType, destLineNumber });
@@ -104,7 +104,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       // Penalty kill positions
       const positions: Position[] = ['LF', 'RF', 'LD', 'RD'];
       destPosition = positions[destination.index];
-    } else if (destType === 'goalies') {
+    } else if (destType === 'goalie') {
       destPosition = 'G';
     }
 
