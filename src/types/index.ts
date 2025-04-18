@@ -31,7 +31,7 @@ export interface Team {
 }
 
 // Hockey position types
-export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G' | null;
+export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G' | 'LF' | 'RF' | null;
 
 export interface PlayerPosition {
   playerId: string;
@@ -43,6 +43,8 @@ export interface Lines {
   forwards: ForwardLine[];
   defense: DefenseLine[];
   goalies: User[];
+  powerPlay?: PowerPlayLine[];
+  penaltyKill?: PenaltyKillLine[];
 }
 
 export interface ForwardLine {
@@ -54,6 +56,23 @@ export interface ForwardLine {
 
 export interface DefenseLine {
   lineNumber: number;
+  leftDefense: User | null;
+  rightDefense: User | null;
+}
+
+export interface PowerPlayLine {
+  lineNumber: number;
+  leftWing: User | null;
+  center: User | null;
+  rightWing: User | null;
+  leftDefense: User | null;
+  rightDefense: User | null;
+}
+
+export interface PenaltyKillLine {
+  lineNumber: number;
+  leftForward: User | null;
+  rightForward: User | null;
   leftDefense: User | null;
   rightDefense: User | null;
 }
