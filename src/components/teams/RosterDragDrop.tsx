@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Team, User, Lines, Position } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Team, Lines } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ForwardLinesSection } from '@/components/events/player-lines/ForwardLinesSection';
-import { DefensePairsSection } from '@/components/events/player-lines/DefensePairsSection';
-import { GoaliesSection } from '@/components/events/player-lines/GoaliesSection';
-import { PlayerCard } from '@/components/events/player-lines/PlayerCard';
-import { Droppable } from '@hello-pangea/dnd';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
+import { AvailablePlayersSection } from './lineup/AvailablePlayersSection';
+import { EvenStrengthLines } from './lineup/EvenStrengthLines';
+import { SpecialTeamsUnit } from './lineup/SpecialTeamsUnit';
 
 interface RosterDragDropProps {
   team: Team;
@@ -130,144 +127,32 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
             <TabsTrigger value="penalty-kill">Penalty Kill</TabsTrigger>
           </TabsList>
           
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Available Players</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Droppable droppableId="roster" direction="horizontal">
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2"
-                  >
-                    {availablePlayers.map((player, index) => (
-                      <div key={player.id} className="col-span-1">
-                        <PlayerCard
-                          player={player}
-                          position={player.position || 'Player'}
-                          isSelected={false}
-                          isDraggable={true}
-                          index={index}
-                          dragId={`roster-0-P-${player.id}`}
-                        />
-                      </div>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </CardContent>
-          </Card>
+          <AvailablePlayersSection availablePlayers={availablePlayers} />
           
           <TabsContent value="even-strength">
-            <div className="space-y-6">
-              <ForwardLinesSection
-                forwardLines={lines.forwards}
-                isDraggable={true}
-              />
-              
-              <Button 
-                variant="outline" 
-                onClick={addForwardLine} 
-                className="mt-2 w-full"
-              >
-                Add Forward Line
-              </Button>
-              
-              <DefensePairsSection
-                defensePairs={lines.defense}
-                isDraggable={true}
-              />
-              
-              <Button 
-                variant="outline" 
-                onClick={addDefenseLine} 
-                className="mt-2 w-full"
-              >
-                Add Defense Pair
-              </Button>
-
-              <GoaliesSection 
-                goalies={lines.goalies}
-                isDraggable={true}
-              />
-            </div>
+            <EvenStrengthLines 
+              lines={lines}
+              onAddForwardLine={addForwardLine}
+              onAddDefenseLine={addDefenseLine}
+            />
           </TabsContent>
           
           <TabsContent value="power-play">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Power Play Units</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {[1, 2].map((unitNumber) => (
-                    <div key={`pp-${unitNumber}`} className="mb-6">
-                      <h4 className="text-sm font-medium mb-2">PP Unit {unitNumber}</h4>
-                      <Droppable droppableId={`pp-${unitNumber}`} direction="horizontal">
-                        {(provided, snapshot) => (
-                          <div 
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className="grid grid-cols-5 gap-2"
-                          >
-                            {['LW', 'C', 'RW', 'LD', 'RD'].map((pos, idx) => (
-                              <div key={pos}>
-                                <PlayerCard
-                                  player={null}
-                                  position={pos}
-                                  isSelected={false}
-                                />
-                              </div>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+            <SpecialTeamsUnit
+              title="Power Play Units"
+              units={[1, 2]}
+              positions={['LW', 'C', 'RW', 'LD', 'RD']}
+              type="pp"
+            />
           </TabsContent>
           
           <TabsContent value="penalty-kill">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Penalty Kill Units</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {[1, 2].map((unitNumber) => (
-                    <div key={`pk-${unitNumber}`} className="mb-6">
-                      <h4 className="text-sm font-medium mb-2">PK Unit {unitNumber}</h4>
-                      <Droppable droppableId={`pk-${unitNumber}`} direction="horizontal">
-                        {(provided, snapshot) => (
-                          <div 
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className="grid grid-cols-4 gap-2"
-                          >
-                            {['LF', 'RF', 'LD', 'RD'].map((pos, idx) => (
-                              <div key={pos}>
-                                <PlayerCard
-                                  player={null}
-                                  position={pos}
-                                  isSelected={false}
-                                />
-                              </div>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+            <SpecialTeamsUnit
+              title="Penalty Kill Units"
+              units={[1, 2]}
+              positions={['LF', 'RF', 'LD', 'RD']}
+              type="pk"
+            />
           </TabsContent>
         </Tabs>
       </div>
