@@ -2,6 +2,14 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { StatAssignment } from '@/hooks/useStatTrackerAssignment';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { User, Users } from 'lucide-react';
 
 const statTypes = ['goals', 'assists', 'penalties', 'shots', 'saves'] as const;
 
@@ -23,18 +31,33 @@ export const StatTypeSelector = ({
           <Label className="text-lg font-semibold capitalize">
             {statType} Tracker
           </Label>
-          <select
-            value={selectedTrackers[statType] || ''}
-            onChange={(e) => onSelect(statType, e.target.value)}
-            className="w-full p-2 border rounded-md bg-background"
+          
+          <Select
+            value={selectedTrackers[statType] || ""}
+            onValueChange={(value) => onSelect(statType, value)}
           >
-            <option value="">Select Tracker</option>
-            {teamMembers.map(member => (
-              <option key={member.id} value={member.id}>
-                {member.name || member.email} {member.role ? `(${member.role})` : ''} - ID: {member.id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Tracker" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              {teamMembers.length === 0 ? (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  No available users for tracking
+                </div>
+              ) : (
+                teamMembers.map(member => (
+                  <SelectItem key={member.id} value={member.id} className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      {member.role === 'user' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                      <span>
+                        {member.name || member.email} {member.role && member.role !== 'user' ? `(${member.role})` : ''}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </div>
       ))}
     </div>

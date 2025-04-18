@@ -33,66 +33,55 @@ export const useStatTrackerAssignment = (gameId: string | undefined) => {
 
         // Get team IDs from the game
         const teamIds = [gameData.home_team_id, gameData.away_team_id];
-        const uniqueTeamIds = [...new Set(teamIds)];
         
-        let allTeamMembers: any[] = [];
+        // Fetch all team members from both teams
+        const { data: allMembers, error: membersError } = await supabase
+          .from('team_members')
+          .select('id, user_id, name, email, role')
+          .in('team_id', teamIds);
         
-        // Fetch team members with valid user_id values
-        for (const teamId of uniqueTeamIds) {
-          const { data: members, error } = await supabase
-            .from('team_members')
-            .select('id, user_id, name, email, role')
-            .eq('team_id', teamId)
-            .not('user_id', 'is', null);
-            
-          if (error) {
-            console.error(`Error fetching members for team ${teamId}:`, error);
-            continue;
-          }
+        if (membersError) throw membersError;
+        
+        // Fetch all available users (not just those connected to teams)
+        const { data: allUsers, error: usersError } = await supabase
+          .from('users')
+          .select('id, name, email');
           
-          if (members) {
-            allTeamMembers = [...allTeamMembers, ...members];
+        if (usersError) throw usersError;
+        
+        // Create a map of users for quick lookup
+        const usersMap = new Map(allUsers?.map(user => [user.id, user]) || []);
+        
+        // Create a combined list of potential stat trackers
+        const validTrackers = [];
+        
+        // Add team members with valid user_id connections
+        for (const member of (allMembers || [])) {
+          if (member.user_id && usersMap.has(member.user_id)) {
+            const user = usersMap.get(member.user_id);
+            validTrackers.push({
+              id: member.user_id,
+              name: member.name || user?.name || 'Unknown',
+              email: member.email || user?.email || 'No email',
+              role: member.role || 'player'
+            });
           }
         }
         
-        // Get the list of valid users from the users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id, name, email');
-
-        if (userError) throw userError;
-        
-        // Map users to the expected format, only using valid users
-        const validUsers = userData?.map(user => ({
-          id: user.id,
-          user_id: user.id, // Make sure user_id is always set to id
-          name: user.name,
-          email: user.email,
-          role: 'user'
-        })) || [];
-        
-        // Combine team members and users, ensuring only members with valid user_ids are included
-        const combinedMembers: any[] = [];
-        
-        // Filter and map team members to ensure they have valid user_ids
-        allTeamMembers.forEach(member => {
-          if (member.user_id && userData?.some(user => user.id === member.user_id)) {
-            combinedMembers.push({
-              ...member,
-              id: member.user_id // Use user_id as id for consistency
+        // Add users that aren't already in the list as potential trackers
+        for (const user of (allUsers || [])) {
+          if (!validTrackers.some(t => t.id === user.id)) {
+            validTrackers.push({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: 'user'
             });
           }
-        });
+        }
         
-        // Add users from users table that aren't already in the list
-        validUsers.forEach(user => {
-          if (!combinedMembers.some(member => member.id === user.id)) {
-            combinedMembers.push(user);
-          }
-        });
-        
-        console.log('Valid members for assignment:', combinedMembers);
-        setTeamMembers(combinedMembers);
+        console.log('Valid trackers for assignment:', validTrackers);
+        setTeamMembers(validTrackers);
 
         // Load existing assignments
         const { data: existingTrackers, error: trackersError } = await supabase
