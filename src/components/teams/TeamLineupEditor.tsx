@@ -41,9 +41,19 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
   // Auto-save whenever lines change
   useEffect(() => {
     const saveLines = async () => {
-      await onSaveLineup(lines);
+      try {
+        await onSaveLineup(lines);
+      } catch (error) {
+        console.error("Error auto-saving lineup:", error);
+      }
     };
-    saveLines();
+    
+    // Add a small delay to prevent too frequent saves
+    const timeoutId = setTimeout(() => {
+      saveLines();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [lines, onSaveLineup]);
 
   return (

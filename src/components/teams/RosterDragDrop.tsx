@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Team, Lines, User } from '@/types';
@@ -15,7 +16,7 @@ interface RosterDragDropProps {
   isSaving?: boolean;
 }
 
-export default function RosterDragDrop({ team, onSave }: RosterDragDropProps) {
+export default function RosterDragDrop({ team, onSave, isSaving = false }: RosterDragDropProps) {
   const {
     lines,
     setLines,
@@ -25,11 +26,22 @@ export default function RosterDragDrop({ team, onSave }: RosterDragDropProps) {
     addDefenseLine,
   } = useLineupEditor(team);
 
+  // Auto-save whenever lines change
   useEffect(() => {
     const saveLines = async () => {
-      await onSave(lines);
+      try {
+        await onSave(lines);
+      } catch (error) {
+        console.error("Error auto-saving lineup:", error);
+      }
     };
-    saveLines();
+    
+    // Add a small delay to prevent too frequent saves
+    const timeoutId = setTimeout(() => {
+      saveLines();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [lines, onSave]);
 
   const onDragEnd = (result: DropResult) => {

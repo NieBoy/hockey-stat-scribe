@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -10,7 +11,6 @@ import { useTeams } from "@/hooks/useTeams";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
-import RosterDragDrop from "@/components/teams/RosterDragDrop";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -40,7 +40,7 @@ export default function TeamLineup() {
     try {
       setSaving(true);
       await updateTeamLineup(id, lines);
-      refetch();
+      toast.success("Lineup saved successfully");
     } catch (error) {
       console.error("Error saving lineup:", error);
       toast.error("Failed to save lineup");
@@ -66,18 +66,6 @@ export default function TeamLineup() {
           <h1 className="text-3xl font-bold tracking-tight mb-1">Team Not Found</h1>
           <p>The team you're looking for doesn't exist or there was an error loading it.</p>
           <p className="text-sm text-red-500">{error instanceof Error ? error.message : 'Unknown error'}</p>
-          <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!team) {
-    return (
-      <MainLayout>
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Team Not Found</h1>
-          <p>The team you're looking for doesn't exist.</p>
           <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
         </div>
       </MainLayout>
@@ -112,15 +100,17 @@ export default function TeamLineup() {
           </div>
         </div>
         
-        {editorMode === 'drag-drop' ? (
-          <RosterDragDrop 
+        {editorMode === 'standard' ? (
+          <TeamLineupEditor 
             team={team} 
-            onSave={handleSaveLineup}
+            onSaveLineup={handleSaveLineup}
+            isSaving={saving}
           />
         ) : (
           <TeamLineupEditor 
             team={team} 
             onSaveLineup={handleSaveLineup}
+            isSaving={saving}
           />
         )}
 
