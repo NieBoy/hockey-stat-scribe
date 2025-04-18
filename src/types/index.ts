@@ -1,4 +1,3 @@
-
 // User Types
 export type UserRole = 'player' | 'parent' | 'coach' | 'admin';
 
@@ -43,8 +42,10 @@ export interface Lines {
   forwards: ForwardLine[];
   defense: DefenseLine[];
   goalies: User[];
-  powerPlay?: PowerPlayLine[];
-  penaltyKill?: PenaltyKillLine[];
+  specialTeams?: {
+    powerPlay?: Record<string, User | null>;
+    penaltyKill?: Record<string, User | null>;
+  };
 }
 
 export interface ForwardLine {
