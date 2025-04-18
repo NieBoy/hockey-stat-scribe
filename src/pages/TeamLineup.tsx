@@ -49,7 +49,7 @@ export default function TeamLineup() {
     }
   }, [id, queryClient, refetch]);
 
-  const handleSaveLineup = useCallback(async (lines: Lines) => {
+  const handleSaveLineup = useCallback(async (lines: Lines): Promise<void> => {
     if (!id) {
       toast.error("No team ID available");
       return;
@@ -69,8 +69,6 @@ export default function TeamLineup() {
         
         // Manually trigger a refetch to get the latest team data
         await refetch();
-        
-        return true;
       } else {
         console.error("TeamLineup - Error saving lineup");
         throw new Error("Failed to save lineup");
