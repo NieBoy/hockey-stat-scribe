@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lines, Team, Position } from "@/types";
@@ -10,6 +10,7 @@ import { ForwardsTab } from "./tabs/ForwardsTab";
 import { DefenseTab } from "./tabs/DefenseTab";
 import { GoaliesTab } from "./tabs/GoaliesTab";
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
+import { toast } from "sonner";
 
 interface SimpleLineupEditorProps {
   team: Team;
@@ -19,7 +20,6 @@ interface SimpleLineupEditorProps {
 export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorProps) {
   const {
     lines,
-    setLines,
     availablePlayers,
     handlePlayerSelect,
     addForwardLine,
@@ -34,6 +34,7 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   const [currentTab, setCurrentTab] = useState<'forwards' | 'defense' | 'goalies'>('forwards');
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handlePositionSelect = (lineIndex: number, position: Position) => {
     setSelectedLineIndex(lineIndex);
@@ -65,11 +66,22 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   const handleSave = async () => {
     if (onSaveLineup) {
       try {
+        setIsSaving(true);
         const success = await onSaveLineup(lines);
+        
+        if (success) {
+          toast.success("Lineup saved successfully");
+        } else {
+          toast.error("Failed to save lineup");
+        }
+        
         return success;
       } catch (error) {
         console.error("Error saving lineup:", error);
+        toast.error("Error saving lineup");
         return false;
+      } finally {
+        setIsSaving(false);
       }
     }
     return false;
@@ -87,8 +99,18 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Team Lineup Editor</CardTitle>
+          {onSaveLineup && (
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="flex items-center gap-2"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save Lineup
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {/* Tab navigation */}
@@ -161,11 +183,6 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Current Lineup</CardTitle>
-          {onSaveLineup && (
-            <Button onClick={handleSave}>
-              Save Lineup
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           <NonDraggableLineupView lines={lines} />

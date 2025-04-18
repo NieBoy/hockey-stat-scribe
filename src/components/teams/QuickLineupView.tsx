@@ -22,6 +22,9 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
 
   // Add timestamp to track when data was last refreshed
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  
+  // Use a ref to prevent running the effect during the initial render
+  const isInitialMount = React.useRef(true);
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -31,6 +34,14 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         
         const lineupData = await getTeamLineup(team.id);
         console.log("QuickLineupView - Retrieved lineup data:", lineupData);
+        
+        if (!lineupData || lineupData.length === 0) {
+          console.log("QuickLineupView - No lineup data found, using initial lines");
+          setLines(buildInitialLines(team));
+          setLoadingState('success');
+          setLastRefreshed(new Date());
+          return;
+        }
         
         // Apply positions from database to the team players
         const updatedTeam = {
@@ -58,9 +69,17 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
         setLoadingState('error');
       }
     };
-
+    
     fetchLineup();
-  }, [team, refreshKey]); // Add refreshKey to dependencies to force re-fetch
+    
+    // Set up auto-refresh every 15 seconds
+    const intervalId = setInterval(() => {
+      console.log("QuickLineupView - Auto-refreshing lineup data");
+      setRefreshKey(prevKey => prevKey + 1);
+    }, 15000);
+    
+    return () => clearInterval(intervalId);
+  }, [team, refreshKey]); 
 
   const handleRefresh = () => {
     setRefreshKey(prevKey => prevKey + 1); // Increment key to force re-fetch

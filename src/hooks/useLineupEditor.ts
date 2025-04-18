@@ -67,11 +67,11 @@ export function useLineupEditor(team: Team) {
           const refreshedLines = buildInitialLines(updatedTeam);
           console.log("Refreshed lines:", refreshedLines);
           setLines(refreshedLines);
-          initialLoadComplete.current = true;
         } else {
           console.log("No lineup data found in database, using initial lines");
-          initialLoadComplete.current = true;
         }
+        
+        initialLoadComplete.current = true;
       } catch (error) {
         console.error("Error fetching lineup data:", error);
         fetchError.current = error instanceof Error ? error : new Error('Unknown error');
@@ -82,21 +82,22 @@ export function useLineupEditor(team: Team) {
     };
     
     fetchAndBuildLines();
-  }, [team?.id, JSON.stringify(team?.players)]);
+  }, [team?.id]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
-  const { addForwardLine, addDefenseLine, deleteForwardLine, deleteDefenseLine } = useLineManagement(lines, setLines);
+  const { 
+    addForwardLine, 
+    addDefenseLine, 
+    deleteForwardLine, 
+    deleteDefenseLine 
+  } = useLineManagement(lines, setLines);
   const { handlePlayerMove } = usePlayerMovement(lines, setLines, availablePlayers, setAvailablePlayers);
   const { handlePlayerSelect } = usePlayerSelection(lines, setLines, availablePlayers, setAvailablePlayers);
 
   // Update available players when lines change
-  const updateAvailable = useCallback(() => {
+  useEffect(() => {
     updateAvailablePlayers(lines);
   }, [lines, updateAvailablePlayers]);
-
-  useEffect(() => {
-    updateAvailable();
-  }, [lines, updateAvailable]);
 
   return {
     lines,

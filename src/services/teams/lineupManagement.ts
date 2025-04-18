@@ -6,7 +6,8 @@ export const updateTeamLineup = async (
   teamId: string, 
   lines: Lines
 ): Promise<boolean> => {
-  console.log("Updating team lineup", { teamId, lines });
+  console.log("Updating team lineup", { teamId });
+  console.log("Lineup data structure:", JSON.stringify(lines, null, 2));
   
   if (!teamId) {
     console.error("No team ID provided for lineup update");
@@ -32,7 +33,7 @@ export const updateTeamLineup = async (
     const updates = [];
     
     // Update forward lines
-    for (const line of lines.forwards) {
+    lines.forwards.forEach(line => {
       if (line.leftWing) {
         updates.push({
           team_id: teamId,
@@ -62,10 +63,10 @@ export const updateTeamLineup = async (
           line_number: line.lineNumber
         });
       }
-    }
+    });
     
     // Update defense lines
-    for (const line of lines.defense) {
+    lines.defense.forEach(line => {
       if (line.leftDefense) {
         updates.push({
           team_id: teamId,
@@ -85,18 +86,18 @@ export const updateTeamLineup = async (
           line_number: line.lineNumber
         });
       }
-    }
+    });
     
     // Update goalies
-    for (const goalie of lines.goalies) {
+    lines.goalies.forEach((goalie, index) => {
       updates.push({
         team_id: teamId,
         user_id: goalie.id,
         role: 'player',
         position: 'G',
-        line_number: null
+        line_number: index + 1  // Added line numbers for goalies to distinguish starting vs backup
       });
-    }
+    });
     
     console.log("Updates to apply:", updates);
     
@@ -132,7 +133,7 @@ export const updateTeamLineup = async (
           continue;
         }
         
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('team_members')
           .update({
             position: update.position,
@@ -153,7 +154,7 @@ export const updateTeamLineup = async (
     }
     
     console.log(`Lineup update complete: ${successCount} successful, ${errorCount} failed`);
-    return errorCount === 0 && successCount > 0;
+    return errorCount === 0;
   } catch (error) {
     console.error("Error updating team lineup:", error);
     return false;
