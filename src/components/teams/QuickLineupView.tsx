@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { Team, Lines } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { getTeamLineup } from '@/services/teams/lineupManagement';
 import { buildInitialLines } from '@/utils/lineupUtils';
 import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
+import { Button } from '@/components/ui/button';
 
 interface QuickLineupViewProps {
   team: Team;
@@ -15,6 +16,9 @@ interface QuickLineupViewProps {
 export function QuickLineupView({ team }: QuickLineupViewProps) {
   const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
   const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
+  
+  // Force refresh key to trigger a re-fetch when needed
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -52,23 +56,38 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
     };
 
     fetchLineup();
-  }, [team]);
+  }, [team, refreshKey]); // Add refreshKey to dependencies to force re-fetch
+
+  const handleRefresh = () => {
+    setRefreshKey(prevKey => prevKey + 1); // Increment key to force re-fetch
+  };
 
   return (
     <Card className="mt-6">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Current Lineup</CardTitle>
-          {loadingState === 'loading' && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
-            </Badge>
-          )}
-          {loadingState === 'error' && (
-            <Badge variant="destructive">
-              Error Loading Lineup
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh} 
+              disabled={loadingState === 'loading'}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            
+            {loadingState === 'loading' && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+              </Badge>
+            )}
+            {loadingState === 'error' && (
+              <Badge variant="destructive">
+                Error Loading Lineup
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

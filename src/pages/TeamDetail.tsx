@@ -24,6 +24,7 @@ export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("players");
+  const [lineupRefreshKey, setLineupRefreshKey] = useState(0);
   
   const { 
     addPlayerDialogOpen, 
@@ -102,6 +103,7 @@ export default function TeamDetail() {
   
   const handleTeamUpdate = () => {
     refetchTeam();
+    setLineupRefreshKey(prev => prev + 1); // Force lineup refresh when team updates
   };
   
   // Wrap the content in a QueryClientProvider to ensure React Query context is available

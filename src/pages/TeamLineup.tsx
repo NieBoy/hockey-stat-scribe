@@ -10,6 +10,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SimpleLineupEditor } from "@/components/teams/lineup/SimpleLineupEditor";
+import { Lines } from "@/types";
+import { updateTeamLineup } from "@/services/teams/lineupManagement";
+import { toast } from "sonner";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +46,29 @@ export default function TeamLineup() {
       refetch();
     }
   }, [id, queryClient, refetch]);
+  
+  const handleSaveLineup = async (lines: Lines) => {
+    if (!team?.id) {
+      toast.error("Unable to save lineup: team ID not available");
+      return;
+    }
+    
+    try {
+      console.log("TeamLineup - Saving lineup for team:", team.id);
+      const success = await updateTeamLineup(team.id, lines);
+      
+      if (success) {
+        // Invalidate the team data to ensure it gets refreshed
+        queryClient.invalidateQueries({ queryKey: ['team', team.id] });
+        return true;
+      } else {
+        throw new Error("Failed to update lineup");
+      }
+    } catch (error) {
+      console.error("Error saving lineup:", error);
+      throw error;
+    }
+  };
   
   if (isLoading) {
     return (

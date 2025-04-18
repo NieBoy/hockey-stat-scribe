@@ -4,7 +4,7 @@ import { Team, Lines, User, Position } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getTeamLineup, updateTeamLineup } from "@/services/teams/lineupManagement";
 import { buildInitialLines } from "@/utils/lineupUtils";
@@ -83,6 +83,69 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Add a new forward line
+  const addForwardLine = () => {
+    const newLines = { ...lines };
+    const newLineNumber = newLines.forwards.length > 0 
+      ? Math.max(...newLines.forwards.map(line => line.lineNumber)) + 1 
+      : 1;
+    
+    newLines.forwards.push({
+      lineNumber: newLineNumber,
+      leftWing: null,
+      center: null,
+      rightWing: null
+    });
+    
+    setLines(newLines);
+    toast.success(`Forward line ${newLineNumber} added`);
+  };
+
+  // Add a new defense line
+  const addDefenseLine = () => {
+    const newLines = { ...lines };
+    const newLineNumber = newLines.defense.length > 0 
+      ? Math.max(...newLines.defense.map(line => line.lineNumber)) + 1 
+      : 1;
+    
+    newLines.defense.push({
+      lineNumber: newLineNumber,
+      leftDefense: null,
+      rightDefense: null
+    });
+    
+    setLines(newLines);
+    toast.success(`Defense pair ${newLineNumber} added`);
+  };
+
+  // Delete a forward line
+  const deleteForwardLine = (lineIndex: number) => {
+    const newLines = { ...lines };
+    newLines.forwards = newLines.forwards.filter((_, index) => index !== lineIndex);
+    
+    // Re-number remaining lines
+    newLines.forwards = newLines.forwards.map((line, index) => ({
+      ...line,
+      lineNumber: index + 1
+    }));
+    
+    setLines(newLines);
+  };
+
+  // Delete a defense line
+  const defenseLine = (lineIndex: number) => {
+    const newLines = { ...lines };
+    newLines.defense = newLines.defense.filter((_, index) => index !== lineIndex);
+    
+    // Re-number remaining lines
+    newLines.defense = newLines.defense.map((line, index) => ({
+      ...line,
+      lineNumber: index + 1
+    }));
+    
+    setLines(newLines);
   };
 
   // Set a player to a specific position
@@ -205,7 +268,19 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
         {lines.forwards.map((line, index) => (
           <Card key={`forward-line-${index}`} className="mb-4">
             <CardHeader>
-              <CardTitle className="text-sm">Forward Line {line.lineNumber}</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-sm">Forward Line {line.lineNumber}</CardTitle>
+                {lines.forwards.length > 1 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-500"
+                    onClick={() => deleteForwardLine(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
@@ -243,6 +318,15 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
             </CardContent>
           </Card>
         ))}
+        
+        <Button 
+          variant="outline" 
+          onClick={addForwardLine}
+          className="w-full flex items-center gap-2 justify-center"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Add Forward Line
+        </Button>
       </div>
     );
   };
@@ -253,7 +337,19 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
         {lines.defense.map((pair, index) => (
           <Card key={`defense-pair-${index}`} className="mb-4">
             <CardHeader>
-              <CardTitle className="text-sm">Defense Pair {pair.lineNumber}</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-sm">Defense Pair {pair.lineNumber}</CardTitle>
+                {lines.defense.length > 1 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-500"
+                    onClick={() => defenseLine(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -281,6 +377,15 @@ export function SimpleLineupEditor({ team }: SimpleLineupEditorProps) {
             </CardContent>
           </Card>
         ))}
+        
+        <Button 
+          variant="outline" 
+          onClick={addDefenseLine}
+          className="w-full flex items-center gap-2 justify-center"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Add Defense Pair
+        </Button>
       </div>
     );
   };
