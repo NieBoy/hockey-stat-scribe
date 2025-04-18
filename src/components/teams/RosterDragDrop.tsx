@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Team, Lines } from '@/types';
+import { Team, Lines, Position } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
