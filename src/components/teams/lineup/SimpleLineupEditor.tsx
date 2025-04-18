@@ -45,12 +45,16 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
     
     if (currentTab === 'forwards') {
       const line = lines.forwards[selectedLineIndex];
+      if (!line) return null; // Guard clause if line is undefined
+      
       if (selectedPosition === 'LW') return line.leftWing;
       if (selectedPosition === 'C') return line.center;
       if (selectedPosition === 'RW') return line.rightWing;
     }
     else if (currentTab === 'defense') {
       const line = lines.defense[selectedLineIndex];
+      if (!line) return null; // Guard clause if line is undefined
+      
       if (selectedPosition === 'LD') return line.leftDefense;
       if (selectedPosition === 'RD') return line.rightDefense;
     }
