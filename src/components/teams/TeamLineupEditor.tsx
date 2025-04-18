@@ -49,6 +49,13 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     lines
   });
 
+  // Create a wrapper for handleSave that returns void instead of boolean
+  const handleSaveWrapper = async (): Promise<void> => {
+    // Call the original handleSave but ignore its return value
+    await handleSave();
+    // This function returns void
+  };
+
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
@@ -127,7 +134,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
       <SaveLineupDialog
         isOpen={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
-        onConfirm={handleSave}
+        onConfirm={handleSaveWrapper}
       />
     </>
   );
