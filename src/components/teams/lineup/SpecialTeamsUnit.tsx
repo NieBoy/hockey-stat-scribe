@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Droppable } from '@hello-pangea/dnd';
 import { PlayerCard } from '@/components/events/player-lines/PlayerCard';
+import { cn } from '@/lib/utils';
 
 interface SpecialTeamsUnitProps {
   title: string;
@@ -25,7 +26,11 @@ export function SpecialTeamsUnit({ title, units, positions, type }: SpecialTeams
                 <div 
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`grid grid-cols-${positions.length} gap-2`}
+                  className={cn(
+                    `grid grid-cols-${positions.length} gap-2`,
+                    snapshot.isDraggingOver && "bg-muted/50 rounded-md",
+                    "grid-cols-5"
+                  )}
                 >
                   {positions.map((pos, idx) => (
                     <div key={pos}>

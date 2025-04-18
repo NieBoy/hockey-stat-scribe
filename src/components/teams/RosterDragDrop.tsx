@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Team, Lines, Position } from '@/types';
+import { Team, Lines, Position, User } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -34,13 +34,33 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     // Dropped outside a droppable area
     if (!destination) return;
     
+    console.log("Drag ended:", { source, destination, draggableId });
+    
     // Parse the draggable ID to get player details
     // Format: [type]-[lineNumber]-[position]-[playerId]
     const parts = draggableId.split('-');
-    const playerType = parts[0];
-    const lineNumber = parseInt(parts[1], 10);
-    const position = parts[2] as Position;
-    const playerId = parts.slice(3).join('-'); // In case player ID contains hyphens
+    
+    // Handle the case where we have a roster draggable
+    let playerType: string;
+    let lineNumber: number;
+    let position: Position | null;
+    let playerId: string;
+    
+    if (parts[0] === 'roster') {
+      playerType = 'roster';
+      lineNumber = 0;
+      position = null;
+      // Player ID starts from index 3
+      playerId = parts.slice(3).join('-');
+    } else {
+      playerType = parts[0];
+      lineNumber = parseInt(parts[1], 10);
+      position = parts[2] as Position;
+      // Player ID starts from index 3
+      playerId = parts.slice(3).join('-');
+    }
+    
+    console.log("Parsed draggable ID:", { playerType, lineNumber, position, playerId });
     
     // Parse destination ID to get drop details
     // Format: [type]-[lineNumber]
@@ -48,11 +68,13 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     const destType = destParts[0];
     const destLineNumber = destParts.length > 1 ? parseInt(destParts[1], 10) : 0;
     
+    console.log("Parsed destination:", { destType, destLineNumber });
+    
     // Handle drops into roster
     if (destination.droppableId === 'roster') {
       handlePlayerMove({
         playerId,
-        sourceType: playerType as 'forward' | 'defense' | 'goalie',
+        sourceType: playerType as 'forward' | 'defense' | 'goalie' | 'roster',
         sourceLineNumber: lineNumber,
         sourcePosition: position,
         destType: 'remove',
@@ -86,11 +108,13 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       destPosition = 'G';
     }
 
+    console.log("Destination position:", destPosition);
+    
     // Move player to new position
     if (destPosition) {
       handlePlayerMove({
         playerId,
-        sourceType: playerType as 'forward' | 'defense' | 'goalie', 
+        sourceType: playerType as 'forward' | 'defense' | 'goalie' | 'roster', 
         sourceLineNumber: lineNumber,
         sourcePosition: position,
         destType: destType as 'forward' | 'defense' | 'goalie' | 'pp' | 'pk',
