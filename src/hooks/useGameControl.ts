@@ -5,6 +5,11 @@ import { useToast } from './use-toast';
 
 type TeamType = 'home' | 'away';
 
+interface GameState {
+  is_active: boolean;
+  current_period: number;
+}
+
 export function useGameControl(gameId?: string) {
   const [isGameActive, setIsGameActive] = useState(false);
   const [currentPeriod, setCurrentPeriod] = useState(1);
@@ -48,9 +53,10 @@ export function useGameControl(gameId?: string) {
           filter: `id=eq.${gameId}`
         },
         (payload) => {
-          if (payload.new) {
-            setIsGameActive(payload.new.is_active);
-            setCurrentPeriod(payload.new.current_period || 1);
+          const newData = payload.new as GameState;
+          if (newData) {
+            setIsGameActive(newData.is_active);
+            setCurrentPeriod(newData.current_period || 1);
           }
         }
       )

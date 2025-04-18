@@ -7,9 +7,12 @@ import EventButton from './EventButton';
 import GameControls from './GameControls';
 import EventHistory from './EventHistory';
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useGameControl } from '@/hooks/useGameControl';
+
+// Define the EventType type
+type EventType = 'goal' | 'penalty' | 'timeout';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
