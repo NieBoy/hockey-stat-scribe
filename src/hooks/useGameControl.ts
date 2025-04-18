@@ -1,7 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from './use-toast';
+import { GameStopReason, GameStatus } from '@/types/game-control';
+import { useNavigate } from 'react-router-dom';
 
 type TeamType = 'home' | 'away';
 
@@ -14,13 +15,14 @@ export function useGameControl(gameId?: string) {
   const [isGameActive, setIsGameActive] = useState(false);
   const [currentPeriod, setCurrentPeriod] = useState(1);
   const [teamType, setTeamType] = useState<TeamType>('home');
-  const [error, setError] = useState<string | null>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus>('not-started');
+  const [stopReason, setStopReason] = useState<GameStopReason>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!gameId) return;
 
-    // Fetch initial game state
     const fetchGameState = async () => {
       const { data, error } = await supabase
         .from('games')
@@ -41,7 +43,6 @@ export function useGameControl(gameId?: string) {
 
     fetchGameState();
 
-    // Subscribe to game state changes
     const channel = supabase
       .channel(`game_${gameId}`)
       .on(
@@ -80,71 +81,90 @@ export function useGameControl(gameId?: string) {
         .eq('id', gameId);
 
       if (error) throw error;
-
+      setGameStatus('in-progress');
+      
       toast({
         title: "Game Started",
         description: "Period 1 has begun"
       });
 
     } catch (err) {
-      setError('Failed to start game');
+      toast({
+        title: "Error",
+        description: "Failed to start game",
+        variant: "destructive"
+      });
     }
   }, [gameId, toast]);
 
   const stopGame = useCallback(async () => {
+    setGameStatus('stopped');
+  }, []);
+
+  const handlePeriodEnd = useCallback(async () => {
     if (!gameId) return;
 
     try {
+      if (currentPeriod >= 3) {
+        const { error } = await supabase
+          .from('games')
+          .update({ 
+            is_active: false 
+          })
+          .eq('id', gameId);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Game Ended",
+          description: "The game has concluded"
+        });
+        
+        navigate(`/games/${gameId}`);
+        return;
+      }
+
       const { error } = await supabase
         .from('games')
         .update({ 
-          is_active: false 
+          current_period: currentPeriod + 1,
+          is_active: true
         })
         .eq('id', gameId);
 
       if (error) throw error;
 
-      toast({
-        title: "Game Stopped",
-        description: "The game has been paused"
-      });
-
-    } catch (err) {
-      setError('Failed to stop game');
-    }
-  }, [gameId, toast]);
-
-  const advancePeriod = useCallback(async () => {
-    if (!gameId) return;
-
-    try {
-      const { error } = await supabase
-        .from('games')
-        .update({ 
-          current_period: currentPeriod + 1 
-        })
-        .eq('id', gameId);
-
-      if (error) throw error;
-
+      setGameStatus('in-progress');
       toast({
         title: "Period Advanced",
         description: `Period ${currentPeriod + 1} has begun`
       });
 
     } catch (err) {
-      setError('Failed to advance period');
+      toast({
+        title: "Error",
+        description: "Failed to handle period end",
+        variant: "destructive"
+      });
     }
-  }, [gameId, currentPeriod, toast]);
+  }, [gameId, currentPeriod, toast, navigate]);
+
+  const handleStoppage = useCallback(async () => {
+    if (!gameId) return;
+    setGameStatus('in-progress');
+  }, [gameId]);
 
   return {
     isGameActive,
     currentPeriod,
     teamType,
+    gameStatus,
+    stopReason,
     startGame,
     stopGame,
+    handlePeriodEnd,
+    handleStoppage,
     setTeamType,
-    advancePeriod,
-    error
+    setStopReason
   };
 }
