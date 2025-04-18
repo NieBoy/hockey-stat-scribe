@@ -117,7 +117,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
         sourceType: playerType,
         sourceLineNumber: lineNumber,
         sourcePosition: position,
-        destType: destType,
+        destType: destType === 'roster' ? 'remove' : destType, // Convert 'roster' to 'remove' for compatibility
         destLineNumber: destLineNumber,
         destPosition
       });
