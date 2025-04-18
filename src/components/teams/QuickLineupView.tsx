@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { getTeamLineup } from '@/services/teams/lineupManagement';
 import { buildInitialLines } from '@/utils/lineupUtils';
-import { useQueryClient } from '@tanstack/react-query';
 import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
 
 interface QuickLineupViewProps {
@@ -16,8 +15,6 @@ interface QuickLineupViewProps {
 export function QuickLineupView({ team }: QuickLineupViewProps) {
   const [lines, setLines] = useState<Lines>(() => buildInitialLines(team));
   const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error'>('loading');
-  // Get queryClient from context - this will help us check if it's available
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchLineup = async () => {
