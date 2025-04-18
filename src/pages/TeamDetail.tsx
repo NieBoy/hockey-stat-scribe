@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -11,6 +10,7 @@ import PlayersTabContent from "@/components/teams/PlayersTabContent";
 import CoachesTabContent from "@/components/teams/CoachesTabContent";
 import StatsTabContent from "@/components/teams/StatsTabContent";
 import TeamMembersTable from "@/components/teams/TeamMembersTable";
+import { QuickLineupView } from "@/components/teams/QuickLineupView";
 import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 import { User } from "@/types";
@@ -107,6 +107,8 @@ export default function TeamDetail() {
           onBackClick={() => navigate("/teams")}
           onAddPlayerClick={handleAddPlayer}
         />
+
+        <QuickLineupView team={team} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
