@@ -8,6 +8,7 @@ import { usePlayerMovement } from "./lineup/usePlayerMovement";
 import { usePlayerSelection } from "./lineup/usePlayerSelection";
 import { getTeamLineup } from "@/services/teams/lineup";
 import { toast } from "sonner";
+import { cloneDeep } from "lodash";
 
 export function useLineupEditor(team: Team) {
   console.log("useLineupEditor initializing with team:", team?.id);
@@ -25,6 +26,49 @@ export function useLineupEditor(team: Team) {
   const fetchError = useRef<Error | null>(null);
   // Store the raw lineup data
   const lineupDataRef = useRef<any[]>([]);
+  // Store the last lines data to prevent loss
+  const lastLinesRef = useRef<Lines | null>(null);
+  
+  // Safe setLines function to prevent data loss
+  const safeSetLines = useCallback((newLines: Lines) => {
+    console.log("Safe setting lines:", JSON.stringify(newLines, null, 2));
+    
+    // First check if the new lines have any valid players (basic validation)
+    const hasForwardPlayers = newLines.forwards.some(line => 
+      line.leftWing || line.center || line.rightWing
+    );
+    
+    const hasDefensePlayers = newLines.defense.some(line =>
+      line.leftDefense || line.rightDefense
+    );
+    
+    const hasGoalies = newLines.goalies.length > 0;
+    
+    const hasAnyPlayers = hasForwardPlayers || hasDefensePlayers || hasGoalies;
+    
+    // If the new lines don't have ANY players and we had players before,
+    // this might be a data loss issue - check and prevent
+    if (!hasAnyPlayers && lastLinesRef.current) {
+      const lastHasPlayers = 
+        lastLinesRef.current.forwards.some(line => line.leftWing || line.center || line.rightWing) ||
+        lastLinesRef.current.defense.some(line => line.leftDefense || line.rightDefense) ||
+        lastLinesRef.current.goalies.length > 0;
+      
+      if (lastHasPlayers) {
+        console.warn("Prevented potential data loss - new lines had no players but previous lines did");
+        toast.error("Prevented potential data loss", { 
+          description: "An error occurred that would have removed all players from your lineup" 
+        });
+        return; // Don't update lines
+      }
+    }
+    
+    // Store the new lines in our ref
+    lastLinesRef.current = cloneDeep(newLines);
+    
+    // Actually update the state
+    setLines(cloneDeep(newLines));
+  }, []);
   
   // Function to force a refresh of lineup data
   const refreshLineupData = useCallback(async () => {
@@ -62,7 +106,7 @@ export function useLineupEditor(team: Team) {
       // Rebuild lines with the updated team data
       const refreshedLines = buildInitialLines(updatedTeam);
       console.log("useLineupEditor - Rebuilt lines with refreshed data:", refreshedLines);
-      setLines(refreshedLines);
+      safeSetLines(refreshedLines);
       
       // Add the lines directly to the team object for better accessibility
       team.lines = refreshedLines;
@@ -79,7 +123,7 @@ export function useLineupEditor(team: Team) {
       toast.error("Failed to refresh lineup data");
       return null;
     }
-  }, [team]);
+  }, [team, safeSetLines]);
   
   // Force rebuild lines whenever team data changes, including when team players' positions change
   useEffect(() => {
@@ -94,7 +138,7 @@ export function useLineupEditor(team: Team) {
         
         // Immediately build initial lines from current team data
         const initialLines = buildInitialLines(team);
-        setLines(initialLines);
+        safeSetLines(initialLines);
         
         console.log("Fetching latest lineup data for team:", team.id);
         const lineupData = await getTeamLineup(team.id);
@@ -127,7 +171,7 @@ export function useLineupEditor(team: Team) {
           console.log("Rebuilding lines with fresh lineup data");
           const refreshedLines = buildInitialLines(updatedTeam);
           console.log("Refreshed lines:", refreshedLines);
-          setLines(refreshedLines);
+          safeSetLines(refreshedLines);
           
           // Add the lines directly to the team object
           team.lines = refreshedLines;
@@ -162,7 +206,7 @@ export function useLineupEditor(team: Team) {
     };
     
     fetchAndBuildLines();
-  }, [team?.id, team]);
+  }, [team?.id, team, safeSetLines]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
   const { 
@@ -170,9 +214,9 @@ export function useLineupEditor(team: Team) {
     addDefenseLine, 
     deleteForwardLine, 
     deleteDefenseLine 
-  } = useLineManagement(lines, setLines);
-  const { handlePlayerMove } = usePlayerMovement(lines, setLines, availablePlayers, setAvailablePlayers);
-  const { handlePlayerSelect } = usePlayerSelection(lines, setLines, availablePlayers, setAvailablePlayers);
+  } = useLineManagement(lines, safeSetLines);
+  const { handlePlayerMove } = usePlayerMovement(lines, safeSetLines, availablePlayers, setAvailablePlayers);
+  const { handlePlayerSelect } = usePlayerSelection(lines, safeSetLines, availablePlayers, setAvailablePlayers);
 
   // Update available players when lines change
   useEffect(() => {
@@ -181,7 +225,7 @@ export function useLineupEditor(team: Team) {
 
   return {
     lines,
-    setLines,
+    setLines: safeSetLines,
     availablePlayers,
     setAvailablePlayers,
     handlePlayerSelect,

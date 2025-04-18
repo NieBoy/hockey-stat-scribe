@@ -13,6 +13,7 @@ import { SimpleLineupEditor } from "@/components/teams/lineup/SimpleLineupEditor
 import { Lines } from "@/types";
 import { updateTeamLineup } from "@/services/teams/lineup";
 import { toast } from "sonner";
+import { cloneDeep } from "lodash";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +60,17 @@ export default function TeamLineup() {
       console.log("TeamLineup - Saving lineup for team:", team.id);
       console.log("TeamLineup - Lineup data being saved:", JSON.stringify(lines, null, 2));
       
-      const success = await updateTeamLineup(team.id, lines);
+      // Create a deep copy of the lines to prevent any mutation issues
+      const linesToSave = cloneDeep(lines);
+      
+      // Validate the structure before saving
+      if (!linesToSave.forwards || !linesToSave.defense || !linesToSave.goalies) {
+        console.error("Invalid lineup structure", linesToSave);
+        toast.error("Invalid lineup structure");
+        return false;
+      }
+      
+      const success = await updateTeamLineup(team.id, linesToSave);
       
       if (success) {
         console.log("TeamLineup - Lineup saved successfully");

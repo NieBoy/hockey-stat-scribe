@@ -1,6 +1,7 @@
 
 import { Lines, User, Position } from "@/types";
 import { usePlayerManagement } from "./usePlayerManagement";
+import { cloneDeep } from "lodash";
 
 export function usePlayerSelection(
   lines: Lines,
@@ -16,14 +17,26 @@ export function usePlayerSelection(
     position: Position,
     playerId: string
   ) => {
-    const player = playerId === 'none' ? null : availablePlayers.find(p => p.id === playerId);
+    console.log(`handlePlayerSelect called with: ${lineType}, ${lineIndex}, ${position}, ${playerId}`);
     
-    updatePlayerPosition({
-      lineType,
-      lineIndex,
-      position,
-      player
-    });
+    try {
+      const player = playerId === 'none' ? null : availablePlayers.find(p => p.id === playerId);
+      
+      // If trying to select a player that doesn't exist (might have been deleted or corrupted data)
+      if (playerId !== 'none' && !player) {
+        console.error(`Player with ID ${playerId} not found in available players list`);
+        return;
+      }
+      
+      updatePlayerPosition({
+        lineType,
+        lineIndex,
+        position,
+        player: player ? cloneDeep(player) : null
+      });
+    } catch (error) {
+      console.error("Error in handlePlayerSelect:", error);
+    }
   };
 
   return {

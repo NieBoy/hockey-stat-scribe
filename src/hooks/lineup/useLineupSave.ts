@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Lines } from '@/types';
 import { toast } from 'sonner';
+import { cloneDeep } from 'lodash';
 
 interface UseLineupSaveProps {
   onSaveLineup?: (lines: Lines) => Promise<boolean>;
@@ -30,7 +31,9 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
         initialSaveAttemptedRef.current = true;
         console.log("Saving lineup data:", JSON.stringify(lines, null, 2));
         
-        const success = await onSaveLineup(lines);
+        // Create a deep copy of lines to ensure we don't lose data during save
+        const linesToSave = cloneDeep(lines);
+        const success = await onSaveLineup(linesToSave);
         
         if (success) {
           toast.success("Lineup saved successfully");
@@ -53,9 +56,10 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
     return false;
   };
 
-  // Auto-save handler
+  // Auto-save handler - disabled for now to prevent unexpected player deletions
   useEffect(() => {
-    if (!isSaving && hasUnsavedChanges && initialSaveAttemptedRef.current) {
+    // Only auto-save when explicitly enabled and after first manual save
+    if (!isSaving && hasUnsavedChanges && initialSaveAttemptedRef.current && false) { // Disabled with 'false' condition
       const timeoutId = setTimeout(() => {
         console.log("Auto-saving lineup changes");
         handleSave();
