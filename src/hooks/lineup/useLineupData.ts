@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Team, Lines } from '@/types';
 import { getTeamLineup } from '@/services/teams/lineupManagement';
 import { buildInitialLines } from '@/utils/lineupUtils';
@@ -11,8 +11,18 @@ export function useLineupData(team: Team, refreshKey: number) {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [error, setError] = useState<Error | null>(null);
   const [hasPositionData, setHasPositionData] = useState<boolean>(false);
+  
+  // Add a ref to track previous team ID to detect team changes
+  const previousTeamIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Determine if we should force a refresh based on team change
+    const shouldForceRefresh = previousTeamIdRef.current !== team.id;
+    if (shouldForceRefresh) {
+      console.log(`useLineupData - Team changed from ${previousTeamIdRef.current} to ${team.id}, forcing refresh`);
+    }
+    previousTeamIdRef.current = team.id;
+    
     const fetchLineup = async () => {
       try {
         setLoadingState('loading');

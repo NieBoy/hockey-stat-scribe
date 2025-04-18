@@ -201,11 +201,10 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
       console.log("Players with positions:", positionCheck);
     }
 
-    // Make sure we get ALL players with positions, even if position is null
-    // This ensures we have complete data for building the lineup
+    // Important: Get ALL team members regardless of whether they have positions
     const { data, error } = await supabase
       .from('team_members')
-      .select('user_id, name, position, line_number')
+      .select('id, user_id, position, line_number, name, email, role')
       .eq('team_id', teamId)
       .eq('role', 'player');
 
@@ -216,8 +215,9 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     console.log("Retrieved team lineup data:", data);
     
-    // Log the breakdown of player positions
+    // Get and log detailed information about player positions
     if (data && data.length > 0) {
+      // Count players by position
       const positions = data.reduce((acc, player) => {
         if (player.position) {
           acc[player.position] = (acc[player.position] || 0) + 1;
@@ -227,7 +227,25 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
         return acc;
       }, {});
       
+      // Count players by line number
+      const lineNumbers = data.reduce((acc, player) => {
+        if (player.line_number) {
+          acc[player.line_number] = (acc[player.line_number] || 0) + 1;
+        } else {
+          acc["unassigned"] = (acc["unassigned"] || 0) + 1;
+        }
+        return acc;
+      }, {});
+      
       console.log("Position breakdown:", positions);
+      console.log("Line number breakdown:", lineNumbers);
+      
+      // Create unique position+line combinations to verify lineup integrity
+      const positionLines = data
+        .filter(p => p.position && p.line_number)
+        .map(p => `${p.position}-Line${p.line_number}`);
+      
+      console.log("Position+Line combinations:", positionLines);
     }
     
     return data || [];

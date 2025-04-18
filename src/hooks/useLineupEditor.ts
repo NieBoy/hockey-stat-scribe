@@ -7,6 +7,7 @@ import { useLineManagement } from "./lineup/useLineManagement";
 import { usePlayerMovement } from "./lineup/usePlayerMovement";
 import { usePlayerSelection } from "./lineup/usePlayerSelection";
 import { getTeamLineup } from "@/services/teams/lineupManagement";
+import { toast } from "sonner";
 
 export function useLineupEditor(team: Team) {
   console.log("useLineupEditor initializing with team:", team?.id);
@@ -67,8 +68,21 @@ export function useLineupEditor(team: Team) {
           const refreshedLines = buildInitialLines(updatedTeam);
           console.log("Refreshed lines:", refreshedLines);
           setLines(refreshedLines);
+          
+          // Check if we have any real position data
+          const hasPositions = refreshedLines.forwards.some(line => 
+            line.leftWing || line.center || line.rightWing
+          ) || refreshedLines.defense.some(pair =>
+            pair.leftDefense || pair.rightDefense
+          ) || refreshedLines.goalies.length > 0;
+          
+          if (!hasPositions) {
+            console.warn("No player positions found in the lineup data");
+            toast.info("No lineup positions found. Please set up your team's lineup.");
+          }
         } else {
           console.log("No lineup data found in database, using initial lines");
+          toast.info("No lineup data found. Please set up your team's lineup.");
         }
         
         initialLoadComplete.current = true;
@@ -76,13 +90,16 @@ export function useLineupEditor(team: Team) {
         console.error("Error fetching lineup data:", error);
         fetchError.current = error instanceof Error ? error : new Error('Unknown error');
         initialLoadComplete.current = true; // Still mark as complete so UI can show error state
+        toast.error("Error loading lineup data", {
+          description: error instanceof Error ? error.message : "Unknown error"
+        });
       } finally {
         fetchInProgress.current = false;
       }
     };
     
     fetchAndBuildLines();
-  }, [team?.id]);
+  }, [team?.id, team]);
   
   const { availablePlayers, setAvailablePlayers, updateAvailablePlayers } = useAvailablePlayers(team, lines);
   const { 

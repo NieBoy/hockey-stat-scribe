@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lines, Team, Position } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, SaveIcon } from "lucide-react";
 import { NonDraggableLineupView } from "./NonDraggableLineupView";
 import { useLineupEditor } from "@/hooks/useLineupEditor";
 import { ForwardsTab } from "./tabs/ForwardsTab";
@@ -35,6 +35,22 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Use a ref to track if initial save has occurred
+  const initialSaveAttemptedRef = useRef<boolean>(false);
+  
+  // Track if lines have changed since last save
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const previousLinesRef = useRef<string>(JSON.stringify(lines));
+
+  // Detect changes in the lineup
+  useEffect(() => {
+    const currentLinesString = JSON.stringify(lines);
+    if (previousLinesRef.current !== currentLinesString) {
+      setHasUnsavedChanges(true);
+      previousLinesRef.current = currentLinesString;
+    }
+  }, [lines]);
 
   const handlePositionSelect = (lineIndex: number, position: Position) => {
     setSelectedLineIndex(lineIndex);
@@ -67,10 +83,15 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
     if (onSaveLineup) {
       try {
         setIsSaving(true);
+        initialSaveAttemptedRef.current = true;
+        
+        console.log("SimpleLineupEditor - Saving lineup data:", JSON.stringify(lines, null, 2));
+        
         const success = await onSaveLineup(lines);
         
         if (success) {
           toast.success("Lineup saved successfully");
+          setHasUnsavedChanges(false);
         } else {
           toast.error("Failed to save lineup");
         }
@@ -78,7 +99,9 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
         return success;
       } catch (error) {
         console.error("Error saving lineup:", error);
-        toast.error("Error saving lineup");
+        toast.error("Error saving lineup", {
+          description: error instanceof Error ? error.message : "Unknown error"
+        });
         return false;
       } finally {
         setIsSaving(false);
@@ -86,6 +109,22 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
     }
     return false;
   };
+
+  // Auto-save handler
+  useEffect(() => {
+    // Only attempt to auto-save if:
+    // 1. We're not already saving
+    // 2. There are unsaved changes
+    // 3. We're not on initial load
+    if (!isSaving && hasUnsavedChanges && initialSaveAttemptedRef.current) {
+      const timeoutId = setTimeout(() => {
+        console.log("SimpleLineupEditor - Auto-saving lineup changes");
+        handleSave();
+      }, 2000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [hasUnsavedChanges, isSaving]);
 
   if (isLoading) {
     return (
@@ -105,10 +144,11 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
             <Button 
               onClick={handleSave} 
               disabled={isSaving}
+              variant={hasUnsavedChanges ? "default" : "outline"}
               className="flex items-center gap-2"
             >
-              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Save Lineup
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <SaveIcon className="h-4 w-4" />}
+              {hasUnsavedChanges ? "Save Changes" : "Save Lineup"}
             </Button>
           )}
         </CardHeader>
@@ -171,6 +211,7 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
                 onPlayerSelect={(playerId) => {
                   handlePlayerSelect(currentTab, selectedLineIndex, selectedPosition, playerId);
                   setSelectedPosition(null);
+                  setHasUnsavedChanges(true);
                 }}
                 onCancel={() => setSelectedPosition(null)}
               />
@@ -183,9 +224,33 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Current Lineup</CardTitle>
+          {hasUnsavedChanges && (
+            <div className="text-sm text-amber-500">
+              * Unsaved changes
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <NonDraggableLineupView lines={lines} />
+          
+          {hasUnsavedChanges && onSaveLineup && (
+            <div className="mt-4 flex justify-end">
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                size="sm"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>Save Changes</>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

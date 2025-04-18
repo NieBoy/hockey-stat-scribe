@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Team } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { LineupHeader } from './lineup/LineupHeader';
@@ -7,13 +7,14 @@ import { NonDraggableLineupView } from './lineup/NonDraggableLineupView';
 import { useLineupData } from '@/hooks/lineup/useLineupData';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface QuickLineupViewProps {
   team: Team;
 }
 
 export function QuickLineupView({ team }: QuickLineupViewProps) {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, setRefreshKey] = useState<number>(Date.now());
   
   // Use custom hook for lineup data management
   const { lines, loadingState, lastRefreshed, error, hasPositionData } = useLineupData(team, refreshKey);
@@ -22,7 +23,7 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   useEffect(() => {
     const intervalId = setInterval(() => {
       console.log("QuickLineupView - Auto-refreshing lineup data");
-      setRefreshKey(prevKey => prevKey + 1);
+      setRefreshKey(Date.now()); // Use timestamp for more reliable refresh
     }, 30000);
     
     return () => clearInterval(intervalId);
@@ -31,15 +32,17 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
   // Show error toast if data loading fails
   useEffect(() => {
     if (error) {
-      toast.error("Failed to load lineup data");
+      toast.error("Failed to load lineup data", {
+        description: error.message
+      });
     }
   }, [error]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     console.log("QuickLineupView - Manual refresh triggered");
-    setRefreshKey(prevKey => prevKey + 1);
+    setRefreshKey(Date.now());
     toast.success("Refreshing lineup data...");
-  };
+  }, []);
 
   return (
     <Card className="mt-6">
@@ -54,8 +57,9 @@ export function QuickLineupView({ team }: QuickLineupViewProps) {
             size="sm" 
             variant="outline" 
             onClick={handleRefresh}
-            className="ml-auto"
+            className="ml-auto gap-2"
           >
+            <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
         </div>

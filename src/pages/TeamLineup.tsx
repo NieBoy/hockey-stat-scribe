@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,12 @@ export default function TeamLineup() {
     submitNewPlayer
   } = useTeams(id);
   
+  // Update staleTime to 0 to always fetch fresh data
   const { data: team, isLoading, error, refetch } = useQuery({
     queryKey: ['team', id],
     queryFn: () => getTeamById(id!),
     enabled: !!id,
-    // Use a very short staleTime to always get fresh data
+    // Always get fresh data
     staleTime: 0, 
     // Refetch every 30 seconds
     refetchInterval: 30000,
@@ -48,7 +49,7 @@ export default function TeamLineup() {
     }
   }, [id, queryClient, refetch]);
   
-  const handleSaveLineup = async (lines: Lines) => {
+  const handleSaveLineup = useCallback(async (lines: Lines) => {
     if (!team?.id) {
       toast.error("Unable to save lineup: team ID not available");
       return false;
@@ -81,10 +82,12 @@ export default function TeamLineup() {
       }
     } catch (error) {
       console.error("TeamLineup - Error saving lineup:", error);
-      toast.error("Failed to save lineup");
+      toast.error("Failed to save lineup", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
       return false;
     }
-  };
+  }, [team?.id, queryClient, refetch]);
   
   if (isLoading) {
     return (
