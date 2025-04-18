@@ -3,6 +3,7 @@ import { usePeriodControl } from './game/usePeriodControl';
 import { useGameStatus } from './game/useGameStatus';
 import { useTeamControl } from './game/useTeamControl';
 import { useGameSubscription } from './game/useGameSubscription';
+import { useCallback, useEffect } from 'react';
 
 export function useGameControl(gameId?: string) {
   const { 
@@ -24,6 +25,18 @@ export function useGameControl(gameId?: string) {
   } = useGameStatus(gameId);
 
   const { teamType, setTeamType } = useTeamControl();
+
+  // Custom period end handler that ensures we transition back to in-progress
+  const handlePeriodEndWithTransition = useCallback(async () => {
+    await handlePeriodEnd();
+    
+    // After handling period end, if we're not at the final period,
+    // transition back to in-progress state
+    if (currentPeriod < 3) {
+      console.log("Period ended, transitioning back to in-progress state");
+      setGameStatus('in-progress');
+    }
+  }, [handlePeriodEnd, currentPeriod, setGameStatus]);
 
   // Use the subscription hook with more defensive handling
   // This should be the ONLY place where we sync with the database
@@ -53,7 +66,7 @@ export function useGameControl(gameId?: string) {
     stopReason,
     startGame,
     stopGame,
-    handlePeriodEnd,
+    handlePeriodEnd: handlePeriodEndWithTransition,
     handleStoppage,
     setTeamType,
     setStopReason

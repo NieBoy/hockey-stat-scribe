@@ -39,21 +39,18 @@ export function useGameSubscription({
           
           // Only update local state if we're not already in a special state
           // and only if DB has a valid active game
-          if (gameStatus === 'not-started' || data.is_active) {
-            // Set is_active state from DB only if it's true
-            // This prevents overriding local "active" state when DB hasn't updated yet
+          if (gameStatus === 'not-started') {
+            // Set is_active state from DB if game is active
             if (data.is_active) {
               setIsGameActive(data.is_active);
+              setGameStatus('in-progress');
+              console.log("Setting initial game status to in-progress based on DB");
             }
             
             // Only set current period if it's greater than 0 to avoid resetting UI
             if (data.current_period > 0) {
               setCurrentPeriod(data.current_period);
-            }
-            
-            // Only update status if we're not in a stopped state and DB shows active
-            if (gameStatus !== 'stopped' && data.is_active) {
-              setGameStatus('in-progress');
+              console.log("Setting initial period to:", data.current_period);
             }
           }
         }
@@ -88,17 +85,7 @@ export function useGameSubscription({
               return;
             }
             
-            // For consistency, only update is_active from DB if it's true
-            // This prevents overriding our local state before DB catches up
-            if (newData.is_active) {
-              setIsGameActive(newData.is_active);
-              
-              // Only update game status if we're not in a special state and DB shows active
-              setGameStatus('in-progress');
-              console.log("Updated game status to in-progress based on DB active=true");
-            }
-            
-            // Only update period if it's a valid value (>0)
+            // For consistency, only update period if it's a valid value (>0)
             if (newData.current_period > 0) {
               setCurrentPeriod(newData.current_period);
               console.log("Updated period to:", newData.current_period);
