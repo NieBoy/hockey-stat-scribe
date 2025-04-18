@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { Trophy, Flag, Clock } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -28,21 +29,11 @@ export default function EventTracker() {
     setTeamType,
   } = useGameControl(gameId);
 
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive"
-      });
-    }
-  }, [error, toast]);
-
   const handleEventSelect = async (eventType: EventType) => {
     if (!gameId || !isGameActive) return;
 
     try {
-      const { error } = await supabase
+      const { error: apiError } = await supabase
         .from('game_events')
         .insert({
           game_id: gameId,
@@ -51,7 +42,7 @@ export default function EventTracker() {
           team_type: teamType,
         });
 
-      if (error) throw error;
+      if (apiError) throw apiError;
 
       setSelectedEvent(eventType);
       toast({
@@ -60,8 +51,8 @@ export default function EventTracker() {
       });
       
       console.log('Event recorded:', { eventType, gameId, period: currentPeriod, team: teamType });
-    } catch (error) {
-      console.error('Error recording event:', error);
+    } catch (err) {
+      console.error('Error recording event:', err);
       toast({
         title: "Error",
         description: "Failed to record event. Please try again.",

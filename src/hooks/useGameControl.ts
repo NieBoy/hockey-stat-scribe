@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from './use-toast';
@@ -24,20 +25,33 @@ export function useGameControl(gameId?: string) {
     if (!gameId) return;
 
     const fetchGameState = async () => {
-      const { data, error } = await supabase
-        .from('games')
-        .select('is_active, current_period')
-        .eq('id', gameId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('games')
+          .select('is_active, current_period')
+          .eq('id', gameId)
+          .single();
 
-      if (error) {
-        setError('Failed to fetch game state');
-        return;
-      }
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch game state",
+            variant: "destructive"
+          });
+          return;
+        }
 
-      if (data) {
-        setIsGameActive(data.is_active);
-        setCurrentPeriod(data.current_period || 1);
+        if (data) {
+          setIsGameActive(data.is_active);
+          setCurrentPeriod(data.current_period || 1);
+          setGameStatus(data.is_active ? 'in-progress' : 'not-started');
+        }
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive"
+        });
       }
     };
 
@@ -66,7 +80,7 @@ export function useGameControl(gameId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameId]);
+  }, [gameId, toast]);
 
   const startGame = useCallback(async () => {
     if (!gameId) return;
