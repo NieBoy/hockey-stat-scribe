@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Team, User, Lines, Position } from '@/types';
@@ -164,11 +163,6 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
           
           <TabsContent value="even-strength">
             <div className="space-y-6">
-              <GoaliesSection 
-                goalies={lines.goalies}
-                isDraggable={true}
-              />
-              
               <ForwardLinesSection
                 forwardLines={lines.forwards}
                 isDraggable={true}
@@ -177,7 +171,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
               <Button 
                 variant="outline" 
                 onClick={addForwardLine} 
-                className="mt-2"
+                className="mt-2 w-full"
               >
                 Add Forward Line
               </Button>
@@ -190,10 +184,15 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
               <Button 
                 variant="outline" 
                 onClick={addDefenseLine} 
-                className="mt-2"
+                className="mt-2 w-full"
               >
                 Add Defense Pair
               </Button>
+
+              <GoaliesSection 
+                goalies={lines.goalies}
+                isDraggable={true}
+              />
             </div>
           </TabsContent>
           
