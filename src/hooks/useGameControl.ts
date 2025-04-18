@@ -45,6 +45,7 @@ export function useGameControl(gameId?: string) {
           setIsGameActive(data.is_active);
           setCurrentPeriod(data.current_period || 1);
           setGameStatus(data.is_active ? 'in-progress' : 'not-started');
+          console.log("Fetched game state:", data);
         }
       } catch (err) {
         toast({
@@ -69,11 +70,16 @@ export function useGameControl(gameId?: string) {
         },
         (payload) => {
           const newData = payload.new as GameState;
+          console.log("Game state updated via subscription:", newData);
+          
           if (newData) {
             setIsGameActive(newData.is_active);
             setCurrentPeriod(newData.current_period || 1);
-            // Update game status based on the active state
-            setGameStatus(newData.is_active ? 'in-progress' : gameStatus);
+            
+            // Preserve game status when it's 'stopped', otherwise update based on active state
+            if (gameStatus !== 'stopped') {
+              setGameStatus(newData.is_active ? 'in-progress' : 'not-started');
+            }
           }
         }
       )
@@ -105,6 +111,8 @@ export function useGameControl(gameId?: string) {
         title: "Game Started",
         description: "Period 1 has begun"
       });
+      
+      console.log("Game started, current state:", { isGameActive: true, currentPeriod: 1, gameStatus: 'in-progress' });
 
     } catch (err) {
       toast({
@@ -117,6 +125,7 @@ export function useGameControl(gameId?: string) {
 
   const stopGame = useCallback(async () => {
     setGameStatus('stopped');
+    console.log("Game stopped, status set to:", 'stopped');
   }, []);
 
   const handlePeriodEnd = useCallback(async () => {
@@ -139,11 +148,13 @@ export function useGameControl(gameId?: string) {
           description: "The game has concluded"
         });
         
+        console.log("Game ended after period", currentPeriod);
         navigate(`/games/${gameId}`);
         return;
       }
 
       const nextPeriod = currentPeriod + 1;
+      console.log("Advancing to next period:", nextPeriod);
       
       const { error } = await supabase
         .from('games')
@@ -159,12 +170,15 @@ export function useGameControl(gameId?: string) {
       setCurrentPeriod(nextPeriod);
       setGameStatus('in-progress');
       
+      console.log("Period advanced, new state:", { currentPeriod: nextPeriod, gameStatus: 'in-progress' });
+      
       toast({
         title: "Period Advanced",
         description: `Period ${nextPeriod} has begun`
       });
 
     } catch (err) {
+      console.error("Error handling period end:", err);
       toast({
         title: "Error",
         description: "Failed to handle period end",
@@ -175,6 +189,7 @@ export function useGameControl(gameId?: string) {
 
   const handleStoppage = useCallback(async () => {
     if (!gameId) return;
+    console.log("Handling stoppage, returning to in-progress");
     setGameStatus('in-progress');
   }, [gameId]);
 

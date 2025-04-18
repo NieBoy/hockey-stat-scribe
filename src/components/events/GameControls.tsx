@@ -26,6 +26,8 @@ export default function GameControls({
   onPeriodEnd,
   onStoppage
 }: GameControlsProps) {
+  console.log('GameControls rendering with period:', period, 'gameStatus:', gameStatus);
+  
   return (
     <div className="space-y-4 mb-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
