@@ -1,6 +1,5 @@
 
 import { User } from '@/types';
-import { Button } from '@/components/ui/button';
 import { UserCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Draggable } from '@hello-pangea/dnd';
@@ -27,10 +26,11 @@ export function PlayerCard({
   const renderCard = () => {
     if (!player) {
       return (
-        <div className="flex flex-col items-center justify-center p-2 rounded-md border border-dashed border-gray-300 h-24 bg-background">
-          <UserCircle className="h-8 w-8 text-gray-400" />
-          <span className="text-xs text-gray-500 mt-1">{position}</span>
-          <span className="text-xs text-gray-400">Empty</span>
+        <div className="flex items-center justify-center p-1 rounded-md border border-dashed border-gray-300 h-16 bg-background">
+          <div className="flex flex-col items-center">
+            <UserCircle className="h-5 w-5 text-gray-400" />
+            <span className="text-xs text-gray-500">{position}</span>
+          </div>
         </div>
       );
     }
@@ -38,24 +38,30 @@ export function PlayerCard({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center h-24 w-full relative p-2 rounded-md border",
+          "flex items-center gap-2 h-16 w-full relative p-2 rounded-md border",
           isSelected ? "border-primary bg-primary/10" : "border-gray-200",
           isDraggable ? "cursor-grab active:cursor-grabbing" : "",
           onClick ? "hover:bg-accent" : ""
         )}
         onClick={onClick ? () => onClick(player) : undefined}
       >
+        <div className="flex-shrink-0">
+          <UserCircle className="h-6 w-6" />
+        </div>
+        <div className="flex flex-col min-w-0">
+          <div className="font-medium text-sm truncate">
+            {player.name || "Unknown"}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>{position}</span>
+            {player.number && <span>#{player.number}</span>}
+          </div>
+        </div>
         {isSelected && (
           <div className="absolute top-1 right-1">
-            <Check className="h-4 w-4 text-primary" />
+            <Check className="h-3 w-3 text-primary" />
           </div>
         )}
-        <UserCircle className="h-8 w-8" />
-        <div className="mt-1 text-xs">{position}</div>
-        <div className="font-medium text-sm truncate max-w-full px-2">
-          {player.name || "Unknown"}
-        </div>
-        {player.number && <div className="text-xs text-gray-500">#{player.number}</div>}
       </div>
     );
   };

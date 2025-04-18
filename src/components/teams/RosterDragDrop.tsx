@@ -21,51 +21,39 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
   
   const {
     lines,
+    setLines,
     availablePlayers,
-    handlePlayerSelect,
+    handlePlayerMove,
     addForwardLine,
     addDefenseLine,
-    handlePlayerMove,
   } = useLineupEditor(team);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
     
-    // Dropped outside a droppable area
     if (!destination) {
-      console.log("Dropped outside a droppable area");
       return;
     }
     
-    console.log("Drag ended:", { source, destination, draggableId });
-    
-    // Prevent dropping onto self
     if (source.droppableId === destination.droppableId) {
       return;
     }
     
-    // Extract player ID from draggable ID
-    // Format can be one of:
-    // roster-[playerId]
-    // [type]-[lineNumber]-[position]-[playerId]
     const parts = draggableId.split('-');
     let playerId: string;
     
     if (parts[0] === 'roster') {
       playerId = parts.slice(1).join('-');
     } else {
-      // The playerId is the last segment(s)
       playerId = parts.slice(3).join('-');
     }
     
-    // Move the player using the simplified API
     handlePlayerMove({
       playerId,
       sourceId: source.droppableId,
       destinationId: destination.droppableId
     });
     
-    // Show success toast
     toast.success('Player position updated');
   };
 
@@ -89,14 +77,14 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
           </Button>
         </div>
 
+        <AvailablePlayersSection availablePlayers={availablePlayers} />
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="even-strength">Even Strength</TabsTrigger>
             <TabsTrigger value="power-play">Power Play</TabsTrigger>
             <TabsTrigger value="penalty-kill">Penalty Kill</TabsTrigger>
           </TabsList>
-          
-          <AvailablePlayersSection availablePlayers={availablePlayers} />
           
           <TabsContent value="even-strength">
             <EvenStrengthLines 
@@ -112,6 +100,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
               units={[1, 2]}
               positions={['LW', 'C', 'RW', 'LD', 'RD']}
               type="pp"
+              players={lines.specialTeams?.powerPlay}
             />
           </TabsContent>
           
@@ -121,6 +110,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
               units={[1, 2]}
               positions={['LF', 'RF', 'LD', 'RD']}
               type="pk"
+              players={lines.specialTeams?.penaltyKill}
             />
           </TabsContent>
         </Tabs>
