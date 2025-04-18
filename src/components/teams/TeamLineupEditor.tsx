@@ -27,12 +27,20 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
     addDefenseLine,
   } = useLineupEditor(team);
 
+  // Normalize onSaveLineup to match the expected type
+  const normalizedSaveLineup = async (linesToSave: Lines): Promise<boolean | void> => {
+    return await onSaveLineup(linesToSave);
+  };
+
   const {
     saveStatus,
     isConfirmDialogOpen,
     setIsConfirmDialogOpen,
-    handleSaveLineup
-  } = useSaveLineup(onSaveLineup);
+    handleSave
+  } = useSaveLineup({
+    onSaveLineup: normalizedSaveLineup,
+    lines
+  });
 
   return (
     <>
@@ -112,7 +120,7 @@ export default function TeamLineupEditor({ team, onSaveLineup, isSaving = false 
       <SaveLineupDialog
         isOpen={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
-        onConfirm={() => handleSaveLineup(lines)}
+        onConfirm={() => handleSave()}
       />
     </>
   );

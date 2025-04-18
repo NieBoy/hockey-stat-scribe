@@ -1,37 +1,33 @@
 
 import React from 'react';
-import { CardHeader, CardTitle } from '@/components/ui/card';
+import { CardTitle, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
 
 interface LineupHeaderProps {
   onSave: () => Promise<boolean>;
-  onRefresh: () => void;
+  onRefresh: () => Promise<Lines | null>;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
 }
 
-export function LineupHeader({ 
-  onSave, 
-  onRefresh, 
-  isSaving, 
-  hasUnsavedChanges 
-}: LineupHeaderProps) {
+export function LineupHeader({ onSave, onRefresh, isSaving, hasUnsavedChanges }: LineupHeaderProps) {
   return (
     <CardHeader className="flex flex-row items-center justify-between">
       <CardTitle>Team Lineup</CardTitle>
       <div className="flex items-center gap-2">
-        {hasUnsavedChanges && (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-            Unsaved Changes
+        {isSaving && (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> Saving...
           </Badge>
         )}
         
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
-          onClick={onRefresh}
+          onClick={onRefresh} 
+          disabled={isSaving}
           className="flex items-center gap-1"
         >
           <RefreshCw className="h-4 w-4" />
@@ -39,23 +35,13 @@ export function LineupHeader({
         </Button>
         
         <Button 
-          variant="default" 
-          size="sm" 
           onClick={onSave} 
           disabled={isSaving || !hasUnsavedChanges}
+          size="sm"
           className="flex items-center gap-1"
         >
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Save Lineup
-            </>
-          )}
+          <Save className="h-4 w-4" />
+          {isSaving ? 'Saving...' : 'Save Lineup'}
         </Button>
       </div>
     </CardHeader>

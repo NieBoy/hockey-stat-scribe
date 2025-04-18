@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { cloneDeep } from 'lodash';
 
 interface UseLineupSaveProps {
-  onSaveLineup?: (lines: Lines) => Promise<boolean>;
+  onSaveLineup?: (lines: Lines) => Promise<boolean | void>;
   lines: Lines;
 }
 
@@ -33,16 +33,19 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
         
         // Create a deep copy of lines to ensure we don't lose data during save
         const linesToSave = cloneDeep(lines);
-        const success = await onSaveLineup(linesToSave);
+        const result = await onSaveLineup(linesToSave);
         
-        if (success) {
+        // Treat both undefined and true as success
+        const saveSuccessful = result === undefined || result === true;
+        
+        if (saveSuccessful) {
           toast.success("Lineup saved successfully");
           setHasUnsavedChanges(false);
+          return true;
         } else {
           toast.error("Failed to save lineup");
+          return false;
         }
-        
-        return success;
       } catch (error) {
         console.error("Error saving lineup:", error);
         toast.error("Error saving lineup", {
@@ -72,6 +75,10 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
   return {
     isSaving,
     hasUnsavedChanges,
+    saveStatus: isSaving ? 'saving' : hasUnsavedChanges ? 'idle' : 'success',
+    lastSavedLineup: previousLinesRef.current,
+    isConfirmDialogOpen: false,
+    setIsConfirmDialogOpen: useState<boolean>(false)[1],
     handleSave
   };
 }

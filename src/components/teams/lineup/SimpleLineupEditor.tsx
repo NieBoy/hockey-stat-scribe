@@ -34,8 +34,14 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   // Normalize onSaveLineup to always return a Promise<boolean>
   const normalizedOnSaveLineup = async (lines: Lines): Promise<boolean> => {
     if (!onSaveLineup) return false;
-    const result = await onSaveLineup(lines);
-    return result === undefined ? true : result;
+    try {
+      const result = await onSaveLineup(lines);
+      // Treat both undefined and true as success
+      return result === undefined || result === true;
+    } catch (error) {
+      console.error("Error in normalized save function:", error);
+      return false;
+    }
   };
 
   const { 
