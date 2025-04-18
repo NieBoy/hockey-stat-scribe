@@ -9,12 +9,18 @@ import EventHistory from './EventHistory';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useGameControl } from '@/hooks/useGameControl';
+import GoalFlow from './GoalFlow';
+import { useQuery } from '@tanstack/react-query';
+import { getGameById } from '@/services/games';
+import LoadingSpinner from '@/components/ui/loading-spinner';
 
 // Define the EventType type
 type EventType = 'goal' | 'penalty' | 'timeout';
+type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'timeout-flow';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+  const [flowState, setFlowState] = useState<FlowState>('buttons');
   const { id: gameId } = useParams<{ id: string }>();
   const { toast } = useToast();
   const { 
@@ -29,20 +35,42 @@ export default function EventTracker() {
     setTeamType,
   } = useGameControl(gameId);
 
+  const { data: game, isLoading } = useQuery({
+    queryKey: ['games', gameId],
+    queryFn: () => gameId ? getGameById(gameId) : null,
+    enabled: !!gameId && gameStatus === 'in-progress'
+  });
+
   // Improved logging to track component state
   console.log('EventTracker rendering with:', { 
     gameStatus, 
     period: currentPeriod, 
     isGameActive,
-    teamType
+    teamType,
+    flowState
   });
 
-  const handleEventSelect = async (eventType: EventType) => {
+  const handleEventSelect = (eventType: EventType) => {
     if (!gameId || gameStatus !== 'in-progress') {
       console.log("Cannot record event - game not in progress:", gameStatus);
       return;
     }
 
+    setSelectedEvent(eventType);
+
+    // Determine which flow to show based on the event type
+    if (eventType === 'goal') {
+      setFlowState('goal-flow');
+    } else if (eventType === 'penalty') {
+      // For now, just record a basic penalty event until we implement the flow
+      recordBasicEvent(eventType);
+    } else if (eventType === 'timeout') {
+      // For now, just record a basic timeout event until we implement the flow
+      recordBasicEvent(eventType);
+    }
+  };
+
+  const recordBasicEvent = async (eventType: EventType) => {
     try {
       console.log('Recording event:', { 
         eventType, 
@@ -61,7 +89,6 @@ export default function EventTracker() {
 
       if (apiError) throw apiError;
 
-      setSelectedEvent(eventType);
       toast({
         title: "Event Recorded",
         description: `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} has been recorded for ${teamType} team in period ${currentPeriod}.`
@@ -78,6 +105,36 @@ export default function EventTracker() {
     }
   };
 
+  const handleFlowComplete = () => {
+    setFlowState('buttons');
+    setSelectedEvent(null);
+  };
+
+  const handleFlowCancel = () => {
+    setFlowState('buttons');
+    setSelectedEvent(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4 max-w-2xl">
+        <Card className="p-6 flex justify-center items-center min-h-[300px]">
+          <LoadingSpinner />
+        </Card>
+      </div>
+    );
+  }
+
+  if (!game && gameStatus === 'in-progress') {
+    return (
+      <div className="container mx-auto p-4 max-w-2xl">
+        <Card className="p-6">
+          <p>Game not found. Please check the game ID and try again.</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="p-6">
@@ -92,7 +149,7 @@ export default function EventTracker() {
           onStoppage={handleStoppage}
         />
         
-        {gameStatus === 'in-progress' && (
+        {gameStatus === 'in-progress' && flowState === 'buttons' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EventButton
               label="Goal"
@@ -113,6 +170,15 @@ export default function EventTracker() {
               className="bg-blue-500 hover:bg-blue-600 md:col-span-2"
             />
           </div>
+        )}
+
+        {gameStatus === 'in-progress' && flowState === 'goal-flow' && game && (
+          <GoalFlow 
+            game={game}
+            period={currentPeriod}
+            onComplete={handleFlowComplete}
+            onCancel={handleFlowCancel}
+          />
         )}
 
         <EventHistory gameId={gameId || ''} />
