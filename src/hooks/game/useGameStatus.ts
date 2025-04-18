@@ -15,6 +15,12 @@ export function useGameStatus(gameId?: string) {
 
     try {
       console.log("Starting game...");
+      
+      // First update local state immediately for responsiveness
+      setIsGameActive(true);
+      setGameStatus('in-progress');
+      
+      // Then update the database (this might take longer)
       const { error } = await supabase
         .from('games')
         .update({ 
@@ -25,12 +31,11 @@ export function useGameStatus(gameId?: string) {
 
       if (error) {
         console.error("Error starting game:", error);
+        // Revert local state if DB update fails
+        setIsGameActive(false);
+        setGameStatus('not-started');
         throw error;
       }
-      
-      // Important: Set local state AFTER database update succeeds
-      setIsGameActive(true);
-      setGameStatus('in-progress');
       
       toast({
         title: "Game Started",
@@ -62,7 +67,11 @@ export function useGameStatus(gameId?: string) {
     try {
       console.log("Resuming from stoppage, setting status back to 'in-progress'");
       
-      // Update the database to ensure game is still active
+      // Update local state immediately for responsiveness
+      setIsGameActive(true);
+      setGameStatus('in-progress');
+      
+      // Then update the database (this might take longer)
       const { error } = await supabase
         .from('games')
         .update({ is_active: true })
@@ -70,12 +79,9 @@ export function useGameStatus(gameId?: string) {
         
       if (error) {
         console.error("Error resuming game after stoppage:", error);
+        // Don't revert UI state on error - let the user stay in game
         throw error;
       }
-      
-      // Update local state
-      setIsGameActive(true);
-      setGameStatus('in-progress');
       
       toast({
         title: "Game Resumed",

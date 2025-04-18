@@ -26,6 +26,7 @@ export function useGameControl(gameId?: string) {
   const { teamType, setTeamType } = useTeamControl();
 
   // Use the subscription hook with more defensive handling
+  // This should be the ONLY place where we sync with the database
   useGameSubscription({
     gameId,
     setIsGameActive,
@@ -34,13 +35,14 @@ export function useGameControl(gameId?: string) {
     gameStatus
   });
 
-  // Debug the overall game control state for better visibility
+  // Enhanced debugging for better visibility into state transitions
   console.log("useGameControl state:", {
     isGameActive,
     currentPeriod,
     gameStatus,
     stopReason,
-    teamType
+    teamType,
+    gameId: gameId || 'undefined'
   });
 
   return {
