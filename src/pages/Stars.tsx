@@ -10,6 +10,7 @@ import { Trophy } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { PlayerStat } from "@/types";
 
 // Helper function to make stat types more readable
 const formatStatType = (statType: string): string => {
@@ -49,8 +50,8 @@ export default function Stars() {
 
   // Filter stats by type if needed
   const filteredStats = statTypeFilter === "all" 
-    ? stats 
-    : stats?.filter(stat => stat.statType === statTypeFilter);
+    ? stats as PlayerStat[] || []
+    : (stats as PlayerStat[] || []).filter(stat => stat.statType === statTypeFilter);
 
   const columns = [
     {
