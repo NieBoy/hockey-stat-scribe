@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query with correctly formatted JSON conditions
+  // Game events query with correctly formatted PostgreSQL JSON conditions
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -63,14 +63,15 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId},details->'playersOnIce'::jsonb ?& array['${playerId}']`);
+          .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->'playersOnIce'.cs.{"${playerId}"}`);
           
         if (eventError) {
           console.error("Error fetching player game events:", eventError);
           throw eventError;
         }
         
-        console.log(`Found ${eventData?.length || 0} game events for player`);
+        // Log the event data to see what we're getting
+        console.log(`Found ${eventData?.length || 0} game events for player`, eventData);
         return eventData || [];
       } catch (error) {
         console.error("Error in fetchPlayerGameEvents:", error);

@@ -10,6 +10,7 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     // Process goal events
     for (const event of events) {
       console.log(`Processing event type: ${event.event_type}`, event);
+      console.log("Event details:", JSON.stringify(event.details, null, 2));
       
       if (event.event_type === 'goal' && event.details) {
         statsCreated = await processGoalEvent(event, playerId) || statsCreated;
@@ -27,7 +28,7 @@ const processGoalEvent = async (event: any, playerId: string): Promise<boolean> 
   let statsCreated = false;
   
   // Log the details to better understand the structure
-  console.log("Processing goal event details:", event.details);
+  console.log("Processing goal event details:", JSON.stringify(event.details, null, 2));
   
   // Process scorer
   if (event.details.playerId === playerId) {
@@ -51,6 +52,14 @@ const processGoalEvent = async (event: any, playerId: string): Promise<boolean> 
   if (Array.isArray(event.details.playersOnIce) && event.details.playersOnIce.includes(playerId)) {
     console.log("Player is on ice, creating plus/minus stat");
     statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
+  } else if (event.details.playersOnIce && typeof event.details.playersOnIce === 'object') {
+    // Handle case where playersOnIce might be an object instead of array
+    console.log("Checking playersOnIce object:", event.details.playersOnIce);
+    const playerIds = Object.keys(event.details.playersOnIce);
+    if (playerIds.includes(playerId)) {
+      console.log("Player ID found in playersOnIce object, creating plus/minus stat");
+      statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
+    }
   }
   
   return statsCreated;
