@@ -69,6 +69,15 @@ export default function PlayerLines({
     }
   };
 
+  // Sort players by number when possible
+  const sortedPlayers = [...team.players].sort((a, b) => {
+    const numA = a.number ? parseInt(a.number) : 999;
+    const numB = b.number ? parseInt(b.number) : 999;
+    return numA - numB;
+  });
+
+  const selectedPlayersList = sortedPlayers.filter(p => selectedIds.has(p.id));
+
   return (
     <Card>
       <CardHeader>
@@ -76,9 +85,9 @@ export default function PlayerLines({
       </CardHeader>
       <CardContent>
         <SimplePlayerList 
-          players={team.players}
+          players={sortedPlayers}
           onPlayerSelect={handlePlayerClick}
-          selectedPlayers={selectedPlayers}
+          selectedPlayers={selectedPlayersList}
         />
         
         <div className="mt-4 flex gap-2 justify-end">
