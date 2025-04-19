@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { useTeams } from "@/hooks/useTeams";
