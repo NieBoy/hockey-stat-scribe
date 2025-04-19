@@ -1,8 +1,9 @@
 
 import { supabase } from "@/lib/supabase";
-import { TeamMemberData, processTeamMember } from "../types/teamMember";
+import { TeamMemberData } from "../types/teamMember";
+import { processTeamMembersByRole } from "../utils/teamRoleProcessing";
 
-export const getTeamMembers = async (teamId: string) => {
+export const getTeamMembers = async (teamId: string): Promise<TeamMemberData[]> => {
   const { data: teamMembers, error: membersError } = await supabase
     .from('team_members')
     .select(`
@@ -26,21 +27,17 @@ export const getTeamMembers = async (teamId: string) => {
     throw membersError;
   }
   
-  return teamMembers as TeamMemberData[];
+  // Transform the response to match TeamMemberData type
+  const transformedMembers: TeamMemberData[] = teamMembers?.map(member => ({
+    ...member,
+    users: member.users ? {
+      id: member.users.id,
+      name: member.users.name,
+      email: member.users.email
+    } : null
+  })) || [];
+  
+  return transformedMembers;
 };
 
-export const processTeamMembersByRole = (members: TeamMemberData[]) => {
-  const players = members
-    .filter(member => member.role === 'player')
-    .map(p => processTeamMember(p, 'Unknown Player'));
-  
-  const coaches = members
-    .filter(member => member.role === 'coach')
-    .map(c => processTeamMember(c, 'Unknown Coach'));
-    
-  const parents = members
-    .filter(member => member.role === 'parent')
-    .map(p => processTeamMember(p, 'Unknown Parent'));
-    
-  return { players, coaches, parents };
-};
+export { processTeamMembersByRole };

@@ -27,13 +27,13 @@ export interface ProcessedTeamMember {
 }
 
 export const processTeamMember = (member: TeamMemberData, defaultName: string = 'Unknown Member'): ProcessedTeamMember => {
-  const userData = member.users && typeof member.users === 'object' ? member.users : null;
+  const userData = member.users;
   
   return {
     id: member.id,
     name: member.name || (userData?.name || defaultName),
     email: member.email || userData?.email,
-    role: [member.role as UserRole] || ['player'],
+    role: member.role ? [member.role as UserRole] : ['player'],
     ...(member.position && { position: member.position as Position }),
     ...(member.line_number !== undefined && { 
       lineNumber: member.line_number,
