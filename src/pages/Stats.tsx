@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import MainLayout from "@/components/layout/MainLayout";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { getAllPlayerStats, refreshAllPlayerStats } from "@/services/stats/playerStatsService";
+import { getAllPlayerStats, refreshAllPlayerStats } from "@/services/stats";
 import StatsHeader from "@/components/stats/StatsHeader";
 import StatsContent from "@/components/stats/StatsContent";
 import EmptyStatsState from "@/components/stats/EmptyStatsState";
@@ -25,6 +25,7 @@ export default function Stats() {
       await refetch();
     } catch (error) {
       toast.error("Failed to refresh statistics.");
+      console.error("Error refreshing stats:", error);
     } finally {
       setIsRefreshing(false);
     }

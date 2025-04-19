@@ -44,10 +44,10 @@ export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> 
 export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
   console.log("fetchAllPlayerStats called");
   try {
+    // First, fetch game stats
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
-      .select('*, team_members!game_stats_player_id_fkey(name)')
-      .order('value', { ascending: false });
+      .select('*');
 
     if (gameStatsError) {
       console.error("Error fetching game stats:", gameStatsError);
@@ -60,6 +60,28 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       console.log("No game stats found");
       return [];
     }
+
+    // Get all unique player IDs from game stats
+    const playerIds = [...new Set(gameStats.map(stat => stat.player_id))];
+    console.log("Unique player IDs:", playerIds);
+
+    // Fetch player names in a separate query
+    const { data: players, error: playersError } = await supabase
+      .from('team_members')
+      .select('id, name')
+      .in('id', playerIds);
+      
+    if (playersError) {
+      console.error("Error fetching player names:", playersError);
+    }
+    
+    // Create a map of player IDs to names
+    const playerNameMap = new Map();
+    players?.forEach(player => {
+      playerNameMap.set(player.id, player.name);
+    });
+    
+    console.log("Player name map:", Object.fromEntries(playerNameMap));
 
     // Define the type for our stats accumulator
     interface StatAccumulator {
@@ -76,7 +98,7 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       if (!acc[key]) {
         acc[key] = {
           playerId: stat.player_id,
-          playerName: stat.team_members?.name || 'Unknown Player',
+          playerName: playerNameMap.get(stat.player_id) || 'Unknown Player',
           statType: stat.stat_type as StatType,
           value: 0,
           gamesPlayed: new Set()

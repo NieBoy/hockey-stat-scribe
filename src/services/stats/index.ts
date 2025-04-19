@@ -1,2 +1,7 @@
 
-export { fetchAllPlayerStats as getAllPlayerStats } from "./core/statsQueries";
+export { 
+  fetchPlayerStats as getPlayerStats,
+  fetchAllPlayerStats as getAllPlayerStats 
+} from "./core/statsQueries";
+export { refreshPlayerStats } from "./core/statsUpdates";
+export { refreshAllPlayerStats } from "./core/statsRefresh";
