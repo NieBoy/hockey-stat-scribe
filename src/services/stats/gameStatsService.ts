@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { GameStat } from '@/types';
 
@@ -78,6 +77,35 @@ export const deleteGameStat = async (statId: string) => {
     return true;
   } catch (error) {
     console.error("Error in deleteGameStat:", error);
+    throw error;
+  }
+};
+
+export const recordPlusMinusStats = async (
+  gameId: string,
+  playerIds: string[],
+  period: number,
+  isPositive: boolean
+) => {
+  try {
+    console.log(`Recording ${isPositive ? 'plus' : 'minus'} for players:`, playerIds);
+    
+    const statPromises = playerIds.map(playerId => 
+      insertGameStat({
+        gameId,
+        playerId,
+        statType: 'plusMinus',
+        period,
+        value: 1,
+        details: isPositive ? 'plus' : 'minus'
+      })
+    );
+    
+    await Promise.all(statPromises);
+    console.log(`Successfully recorded ${isPositive ? 'plus' : 'minus'} stats for ${playerIds.length} players`);
+    return true;
+  } catch (error) {
+    console.error("Error recording plus/minus stats:", error);
     throw error;
   }
 };
