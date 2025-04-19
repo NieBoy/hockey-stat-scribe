@@ -44,19 +44,25 @@ const updateOrInsertStat = async (
 export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
   console.log("refreshPlayerStats called for player:", playerId);
   try {
-    const { data: playerData } = await supabase
+    // First, get player details to ensure we have a valid player
+    const { data: playerData, error: playerError } = await supabase
       .from('team_members')
-      .select('name')
+      .select('name, team_id')
       .eq('id', playerId)
       .single();
       
-    const playerName = playerData?.name || 'Unknown Player';
-    console.log("Found player:", playerName);
+    if (playerError) {
+      console.error("Error fetching player data:", playerError);
+      return [];
+    }
     
-    // First, check if the player has any game stats
+    const playerName = playerData?.name || 'Unknown Player';
+    console.log("Found player:", playerName, "team_id:", playerData.team_id);
+    
+    // Query the game_stats table for this player specifically
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
-      .select('stat_type, value, game_id')
+      .select('stat_type, value, game_id, period, details')
       .eq('player_id', playerId);
       
     if (gameStatsError) {
@@ -66,7 +72,30 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     console.log("Raw game stats for player:", gameStats);
     
+    // If there are no game stats for this player, let's see if there are ANY game stats in the database
     if (!gameStats || gameStats.length === 0) {
+      const { count, error: countError } = await supabase
+        .from('game_stats')
+        .select('*', { count: 'exact', head: true });
+        
+      if (countError) {
+        console.error("Error counting game stats:", countError);
+      } else {
+        console.log("Total game stats in database:", count);
+      }
+      
+      // Also check games this player might be part of
+      const { data: playerGames, error: playerGamesError } = await supabase
+        .from('games')
+        .select('id, home_team_id, away_team_id')
+        .or(`home_team_id.eq.${playerData.team_id},away_team_id.eq.${playerData.team_id}`);
+        
+      if (playerGamesError) {
+        console.error("Error checking player games:", playerGamesError);
+      } else {
+        console.log("Games for player's team:", playerGames);
+      }
+      
       console.log("No game stats found for player:", playerId);
       return [];
     }
@@ -76,6 +105,11 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     gameStats.forEach(stat => {
       const statType = stat.stat_type;
+      if (!statType) {
+        console.warn("Ignoring stat with undefined stat_type:", stat);
+        return;
+      }
+      
       const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
       
       currentStat.value += stat.value;

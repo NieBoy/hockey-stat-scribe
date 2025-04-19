@@ -8,15 +8,17 @@ import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { usePlayerDetails } from "@/hooks/usePlayerDetails";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Bug } from "lucide-react";
 import { getPlayerStats, refreshPlayerStats } from "@/services/stats";
 import { toast } from "sonner";
 import { fetchGameStats } from "@/services/stats/gameStatsService";
+import { supabase } from "@/lib/supabase";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [gameStatsDebug, setGameStatsDebug] = useState<any[]>([]);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   const { 
     data: stats, 
@@ -32,7 +34,7 @@ export default function PlayerStats() {
   const { player, loading: playerLoading } = usePlayerDetails(id);
 
   // Add debug query to check game_stats directly
-  const { data: rawGameStats } = useQuery({
+  const { data: rawGameStats, refetch: refetchRawStats } = useQuery({
     queryKey: ['rawGameStats', id],
     queryFn: async () => {
       if (!id) return [];
@@ -47,6 +49,60 @@ export default function PlayerStats() {
     enabled: !!id
   });
 
+  // Fetch player's team information
+  const { data: playerTeam } = useQuery({
+    queryKey: ['playerTeam', id],
+    queryFn: async () => {
+      if (!id) return null;
+      try {
+        const { data, error } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('id', id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data?.team_id) {
+          const { data: teamData, error: teamError } = await supabase
+            .from('teams')
+            .select('id, name')
+            .eq('id', data.team_id)
+            .single();
+            
+          if (teamError) throw teamError;
+          return teamData;
+        }
+        return null;
+      } catch (error) {
+        console.error("Error fetching player team:", error);
+        return null;
+      }
+    },
+    enabled: !!id
+  });
+
+  // Fetch games for player's team
+  const { data: teamGames } = useQuery({
+    queryKey: ['teamGames', playerTeam?.id],
+    queryFn: async () => {
+      if (!playerTeam?.id) return [];
+      try {
+        const { data, error } = await supabase
+          .from('games')
+          .select('id, date, home_team_id, away_team_id, location')
+          .or(`home_team_id.eq.${playerTeam.id},away_team_id.eq.${playerTeam.id}`);
+          
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching team games:", error);
+        return [];
+      }
+    },
+    enabled: !!playerTeam?.id
+  });
+
   useEffect(() => {
     console.log('Player Stats Debug:');
     console.log('Player ID:', id);
@@ -54,12 +110,14 @@ export default function PlayerStats() {
     console.log('Stats Loading:', statsLoading);
     console.log('Stats Error:', statsError);
     console.log('Player:', player);
+    console.log('Player Team:', playerTeam);
+    console.log('Team Games:', teamGames);
     console.log('Raw Game Stats:', rawGameStats);
     
     if (rawGameStats && rawGameStats.length > 0) {
       setGameStatsDebug(rawGameStats);
     }
-  }, [id, stats, player, statsError, rawGameStats]);
+  }, [id, stats, player, statsError, rawGameStats, playerTeam, teamGames]);
 
   const isLoading = statsLoading || playerLoading;
   
@@ -71,6 +129,7 @@ export default function PlayerStats() {
       // Force a refresh of the player's stats
       await refreshPlayerStats(id);
       await refetchStats();
+      await refetchRawStats();
       toast.success("Stats Refreshed", {
         description: "Player statistics have been recalculated from game data."
       });
@@ -81,6 +140,10 @@ export default function PlayerStats() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const toggleDebugInfo = () => {
+    setShowDebugInfo(!showDebugInfo);
   };
 
   if (isLoading) {
@@ -113,14 +176,24 @@ export default function PlayerStats() {
               View and analyze performance statistics
             </p>
           </div>
-          <Button 
-            onClick={handleRefreshStats} 
-            disabled={isRefreshing}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh Stats
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRefreshStats} 
+              disabled={isRefreshing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh Stats
+            </Button>
+            <Button
+              variant="outline"
+              onClick={toggleDebugInfo}
+              className="gap-2"
+            >
+              <Bug className="h-4 w-4" />
+              {showDebugInfo ? "Hide Debug" : "Show Debug"}
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -150,6 +223,49 @@ export default function PlayerStats() {
                     <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from game data.</p>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {showDebugInfo && (
+              <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-md text-left">
+                <h3 className="font-medium mb-2 text-lg">Debug Information</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-sm">Player Information:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(player, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">Player Team:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(playerTeam, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">Team Games:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(teamGames, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">Raw Game Stats:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(rawGameStats, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">Processed Stats:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(stats, null, 2)}
+                    </pre>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
