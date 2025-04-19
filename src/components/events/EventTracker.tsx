@@ -13,9 +13,10 @@ import PenaltyFlow from './PenaltyFlow';
 import { useQuery } from '@tanstack/react-query';
 import { getGameById } from '@/services/games';
 import LoadingSpinner from '@/components/ui/loading-spinner';
+import FaceoffFlow from './FaceoffFlow';
 
-type EventType = 'goal' | 'penalty' | 'timeout';
-type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'timeout-flow';
+type EventType = 'goal' | 'penalty' | 'faceoff';
+type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'faceoff-flow';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
@@ -60,8 +61,8 @@ export default function EventTracker() {
       setFlowState('goal-flow');
     } else if (eventType === 'penalty') {
       setFlowState('penalty-flow');
-    } else if (eventType === 'timeout') {
-      recordBasicEvent(eventType);
+    } else if (eventType === 'faceoff') {
+      setFlowState('faceoff-flow');
     }
   };
 
@@ -159,9 +160,9 @@ export default function EventTracker() {
               className="bg-red-500 hover:bg-red-600"
             />
             <EventButton
-              label="Timeout"
+              label="Faceoff"
               icon={<Clock className="h-8 w-8" />}
-              onClick={() => handleEventSelect('timeout')}
+              onClick={() => handleEventSelect('faceoff')}
               className="bg-blue-500 hover:bg-blue-600 md:col-span-2"
             />
           </div>
@@ -178,6 +179,15 @@ export default function EventTracker() {
 
         {gameStatus === 'in-progress' && flowState === 'penalty-flow' && game && (
           <PenaltyFlow
+            game={game}
+            period={currentPeriod}
+            onComplete={handleFlowComplete}
+            onCancel={handleFlowCancel}
+          />
+        )}
+
+        {gameStatus === 'in-progress' && flowState === 'faceoff-flow' && game && (
+          <FaceoffFlow
             game={game}
             period={currentPeriod}
             onComplete={handleFlowComplete}
