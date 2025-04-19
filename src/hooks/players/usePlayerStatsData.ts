@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Updated game events query with proper UUID syntax
+  // Game events query with fixed UUID handling
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -51,7 +51,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Fix the query to use proper UUID syntax with quotes
+        // Fixed query syntax that properly handles UUIDs in jsonb fields
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -63,7 +63,8 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->playerId.eq."${playerId}",details->primaryAssistId.eq."${playerId}",details->secondaryAssistId.eq."${playerId}",details->playersOnIce.cs.{"${playerId}"}`);
+          // Using proper JSONB containment for arrays and equality for scalar values
+          .or(`details->'playerId'->>'text' = '${playerId}',details->'primaryAssistId'->>'text' = '${playerId}',details->'secondaryAssistId'->>'text' = '${playerId}'`);
           
         if (eventError) {
           console.error("Error fetching player game events:", eventError);

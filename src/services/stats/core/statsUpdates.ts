@@ -23,11 +23,11 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName, "team_id:", playerData.team_id);
     
-    // Get relevant game events with fixed query syntax
+    // Get relevant game events with fixed query format
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
       .select('id, event_type, game_id, period, details, team_type')
-      .or(`details->playerId.eq."${playerId}",details->primaryAssistId.eq."${playerId}",details->secondaryAssistId.eq."${playerId}",details->playersOnIce.cs.{"${playerId}"}`);
+      .or(`details->'playerId'->>'text' = '${playerId}',details->'primaryAssistId'->>'text' = '${playerId}',details->'secondaryAssistId'->>'text' = '${playerId}'`);
       
     if (eventsError) {
       console.error("Error fetching game events:", eventsError);
