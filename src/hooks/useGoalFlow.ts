@@ -21,7 +21,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     if (team === 'home') {
       setCurrentStep('scorer-select');
     } else {
-      setCurrentStep('opponent-players-on-ice');
+      // Instead of 'opponent-players-on-ice', we'll use 'players-on-ice' which is in our FlowStep type
+      setCurrentStep('players-on-ice');
     }
   };
 
