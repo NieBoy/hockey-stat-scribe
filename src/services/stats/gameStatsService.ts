@@ -148,3 +148,142 @@ export const recordPlusMinusStats = async (
     throw error;
   }
 };
+
+// Helper function to create game stats from game events that reference a player
+export const createStatsFromEvents = async (playerId: string): Promise<boolean> => {
+  try {
+    console.log(`Creating game stats from events for player: ${playerId}`);
+    
+    // Get all game events that reference this player
+    const { data: events, error: eventsError } = await supabase
+      .from('game_events')
+      .select('id, event_type, game_id, period, details, team_type')
+      .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->playersOnIce.cs.{${playerId}}`);
+      
+    if (eventsError) {
+      console.error("Error fetching game events:", eventsError);
+      return false;
+    }
+    
+    console.log(`Found ${events?.length || 0} game events referencing player`);
+    
+    if (!events || events.length === 0) {
+      return false;
+    }
+    
+    // Process goal events
+    let statsCreated = false;
+    
+    for (const event of events) {
+      if (event.event_type === 'goal' && event.details) {
+        // Create goal stat if player is the scorer
+        if (event.details.playerId === playerId) {
+          try {
+            console.log(`Creating goal stat for player ${playerId} from event ${event.id}`);
+            
+            await insertGameStat({
+              gameId: event.game_id,
+              playerId: playerId,
+              statType: 'goals',
+              period: event.period,
+              value: 1,
+              details: ''
+            });
+            
+            statsCreated = true;
+          } catch (error) {
+            console.error("Error creating goal stat:", error);
+          }
+        }
+        
+        // Create assist stat if player is primary or secondary assist
+        if (event.details.primaryAssistId === playerId) {
+          try {
+            console.log(`Creating primary assist stat for player ${playerId} from event ${event.id}`);
+            
+            await insertGameStat({
+              gameId: event.game_id,
+              playerId: playerId,
+              statType: 'assists',
+              period: event.period,
+              value: 1,
+              details: 'primary'
+            });
+            
+            statsCreated = true;
+          } catch (error) {
+            console.error("Error creating primary assist stat:", error);
+          }
+        }
+        
+        if (event.details.secondaryAssistId === playerId) {
+          try {
+            console.log(`Creating secondary assist stat for player ${playerId} from event ${event.id}`);
+            
+            await insertGameStat({
+              gameId: event.game_id,
+              playerId: playerId,
+              statType: 'assists',
+              period: event.period,
+              value: 1,
+              details: 'secondary'
+            });
+            
+            statsCreated = true;
+          } catch (error) {
+            console.error("Error creating secondary assist stat:", error);
+          }
+        }
+        
+        // Create plus/minus stat if player was on the ice
+        if (event.details.playersOnIce && Array.isArray(event.details.playersOnIce) && 
+            event.details.playersOnIce.includes(playerId)) {
+          try {
+            console.log(`Creating plus/minus stat for player ${playerId} from event ${event.id}`);
+            
+            // Determine if it's a plus or minus based on team type and player's team
+            const { data: playerData } = await supabase
+              .from('team_members')
+              .select('team_id')
+              .eq('id', playerId)
+              .single();
+              
+            // Get the game to determine team types
+            const { data: gameData } = await supabase
+              .from('games')
+              .select('home_team_id, away_team_id')
+              .eq('id', event.game_id)
+              .single();
+              
+            if (playerData && gameData) {
+              const isPlayerOnHomeTeam = playerData.team_id === gameData.home_team_id;
+              const isHomeTeamScoring = event.team_type === 'home';
+              
+              // If player's team is scoring, it's a plus, otherwise a minus
+              const isPlus = (isPlayerOnHomeTeam && isHomeTeamScoring) || 
+                            (!isPlayerOnHomeTeam && !isHomeTeamScoring);
+                            
+              await insertGameStat({
+                gameId: event.game_id,
+                playerId: playerId,
+                statType: 'plusMinus',
+                period: event.period,
+                value: 1,
+                details: isPlus ? 'plus' : 'minus'
+              });
+              
+              statsCreated = true;
+            }
+          } catch (error) {
+            console.error("Error creating plus/minus stat:", error);
+          }
+        }
+      }
+    }
+    
+    return statsCreated;
+  } catch (error) {
+    console.error("Error creating stats from events:", error);
+    return false;
+  }
+};

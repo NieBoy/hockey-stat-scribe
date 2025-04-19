@@ -18,12 +18,19 @@ export function usePlayerStatsData(playerId: string) {
   });
 
   // Raw game stats query
-  const { data: rawGameStats, refetch: refetchRawStats } = useQuery({
+  const { 
+    data: rawGameStats, 
+    refetch: refetchRawStats,
+    isLoading: rawStatsLoading 
+  } = useQuery({
     queryKey: ['rawGameStats', playerId],
     queryFn: async () => {
       if (!playerId) return [];
       try {
-        return await fetchGameStats('', playerId);
+        console.log("Fetching raw game stats for player:", playerId);
+        const stats = await fetchGameStats('', playerId);
+        console.log(`Found ${stats.length} raw game stats for player`);
+        return stats;
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
         return [];
@@ -32,12 +39,19 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Updated game events query to use details column
-  const { data: playerGameEvents } = useQuery({
+  // Updated game events query with better filtering
+  const { 
+    data: playerGameEvents,
+    isLoading: eventsLoading,
+    refetch: refetchEvents 
+  } = useQuery({
     queryKey: ['playerGameEvents', playerId],
     queryFn: async () => {
       if (!playerId) return [];
       try {
+        console.log("Fetching game events for player:", playerId);
+        
+        // More inclusive query to find all events that reference this player
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -49,10 +63,14 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .filter('details', 'cs', JSON.stringify({ playerId }))
-          .order('timestamp', { ascending: false });
+          .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->playersOnIce.cs.{${playerId}}`);
           
-        if (eventError) throw eventError;
+        if (eventError) {
+          console.error("Error fetching player game events:", eventError);
+          throw eventError;
+        }
+        
+        console.log(`Found ${eventData?.length || 0} game events for player`);
         return eventData || [];
       } catch (error) {
         console.error("Error in fetchPlayerGameEvents:", error);
@@ -115,15 +133,18 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerTeam?.id
   });
 
+  const isLoading = statsLoading || rawStatsLoading || eventsLoading;
+
   return {
     stats,
-    statsLoading,
+    statsLoading: isLoading,
     statsError,
     rawGameStats,
     playerGameEvents,
     playerTeam,
     teamGames,
     refetchStats,
-    refetchRawStats
+    refetchRawStats,
+    refetchEvents
   };
 }

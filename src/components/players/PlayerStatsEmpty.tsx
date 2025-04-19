@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface PlayerStatsEmptyProps {
   gameStatsDebug: any[];
@@ -34,12 +35,13 @@ export default function PlayerStatsEmpty({
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-left">
           <p className="font-medium mb-2">Game Events Found:</p>
           <p>Found {playerGameEvents.length} game events for this player, but they haven't been processed into stats yet.</p>
-          <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from these events.</p>
+          <p className="mt-2">Click the button below to create stats from these events.</p>
         </div>
       )}
 
       <div className="mt-4">
-        <Button onClick={onRefresh}>
+        <Button onClick={onRefresh} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
           Calculate Stats from Game Data
         </Button>
       </div>

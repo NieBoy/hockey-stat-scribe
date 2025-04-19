@@ -13,6 +13,7 @@ import { usePlayerStatsData } from "@/hooks/players/usePlayerStatsData";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import PlayerStatsDebug from "@/components/players/PlayerStatsDebug";
 import PlayerStatsEmpty from "@/components/players/PlayerStatsEmpty";
+import { createStatsFromEvents } from "@/services/stats/gameStatsService";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
@@ -37,13 +38,27 @@ export default function PlayerStats() {
     
     setIsRefreshing(true);
     try {
+      console.log("Generating game stats from events...");
+      // First try to create any missing game stats from events
+      if (playerGameEvents && playerGameEvents.length > 0 && 
+          (!rawGameStats || rawGameStats.length === 0)) {
+        const statsCreated = await createStatsFromEvents(id);
+        if (statsCreated) {
+          console.log("Successfully created game stats from events");
+          await refetchRawStats();
+        }
+      }
+      
+      // Now refresh the player stats from all available game stats
       await refreshPlayerStats(id);
       await refetchStats();
       await refetchRawStats();
+      
       toast.success("Stats Refreshed", {
         description: "Player statistics have been recalculated from game data."
       });
     } catch (error) {
+      console.error("Error refreshing stats:", error);
       toast.error("Refresh Failed", {
         description: "Failed to refresh player statistics."
       });

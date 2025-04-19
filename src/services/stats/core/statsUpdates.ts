@@ -58,6 +58,114 @@ const updateOrInsertStat = async (
   }
 };
 
+// Create game stats from game events if they don't exist
+const createGameStatsFromEvents = async (playerId: string, events: any[]): Promise<boolean> => {
+  try {
+    console.log(`Creating game stats from ${events.length} events for player ${playerId}`);
+    
+    let statsCreated = false;
+    
+    // Process goal events
+    for (const event of events) {
+      console.log(`Processing event type: ${event.event_type}`, event);
+      
+      if (event.event_type === 'goal' && event.details) {
+        // Create goal stat if player is the scorer
+        if (event.details.playerId === playerId) {
+          console.log(`Creating goal stat for player ${playerId} from event ${event.id}`);
+          
+          const { data, error } = await supabase.rpc('record_game_stat', {
+            p_game_id: event.game_id,
+            p_player_id: playerId,
+            p_stat_type: 'goals',
+            p_period: event.period,
+            p_value: 1,
+            p_details: ''
+          });
+          
+          if (error) {
+            console.error("Error recording goal stat:", error);
+          } else {
+            console.log("Successfully created goal stat from event");
+            statsCreated = true;
+          }
+        }
+        
+        // Create assist stat if player is primary or secondary assist
+        if (event.details.primaryAssistId === playerId) {
+          console.log(`Creating primary assist stat for player ${playerId} from event ${event.id}`);
+          
+          const { data, error } = await supabase.rpc('record_game_stat', {
+            p_game_id: event.game_id,
+            p_player_id: playerId,
+            p_stat_type: 'assists',
+            p_period: event.period,
+            p_value: 1,
+            p_details: 'primary'
+          });
+          
+          if (error) {
+            console.error("Error recording primary assist stat:", error);
+          } else {
+            console.log("Successfully created primary assist stat from event");
+            statsCreated = true;
+          }
+        }
+        
+        if (event.details.secondaryAssistId === playerId) {
+          console.log(`Creating secondary assist stat for player ${playerId} from event ${event.id}`);
+          
+          const { data, error } = await supabase.rpc('record_game_stat', {
+            p_game_id: event.game_id,
+            p_player_id: playerId,
+            p_stat_type: 'assists',
+            p_period: event.period,
+            p_value: 1,
+            p_details: 'secondary'
+          });
+          
+          if (error) {
+            console.error("Error recording secondary assist stat:", error);
+          } else {
+            console.log("Successfully created secondary assist stat from event");
+            statsCreated = true;
+          }
+        }
+        
+        // Create plus/minus stat if player was on the ice
+        if (event.details.playersOnIce && Array.isArray(event.details.playersOnIce) && 
+            event.details.playersOnIce.includes(playerId)) {
+          console.log(`Creating plus/minus stat for player ${playerId} from event ${event.id}`);
+          
+          // Determine if it's a plus or minus based on team type
+          const isPlus = true; // This would typically depend on team comparison logic
+          
+          const { data, error } = await supabase.rpc('record_game_stat', {
+            p_game_id: event.game_id,
+            p_player_id: playerId,
+            p_stat_type: 'plusMinus',
+            p_period: event.period,
+            p_value: 1,
+            p_details: isPlus ? 'plus' : 'minus'
+          });
+          
+          if (error) {
+            console.error("Error recording plus/minus stat:", error);
+          } else {
+            console.log("Successfully created plus/minus stat from event");
+            statsCreated = true;
+          }
+        }
+      }
+    }
+    
+    return statsCreated;
+  } catch (error) {
+    console.error("Error creating game stats from events:", error);
+    return false;
+  }
+};
+
 export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
   console.log("refreshPlayerStats called for player:", playerId);
   try {
@@ -79,9 +187,13 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     // Look for events that reference this player in their details
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
-      .select('id, event_type, game_id, period, details')
-      .contains('details', { playerId });
+      .select('id, event_type, game_id, period, details, team_type')
+      .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->playersOnIce.cs.{${playerId}}`);
       
+    if (eventsError) {
+      console.error("Error fetching game events:", eventsError);
+    }
+    
     console.log(`Found ${gameEvents?.length || 0} game events referencing player ${playerId}`);
     
     // Query the game_stats table for this player specifically
@@ -103,12 +215,28 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       
       if (gameEvents && gameEvents.length > 0) {
         console.log("Processing game events to create stats...");
-        // Process game events to create missing stats if needed
-        // This is a potential source of the issue if events are recorded but stats aren't
+        // Create game stats from events if needed
+        const statsCreated = await createGameStatsFromEvents(playerId, gameEvents);
+        
+        if (statsCreated) {
+          // Re-fetch game stats after creation
+          const { data: updatedStats, error: updatedStatsError } = await supabase
+            .from('game_stats')
+            .select('stat_type, value, game_id, period, details')
+            .eq('player_id', playerId);
+            
+          if (!updatedStatsError && updatedStats) {
+            console.log(`After creation, found ${updatedStats.length} game stats`);
+            gameStats = updatedStats;
+          }
+        }
       }
       
-      // Even if no stats, return empty array to prevent errors
-      return [];
+      // If still no stats after attempted creation, return empty array
+      if (!gameStats || gameStats.length === 0) {
+        console.log("No game stats available after processing events");
+        return [];
+      }
     }
     
     // Calculate stats summary by type
