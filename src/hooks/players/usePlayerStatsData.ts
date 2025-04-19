@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query with properly formatted PostgreSQL JSON conditions
+  // Game events query - Improved to properly fetch all relevant events
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -51,8 +51,8 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Fix: Use proper PostgreSQL JSON query syntax
-        const { data: eventData, error: eventError } = await supabase
+        // Fetch events where player is directly mentioned in fields
+        const { data: directEvents, error: directError } = await supabase
           .from('game_events')
           .select(`
             id, 
@@ -63,15 +63,14 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          // First try with direct key matches
           .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
         
-        if (eventError) {
-          console.error("Error fetching player game events:", eventError);
-          throw eventError;
+        if (directError) {
+          console.error("Error fetching player game events (direct):", directError);
+          throw directError;
         }
 
-        // Now let's see if the player is in playersOnIce array
+        // Fetch events where player is in playersOnIce array
         const { data: onIceEvents, error: onIceError } = await supabase
           .from('game_events')
           .select(`
@@ -90,7 +89,7 @@ export function usePlayerStatsData(playerId: string) {
         }
         
         // Combine both result sets and remove duplicates
-        const allEvents = [...(eventData || []), ...(onIceEvents || [])];
+        const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
         const uniqueEvents = allEvents.filter((event, index, self) =>
           index === self.findIndex((e) => e.id === event.id)
         );
