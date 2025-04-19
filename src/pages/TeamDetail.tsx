@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { useTeams } from "@/hooks/useTeams";
 import TeamHeader from "@/components/teams/TeamHeader";
@@ -12,6 +10,9 @@ import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import TeamTabs from "@/components/teams/TeamTabs";
 import QuickLineupSection from "@/components/teams/QuickLineupSection";
 import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
+import TeamDetailLoading from "@/components/teams/TeamDetailLoading";
+import TeamDetailError from "@/components/teams/TeamDetailError";
+import TeamDetailNotFound from "@/components/teams/TeamDetailNotFound";
 
 const queryClient = new QueryClient();
 
@@ -127,37 +128,15 @@ export default function TeamDetail() {
   };
 
   if (isLoadingTeam) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
-    );
+    return <TeamDetailLoading />;
   }
 
   if (teamError) {
-    return (
-      <MainLayout>
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Error Loading Team</h1>
-          <p className="text-red-500">{(teamError as Error).message}</p>
-          <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
-        </div>
-      </MainLayout>
-    );
+    return <TeamDetailError error={teamError as Error} />;
   }
 
   if (!team) {
-    return (
-      <MainLayout>
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Team Not Found</h1>
-          <p>The team you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/teams')}>Back to Teams</Button>
-        </div>
-      </MainLayout>
-    );
+    return <TeamDetailNotFound />;
   }
 
   return (
