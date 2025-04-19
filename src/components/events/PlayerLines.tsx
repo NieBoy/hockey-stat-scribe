@@ -50,11 +50,15 @@ export default function PlayerLines({
       const newSelectedIds = new Set(selectedIds);
       
       if (selectedIds.has(player.id)) {
+        // Deselect if already selected
         newSelectedIds.delete(player.id);
       } else {
+        // Check if we've hit the max selections limit
         if (maxSelections && newSelectedIds.size >= maxSelections) {
+          console.log(`Max selections (${maxSelections}) reached`);
           return;
         }
+        // Select if not already selected
         newSelectedIds.add(player.id);
       }
       

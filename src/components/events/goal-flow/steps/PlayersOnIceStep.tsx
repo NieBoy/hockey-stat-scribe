@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Team, User } from '@/types';
 import PlayerLines from '../../PlayerLines';
+import { Button } from '@/components/ui/button';
 
 interface PlayersOnIceStepProps {
   team: Team;
@@ -16,6 +17,18 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
+  const [selectedPlayers, setSelectedPlayers] = useState<User[]>(preSelectedPlayers || []);
+  
+  // Update local state when preSelectedPlayers changes
+  useEffect(() => {
+    setSelectedPlayers(preSelectedPlayers);
+  }, [preSelectedPlayers]);
+  
+  const handlePlayersSelect = (players: User[]) => {
+    setSelectedPlayers(players);
+    onPlayersSelect(players);
+  };
+  
   return (
     <div>
       <div className="mb-3">
@@ -23,17 +36,21 @@ export function PlayersOnIceStep({
         <p className="text-sm text-muted-foreground">
           Select all players on the ice at the time of the goal (max 6)
         </p>
+        
+        <div className="mt-3 mb-4">
+          <p className="text-sm font-medium">Selected: {selectedPlayers.length}/6 players</p>
+        </div>
       </div>
+      
       <PlayerLines 
         team={team}
-        onMultiPlayerSelect={onPlayersSelect}
-        selectedPlayers={preSelectedPlayers}
+        onMultiPlayerSelect={handlePlayersSelect}
+        selectedPlayers={selectedPlayers}
         multiSelect={true}
         allowComplete={true}
         onComplete={onComplete}
         completeText="Confirm Players"
         maxSelections={6}
-        forceRefresh={true} // Force refresh to ensure selection state updates
       />
     </div>
   );

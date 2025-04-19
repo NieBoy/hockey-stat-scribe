@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { RefreshCw } from "lucide-react";
 
 interface Event {
   id: string;
@@ -36,50 +37,65 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     setIsLoading(true);
     console.log('Fetching events for game ID:', gameId);
     
-    const { data, error } = await supabase
-      .from('game_events')
-      .select('*')
-      .eq('game_id', gameId)
-      .order('timestamp', { ascending: false });
+    try {
+      // Use direct SQL query via RPC to bypass RLS issues
+      const { data, error } = await supabase
+        .rpc('get_game_events', { p_game_id: gameId });
 
-    if (error) {
-      console.error('Error fetching events:', error);
+      if (error) {
+        console.error('Error fetching events:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load events. Please refresh the page.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Events fetched:', data);
+      setEvents(data || []);
+    } catch (err) {
+      console.error('Error in fetchEvents:', err);
       toast({
         title: "Error",
-        description: "Failed to load events. Please refresh the page.",
+        description: "Failed to load events. Please try again.",
         variant: "destructive"
       });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    console.log('Events fetched:', data);
-    setEvents(data || []);
-    setIsLoading(false);
   };
 
   const deleteEvent = async (eventId: string) => {
-    const { error } = await supabase
-      .from('game_events')
-      .delete()
-      .eq('id', eventId);
+    try {
+      const { error } = await supabase
+        .rpc('delete_game_event', { p_event_id: eventId });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete event. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Event Deleted",
+        description: "The event has been successfully removed."
+      });
+
+      fetchEvents();
+      if (onEventDeleted) onEventDeleted();
+    } catch (err) {
+      console.error('Error deleting event:', err);
       toast({
         title: "Error",
         description: "Failed to delete event. Please try again.",
         variant: "destructive"
       });
-      return;
     }
-
-    toast({
-      title: "Event Deleted",
-      description: "The event has been successfully removed."
-    });
-
-    fetchEvents();
-    if (onEventDeleted) onEventDeleted();
   };
 
   useEffect(() => {
@@ -88,35 +104,21 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     }
   }, [gameId]);
 
-  useEffect(() => {
-    if (!gameId) return;
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('game_events_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'game_events',
-          filter: `game_id=eq.${gameId}`
-        },
-        (payload) => {
-          console.log('Game event change detected:', payload);
-          fetchEvents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [gameId]);
-
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-semibold mb-4">Event History</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Event History</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={fetchEvents}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
