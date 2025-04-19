@@ -1,5 +1,5 @@
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import TeamHeader from "@/components/teams/TeamHeader";

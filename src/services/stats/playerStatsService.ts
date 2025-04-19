@@ -142,7 +142,7 @@ export const getPlayerStatsWithRefresh = async (playerId: string): Promise<Playe
       statType: stat.stat_type as StatType,
       value: stat.value,
       gamesPlayed: stat.games_played,
-      playerName: stat.users?.name || 'Unknown Player'
+      playerName: stat.users ? stat.users.name : 'Unknown Player'
     }));
   } catch (error) {
     console.error("Error in getPlayerStatsWithRefresh:", error);
@@ -167,7 +167,7 @@ export const getAllPlayerStats = async (): Promise<PlayerStat[]> => {
       statType: stat.stat_type as StatType,
       value: stat.value,
       gamesPlayed: stat.games_played,
-      playerName: stat.users?.name || 'Unknown Player'
+      playerName: stat.users ? stat.users.name : 'Unknown Player'
     }));
   } catch (error) {
     console.error("Error fetching all player stats:", error);
@@ -180,21 +180,22 @@ export const getAllPlayerStats = async (): Promise<PlayerStat[]> => {
  */
 export const refreshAllPlayerStats = async (): Promise<void> => {
   try {
-    // Get all unique player IDs with game stats
-    const { data: players, error: playersError } = await supabase
+    // Get all unique player IDs with game stats using a workaround for distinct
+    const { data: gameStats, error: statsError } = await supabase
       .from('game_stats')
-      .select('player_id')
-      .distinct();
+      .select('player_id');
       
-    if (playersError) throw playersError;
+    if (statsError) throw statsError;
     
-    console.log(`Found ${players?.length || 0} players with game stats`);
+    // Process data to get unique player IDs
+    const uniquePlayerIds = [...new Set(gameStats?.map(stat => stat.player_id) || [])];
+    const players = uniquePlayerIds.map(id => ({ player_id: id }));
+    
+    console.log(`Found ${players.length} players with game stats`);
     
     // Process each player's stats
-    if (players && players.length > 0) {
-      for (const player of players) {
-        await refreshPlayerStats(player.player_id);
-      }
+    for (const player of players) {
+      await refreshPlayerStats(player.player_id);
     }
   } catch (error) {
     console.error("Error refreshing all player stats:", error);

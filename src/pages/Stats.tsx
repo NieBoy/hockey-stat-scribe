@@ -1,4 +1,3 @@
-
 import MainLayout from "@/components/layout/MainLayout";
 import { DataTable } from "@/components/ui/data-table";
 import { Card } from "@/components/ui/card";
@@ -75,7 +74,18 @@ const refreshAllPlayerStats = async (): Promise<void> => {
   const { data: players, error: playersError } = await supabase
     .from('game_stats')
     .select('player_id')
-    .distinct();
+    .eq('player_id', 'player_id') // Add a dummy condition to avoid distinct()
+    .then(result => {
+      // Process the result to get unique player IDs
+      if (result.data) {
+        const uniquePlayerIds = [...new Set(result.data.map(row => row.player_id))];
+        return {
+          ...result,
+          data: uniquePlayerIds.map(id => ({ player_id: id }))
+        };
+      }
+      return result;
+    });
     
   if (playersError) {
     console.error("Error getting players with stats:", playersError);
