@@ -14,13 +14,7 @@ export interface GoalEventData {
   playersOnIce: string[];
 }
 
-interface GameEventResponse {
-  id: string;
-  game_id: string;
-  event_type: string;
-  period: number;
-  team_type: string;
-}
+type GameEventResponse = Database['public']['Functions']['create_game_event']['Returns'];
 
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
