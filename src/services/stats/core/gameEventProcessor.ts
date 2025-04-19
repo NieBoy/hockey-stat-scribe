@@ -26,23 +26,30 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
 const processGoalEvent = async (event: any, playerId: string): Promise<boolean> => {
   let statsCreated = false;
   
+  // Log the details to better understand the structure
+  console.log("Processing goal event details:", event.details);
+  
   // Process scorer
   if (event.details.playerId === playerId) {
+    console.log("Player is the scorer, creating goal stat");
     statsCreated = await createGameStat(event, playerId, 'goals') || statsCreated;
   }
   
   // Process primary assist
   if (event.details.primaryAssistId === playerId) {
+    console.log("Player has primary assist, creating assist stat");
     statsCreated = await createGameStat(event, playerId, 'assists', 'primary') || statsCreated;
   }
   
   // Process secondary assist
   if (event.details.secondaryAssistId === playerId) {
+    console.log("Player has secondary assist, creating assist stat");
     statsCreated = await createGameStat(event, playerId, 'assists', 'secondary') || statsCreated;
   }
   
   // Process plus/minus
-  if (event.details.playersOnIce?.includes(playerId)) {
+  if (Array.isArray(event.details.playersOnIce) && event.details.playersOnIce.includes(playerId)) {
+    console.log("Player is on ice, creating plus/minus stat");
     statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
   }
   
@@ -56,6 +63,8 @@ const createGameStat = async (
   details: string = ''
 ): Promise<boolean> => {
   try {
+    console.log(`Creating ${statType} stat for player ${playerId} from event:`, event.id);
+    
     const { error } = await supabase.rpc('record_game_stat', {
       p_game_id: event.game_id,
       p_player_id: playerId,

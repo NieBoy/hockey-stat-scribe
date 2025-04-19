@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
 import { toast } from 'sonner';
 import { Database } from '@/types/supabase';
-import { refreshPlayerStats } from '@/services/stats/playerStatsService';
+import { refreshPlayerStats } from '@/services/stats';
 
 export interface GoalEventData {
   gameId: string;
@@ -90,6 +90,8 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       playersOnIce: data.playersOnIce
     };
 
+    console.log("Creating game event with details:", details);
+    
     // Record the game event with details explicitly passed as a parameter
     const { data: eventData, error: eventError } = await supabase
       .rpc('create_game_event', {
@@ -104,6 +106,8 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       console.error("Error calling create_game_event function:", eventError);
       throw new Error(`Failed to record goal event: ${eventError.message}`);
     }
+    
+    console.log("Successfully created game event:", eventData);
     
     // Record goal stat if scorer provided
     if (data.scorerId) {

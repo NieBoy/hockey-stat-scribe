@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query with correct format for JSON field queries
+  // Game events query with correctly formatted JSON conditions
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -51,7 +51,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Properly format the query for JSONB text fields
+        // Use proper PostgreSQL JSON operators for filtering
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -63,7 +63,7 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->>'playerId'=.${playerId},details->>'primaryAssistId'=.${playerId},details->>'secondaryAssistId'=.${playerId},details->'playersOnIce'::jsonb?.'${playerId}'`);
+          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId},details->'playersOnIce'::jsonb ?& array['${playerId}']`);
           
         if (eventError) {
           console.error("Error fetching player game events:", eventError);
