@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Flag, Clock } from 'lucide-react';
+import { Trophy, Flag, Clock, Target } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import EventButton from './EventButton';
@@ -14,9 +14,10 @@ import { useQuery } from '@tanstack/react-query';
 import { getGameById } from '@/services/games';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import FaceoffFlow from './FaceoffFlow';
+import ShotsFlow from './ShotsFlow';
 
-type EventType = 'goal' | 'penalty' | 'faceoff';
-type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'faceoff-flow';
+type EventType = 'goal' | 'penalty' | 'faceoff' | 'shot';
+type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'faceoff-flow' | 'shot-flow';
 
 export default function EventTracker() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
@@ -63,6 +64,8 @@ export default function EventTracker() {
       setFlowState('penalty-flow');
     } else if (eventType === 'faceoff') {
       setFlowState('faceoff-flow');
+    } else if (eventType === 'shot') {
+      setFlowState('shot-flow');
     }
   };
 
@@ -163,7 +166,13 @@ export default function EventTracker() {
               label="Faceoff"
               icon={<Clock className="h-8 w-8" />}
               onClick={() => handleEventSelect('faceoff')}
-              className="bg-blue-500 hover:bg-blue-600 md:col-span-2"
+              className="bg-blue-500 hover:bg-blue-600"
+            />
+            <EventButton
+              label="Shot"
+              icon={<Target className="h-8 w-8" />}
+              onClick={() => handleEventSelect('shot')}
+              className="bg-purple-500 hover:bg-purple-600"
             />
           </div>
         )}
@@ -188,6 +197,15 @@ export default function EventTracker() {
 
         {gameStatus === 'in-progress' && flowState === 'faceoff-flow' && game && (
           <FaceoffFlow
+            game={game}
+            period={currentPeriod}
+            onComplete={handleFlowComplete}
+            onCancel={handleFlowCancel}
+          />
+        )}
+
+        {gameStatus === 'in-progress' && flowState === 'shot-flow' && game && (
+          <ShotsFlow
             game={game}
             period={currentPeriod}
             onComplete={handleFlowComplete}
