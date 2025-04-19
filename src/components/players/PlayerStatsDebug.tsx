@@ -52,11 +52,11 @@ export default function PlayerStatsDebug({
               {playerGameEvents?.length || 0} events
             </span>
           </h4>
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto"> {/* Increased height for better visibility */}
             {playerGameEvents && playerGameEvents.length > 0 ? (
               playerGameEvents.map((event, index) => (
-                <div key={event.id} className="mb-2">
-                  <h5 className="text-xs font-semibold">Event #{index + 1} ({event.event_type})</h5>
+                <div key={event.id} className="mb-2 border-b border-slate-200 pb-2">
+                  <h5 className="text-xs font-semibold bg-blue-50 p-1">Event #{index + 1} ({event.event_type})</h5>
                   <div className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
                     <div>
                       <span className="font-semibold">ID:</span> {event.id}
@@ -79,12 +79,36 @@ export default function PlayerStatsDebug({
                         {JSON.stringify(event.details, null, 2)}
                       </pre>
                     </div>
+                    {/* Add information to help debug player connections */}
+                    {event.details && (
+                      <div className="mt-2 bg-yellow-50 p-1 rounded">
+                        <div className="font-semibold text-yellow-800">Player Match Check:</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          <div>Scorer Match: </div>
+                          <div>{event.details.playerId === player?.id ? '✅ Yes' : '❌ No'}</div>
+                          
+                          <div>Primary Assist Match: </div>
+                          <div>{event.details.primaryAssistId === player?.id ? '✅ Yes' : '❌ No'}</div>
+                          
+                          <div>Secondary Assist Match: </div>
+                          <div>{event.details.secondaryAssistId === player?.id ? '✅ Yes' : '❌ No'}</div>
+                          
+                          <div>On Ice Match: </div>
+                          <div>{event.details.playersOnIce && 
+                            (Array.isArray(event.details.playersOnIce) && 
+                             event.details.playersOnIce.includes(player?.id)) ? '✅ Yes' : '❌ No'}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
               <div className="bg-amber-50 p-2 rounded text-amber-800 text-xs">
-                No game events found for this player.
+                No game events found for this player. 
+                <div className="mt-1 font-semibold">Debug info:</div>
+                <div>Player ID: {player?.id}</div>
+                <div>Query used: .or(`details-&gt;&gt;'playerId'.eq.{player?.id},details-&gt;&gt;'primaryAssistId'.eq.{player?.id},details-&gt;&gt;'secondaryAssistId'.eq.{player?.id}`) and .contains('details', {'{'} playersOnIce: [{player?.id}] {'}'})</div>
               </div>
             )}
           </div>

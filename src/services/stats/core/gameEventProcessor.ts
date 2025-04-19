@@ -74,7 +74,8 @@ const processGoalEvent = async (event: any, playerId: string, details: any): Pro
     // Check if it's an object
     else if (typeof details.playersOnIce === 'object') {
       console.log("playersOnIce is object, checking for player:", playerId);
-      playerFound = Object.keys(details.playersOnIce).includes(playerId);
+      playerFound = Object.keys(details.playersOnIce).includes(playerId) || 
+                    Object.values(details.playersOnIce).includes(playerId);
     }
     // Check if it's a string that contains the player ID
     else if (typeof details.playersOnIce === 'string') {
@@ -85,6 +86,8 @@ const processGoalEvent = async (event: any, playerId: string, details: any): Pro
     if (playerFound) {
       console.log("Player found in playersOnIce, creating plus/minus stat");
       statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
+    } else {
+      console.log("Player NOT found in playersOnIce");
     }
   }
   
@@ -99,6 +102,25 @@ const createGameStat = async (
 ): Promise<boolean> => {
   try {
     console.log(`Creating ${statType} stat for player ${playerId} from event:`, event.id);
+    
+    // First check if this stat already exists to avoid duplicates
+    const { data: existingStat, error: checkError } = await supabase
+      .from('game_stats')
+      .select('id')
+      .eq('game_id', event.game_id)
+      .eq('player_id', playerId)
+      .eq('stat_type', statType)
+      .eq('period', event.period)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error("Error checking for existing stat:", checkError);
+    }
+    
+    if (existingStat) {
+      console.log("Stat already exists, skipping creation");
+      return true;
+    }
     
     const { error } = await supabase.rpc('record_game_stat', {
       p_game_id: event.game_id,
@@ -126,6 +148,25 @@ const createPlusMinusStat = async (event: any, playerId: string): Promise<boolea
   try {
     // In a real implementation, this would determine if it's a plus or minus based on team comparison
     const isPlus = true;
+    
+    // First check if this stat already exists to avoid duplicates
+    const { data: existingStat, error: checkError } = await supabase
+      .from('game_stats')
+      .select('id')
+      .eq('game_id', event.game_id)
+      .eq('player_id', playerId)
+      .eq('stat_type', 'plusMinus')
+      .eq('period', event.period)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error("Error checking for existing plus/minus stat:", checkError);
+    }
+    
+    if (existingStat) {
+      console.log("Plus/minus stat already exists, skipping creation");
+      return true;
+    }
     
     const { error } = await supabase.rpc('record_game_stat', {
       p_game_id: event.game_id,

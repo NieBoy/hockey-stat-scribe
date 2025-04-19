@@ -23,11 +23,13 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName, "team_id:", playerData.team_id);
     
-    // Get relevant game events with correctly formatted JSON query
+    // Get relevant game events with properly formatted PostgreSQL JSON query
+    // This is what was causing the error - we need to use the proper JSON query syntax
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
       .select('id, event_type, game_id, period, details, team_type')
-      .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId},details->'playersOnIce'->0.eq.${playerId}`);
+      .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`)
+      .contains('details', { playersOnIce: [playerId] });
       
     if (eventsError) {
       console.error("Error fetching game events:", eventsError);

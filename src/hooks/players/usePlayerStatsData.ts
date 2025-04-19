@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query with correctly formatted PostgreSQL JSON conditions
+  // Game events query with properly formatted PostgreSQL JSON conditions
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -51,7 +51,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Fixed query with proper quotes and PostgreSQL syntax
+        // Fix: Use proper PostgreSQL JSON query syntax
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -63,16 +63,40 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId},details->'playersOnIce'->0.eq.${playerId}`);
+          // First try with direct key matches
+          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
         
         if (eventError) {
           console.error("Error fetching player game events:", eventError);
           throw eventError;
         }
+
+        // Now let's see if the player is in playersOnIce array
+        const { data: onIceEvents, error: onIceError } = await supabase
+          .from('game_events')
+          .select(`
+            id, 
+            game_id, 
+            event_type, 
+            period, 
+            team_type, 
+            timestamp,
+            details
+          `)
+          .contains('details', { playersOnIce: [playerId] });
+
+        if (onIceError) {
+          console.error("Error fetching on-ice events:", onIceError);
+        }
         
-        // Log the event data to see what we're getting
-        console.log(`Found ${eventData?.length || 0} game events for player:`, eventData);
-        return eventData || [];
+        // Combine both result sets and remove duplicates
+        const allEvents = [...(eventData || []), ...(onIceEvents || [])];
+        const uniqueEvents = allEvents.filter((event, index, self) =>
+          index === self.findIndex((e) => e.id === event.id)
+        );
+        
+        console.log(`Found ${uniqueEvents.length} game events for player:`, uniqueEvents);
+        return uniqueEvents;
       } catch (error) {
         console.error("Error in fetchPlayerGameEvents:", error);
         return [];
