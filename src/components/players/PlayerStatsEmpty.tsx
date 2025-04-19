@@ -16,7 +16,11 @@ export default function PlayerStatsEmpty({
   
   const handleRefreshClick = () => {
     console.log("Calculate Stats button clicked");
-    onRefresh();
+    // Add a small delay to ensure the click is registered
+    setTimeout(() => {
+      console.log("Executing onRefresh callback");
+      onRefresh();
+    }, 10);
   };
 
   return (
@@ -33,7 +37,7 @@ export default function PlayerStatsEmpty({
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-left">
           <p className="font-medium mb-2">Debug Information:</p>
           <p>Found {gameStatsDebug.length} raw game stats for this player that need to be processed.</p>
-          <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from game data.</p>
+          <p className="mt-2">Try clicking the "Calculate Stats" button below to calculate statistics from game data.</p>
         </div>
       )}
       
@@ -46,9 +50,14 @@ export default function PlayerStatsEmpty({
       )}
 
       <div className="mt-4">
-        <Button onClick={handleRefreshClick} className="gap-2">
+        <Button 
+          onClick={handleRefreshClick} 
+          className="gap-2"
+          disabled={!playerGameEvents || playerGameEvents.length === 0}
+        >
           <RefreshCw className="h-4 w-4" />
           Calculate Stats from Game Data
+          {(!playerGameEvents || playerGameEvents.length === 0) && " (No Events Found)"}
         </Button>
       </div>
     </div>

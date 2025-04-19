@@ -30,7 +30,8 @@ export default function PlayerStats() {
     playerTeam,
     teamGames,
     refetchStats,
-    refetchRawStats
+    refetchRawStats,
+    refetchEvents
   } = usePlayerStatsData(id || '');
 
   const handleRefreshStats = async () => {
@@ -39,10 +40,17 @@ export default function PlayerStats() {
     console.log("Refresh stats button clicked for player:", id);
     setIsRefreshing(true);
     try {
+      // First refresh events to make sure we have the latest data
+      await refetchEvents();
+      console.log("Refreshed events data");
+      
       console.log("Generating game stats from events...");
-      // First try to create any missing game stats from events
-      if (playerGameEvents && playerGameEvents.length > 0) {
-        console.log(`Found ${playerGameEvents.length} game events to process`);
+      // Try to create any missing game stats from events
+      const currentEvents = await refetchEvents();
+      const events = currentEvents.data || [];
+      
+      if (events && events.length > 0) {
+        console.log(`Found ${events.length} game events to process`);
         const statsCreated = await createStatsFromEvents(id);
         console.log("Stats created from events:", statsCreated);
         if (statsCreated) {
