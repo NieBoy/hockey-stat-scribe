@@ -36,23 +36,34 @@ export default function PlayerStats() {
   const handleRefreshStats = async () => {
     if (!id) return;
     
+    console.log("Refresh stats button clicked for player:", id);
     setIsRefreshing(true);
     try {
       console.log("Generating game stats from events...");
       // First try to create any missing game stats from events
-      if (playerGameEvents && playerGameEvents.length > 0 && 
-          (!rawGameStats || rawGameStats.length === 0)) {
+      if (playerGameEvents && playerGameEvents.length > 0) {
+        console.log(`Found ${playerGameEvents.length} game events to process`);
         const statsCreated = await createStatsFromEvents(id);
+        console.log("Stats created from events:", statsCreated);
         if (statsCreated) {
           console.log("Successfully created game stats from events");
           await refetchRawStats();
+          console.log("Refetched raw stats");
+        } else {
+          console.log("No new stats were created from events");
         }
+      } else {
+        console.log("No game events found to process");
       }
       
       // Now refresh the player stats from all available game stats
+      console.log("Refreshing player stats");
       await refreshPlayerStats(id);
+      console.log("Player stats refreshed");
       await refetchStats();
+      console.log("Refetched player stats");
       await refetchRawStats();
+      console.log("Refetched raw stats again");
       
       toast.success("Stats Refreshed", {
         description: "Player statistics have been recalculated from game data."
@@ -64,6 +75,7 @@ export default function PlayerStats() {
       });
     } finally {
       setIsRefreshing(false);
+      console.log("Stats refresh process completed");
     }
   };
 
