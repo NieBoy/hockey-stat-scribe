@@ -2,15 +2,16 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Game, User } from '@/types';
-import { Button } from '@/components/ui/button';
-import { TeamSelect } from './goal-flow/TeamSelect';
-import { RefreshCw } from 'lucide-react';
-import { useGoalFlow } from './goal-flow/useGoalFlow';
 import { GoalHeader } from './goal-flow/GoalHeader';
 import { GoalActions } from './goal-flow/GoalActions';
-import PlayerLines from './PlayerLines';
+import { useGoalFlow } from './goal-flow/useGoalFlow';
 import { recordGoalEvent } from '@/services/events/goalEventService';
 import { useToast } from '@/hooks/use-toast';
+import { TeamSelectionStep } from './goal-flow/steps/TeamSelectionStep';
+import { ScorerSelectionStep } from './goal-flow/steps/ScorerSelectionStep';
+import { AssistSelectionStep } from './goal-flow/steps/AssistSelectionStep';
+import { PlayersOnIceStep } from './goal-flow/steps/PlayersOnIceStep';
+import { GoalSummaryStep } from './goal-flow/steps/GoalSummaryStep';
 
 interface GoalFlowProps {
   game: Game;
@@ -28,7 +29,6 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     setSelectedTeam
   } = useGoalFlow(game, period, onComplete);
   
-  // Track the current step in the flow
   const [currentStep, setCurrentStep] = useState<'team' | 'scorer' | 'primary' | 'secondary' | 'players-on-ice' | 'submit'>('team');
   const [selectedScorer, setSelectedScorer] = useState<User | null>(null);
   const [primaryAssist, setPrimaryAssist] = useState<User | null>(null);
@@ -36,7 +36,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
   const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
+
   const handlePlayerSelect = (player: User) => {
     if (currentStep === 'scorer') {
       setSelectedScorer(player);
@@ -65,25 +65,15 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
   };
 
   const handlePlayersOnIceComplete = () => {
-    // Make sure scorer and assists are included in players on ice
     const essentialPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
-    
-    // Create a map of player IDs for quick lookup
     const selectedIds = new Map(playersOnIce.map(player => [player.id, player]));
-    
-    // Add essential players if not already selected
     essentialPlayers.forEach(player => {
       if (!selectedIds.has(player.id)) {
         selectedIds.set(player.id, player);
       }
     });
-    
-    // Convert Map back to array
     const allPlayers = Array.from(selectedIds.values());
-    
-    // Limit to maximum 6 players on ice (5 skaters + 1 goalie)
     const limitedPlayers = allPlayers.slice(0, 6);
-    
     setPlayersOnIce(limitedPlayers);
     setCurrentStep('submit');
   };
@@ -100,7 +90,6 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     
     setIsSubmitting(true);
     try {
-      // Create goal event data object
       const goalData = {
         gameId: game.id,
         period: period,
@@ -111,9 +100,6 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         playersOnIce: playersOnIce.map(p => p.id)
       };
       
-      console.log("Submitting goal data:", goalData);
-      
-      // Call the service to record the goal event
       await recordGoalEvent(goalData);
       
       toast({
@@ -121,7 +107,6 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         description: `Goal by ${selectedScorer?.name || 'Unknown'} in period ${period}`
       });
       
-      // Call the complete handler to notify parent component
       onComplete();
     } catch (error) {
       console.error('Error saving goal:', error);
@@ -143,145 +128,75 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
 
   const renderStepContent = () => {
     if (currentStep === 'team' || !selectedTeam) {
-      return <TeamSelect game={game} onTeamSelect={setSelectedTeam} />;
+      return <TeamSelectionStep game={game} onTeamSelect={setSelectedTeam} />;
     }
     
     const teamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
     
     if (currentStep === 'scorer') {
       return (
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium">Who scored the goal?</h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefreshLineups}
-              disabled={isLoadingLineups}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoadingLineups ? 'animate-spin' : ''}`} />
-              Refresh Players
-            </Button>
-          </div>
-          <PlayerLines
-            team={teamData}
-            onPlayerSelect={handlePlayerSelect}
-            selectedPlayers={selectedScorer ? [selectedScorer] : []}
-            multiSelect={false}
-          />
-        </div>
+        <ScorerSelectionStep
+          team={teamData}
+          onPlayerSelect={handlePlayerSelect}
+          selectedScorer={selectedScorer}
+          isLoadingLineups={isLoadingLineups}
+          onRefreshLineups={handleRefreshLineups}
+        />
       );
     }
     
     if (currentStep === 'primary') {
-      // Filter out the scorer from the list of potential assists
-      const eligiblePlayers = teamData.players.filter(p => p.id !== selectedScorer?.id);
-      const teamWithEligiblePlayers = { ...teamData, players: eligiblePlayers };
-      
       return (
-        <div>
-          <div className="mb-3">
-            <h3 className="text-lg font-medium">Who had the primary assist?</h3>
-          </div>
-          <PlayerLines
-            team={teamWithEligiblePlayers}
-            onPlayerSelect={handlePlayerSelect}
-            selectedPlayers={primaryAssist ? [primaryAssist] : []}
-            multiSelect={false}
-            allowSkip={true}
-            onSkip={handleSkipAssist}
-            skipText="Skip (No Assist)"
-          />
-        </div>
+        <AssistSelectionStep
+          team={teamData}
+          onPlayerSelect={handlePlayerSelect}
+          selectedAssist={primaryAssist}
+          excludedPlayers={[selectedScorer].filter(Boolean) as User[]}
+          isPrimary={true}
+          onSkip={handleSkipAssist}
+        />
       );
     }
     
     if (currentStep === 'secondary') {
-      // Filter out scorer and primary assist from potential secondary assists
-      const eligiblePlayers = teamData.players.filter(
-        p => p.id !== selectedScorer?.id && p.id !== primaryAssist?.id
-      );
-      const teamWithEligiblePlayers = { ...teamData, players: eligiblePlayers };
-      
       return (
-        <div>
-          <div className="mb-3">
-            <h3 className="text-lg font-medium">Who had the secondary assist?</h3>
-          </div>
-          <PlayerLines
-            team={teamWithEligiblePlayers}
-            onPlayerSelect={handlePlayerSelect}
-            selectedPlayers={secondaryAssist ? [secondaryAssist] : []}
-            multiSelect={false}
-            allowSkip={true}
-            onSkip={handleSkipAssist}
-            skipText="Skip (No Second Assist)"
-          />
-        </div>
+        <AssistSelectionStep
+          team={teamData}
+          onPlayerSelect={handlePlayerSelect}
+          selectedAssist={secondaryAssist}
+          excludedPlayers={[selectedScorer, primaryAssist].filter(Boolean) as User[]}
+          isPrimary={false}
+          onSkip={handleSkipAssist}
+        />
       );
     }
     
     if (currentStep === 'players-on-ice') {
-      // Pre-select scorer and assists for players on ice
-      const preSelectedPlayers = [selectedScorer, primaryAssist, secondaryAssist]
-        .filter(Boolean) as User[];
-        
       return (
-        <div>
-          <div className="mb-3">
-            <h3 className="text-lg font-medium">Select players on ice (+/-)</h3>
-            <p className="text-sm text-muted-foreground">
-              Select all players on the ice at the time of the goal (max 6)
-            </p>
-          </div>
-          <PlayerLines 
-            team={teamData}
-            onMultiPlayerSelect={handlePlayersOnIceSelect}
-            selectedPlayers={preSelectedPlayers}
-            multiSelect={true}
-            allowComplete={true}
-            onComplete={handlePlayersOnIceComplete}
-            completeText="Confirm Players"
-            maxSelections={6}
-          />
-        </div>
+        <PlayersOnIceStep
+          team={teamData}
+          onPlayersSelect={handlePlayersOnIceSelect}
+          preSelectedPlayers={[selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[]}
+          onComplete={handlePlayersOnIceComplete}
+        />
       );
     }
     
     if (currentStep === 'submit') {
       return (
-        <div>
-          <div className="mb-3">
-            <h3 className="text-lg font-medium">Goal Summary</h3>
-          </div>
-          <div className="space-y-2 bg-muted/50 p-4 rounded-md">
-            <p><strong>Scorer:</strong> {selectedScorer?.name}</p>
-            <p><strong>Primary Assist:</strong> {primaryAssist?.name || 'None'}</p>
-            <p><strong>Secondary Assist:</strong> {secondaryAssist?.name || 'None'}</p>
-            <p><strong>Period:</strong> {period}</p>
-            <div>
-              <p><strong>Players on Ice:</strong></p>
-              <ul className="list-disc pl-5 mt-1">
-                {playersOnIce.map(player => (
-                  <li key={player.id}>{player.name}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <GoalActions 
-              isSubmitting={isSubmitting} 
-              onCancel={onCancel} 
-              onSubmit={handleSubmit}
-              showSubmit={true}
-            />
-          </div>
-        </div>
+        <GoalSummaryStep
+          game={game}
+          selectedScorer={selectedScorer}
+          primaryAssist={primaryAssist}
+          secondaryAssist={secondaryAssist}
+          period={period}
+          playersOnIce={playersOnIce}
+          isSubmitting={isSubmitting}
+          onCancel={onCancel}
+          onSubmit={handleSubmit}
+        />
       );
     }
-    
-    return null;
   };
 
   return (
