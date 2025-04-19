@@ -1,20 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { useTeams } from "@/hooks/useTeams";
 import TeamHeader from "@/components/teams/TeamHeader";
-import PlayersTabContent from "@/components/teams/PlayersTabContent";
-import CoachesTabContent from "@/components/teams/CoachesTabContent";
-import StatsTabContent from "@/components/teams/StatsTabContent";
-import TeamMembersTable from "@/components/teams/TeamMembersTable";
-import { QuickLineupView } from "@/components/teams/QuickLineupView";
-import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
 import { toast } from "sonner";
 import { User } from "@/types";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import TeamTabs from "@/components/teams/TeamTabs";
+import QuickLineupSection from "@/components/teams/QuickLineupSection";
+import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
 
 const queryClient = new QueryClient();
 
@@ -68,7 +65,6 @@ export default function TeamDetail() {
     setLineupRefreshKey(Date.now());
   }, []);
 
-  // Add the missing function handlers here
   const handleSendInvitations = async (memberIds: string[]) => {
     if (!id || memberIds.length === 0) {
       toast.error("No members selected for invitation");
@@ -112,6 +108,24 @@ export default function TeamDetail() {
     }
   };
 
+  const handleTeamUpdate = () => {
+    console.log("Team update detected, refreshing data");
+    refetchTeam();
+    setLineupRefreshKey(prev => prev + 1);
+  };
+
+  const handleEditLineupClick = () => {
+    console.log("TeamDetail - Navigating to lineup editor page");
+    navigate(`/teams/${id}/lineup`);
+  };
+
+  const handleRefreshLineup = () => {
+    console.log("TeamDetail - Manual lineup refresh requested");
+    refetchTeam();
+    setLineupRefreshKey(Date.now());
+    toast.success("Refreshing lineup data...");
+  };
+
   if (isLoadingTeam) {
     return (
       <MainLayout>
@@ -145,24 +159,6 @@ export default function TeamDetail() {
       </MainLayout>
     );
   }
-  
-  const handleTeamUpdate = () => {
-    console.log("Team update detected, refreshing data");
-    refetchTeam();
-    setLineupRefreshKey(prev => prev + 1);
-  };
-
-  const handleEditLineupClick = () => {
-    console.log("TeamDetail - Navigating to lineup editor page");
-    navigate(`/teams/${id}/lineup`);
-  };
-
-  const handleRefreshLineup = () => {
-    console.log("TeamDetail - Manual lineup refresh requested");
-    refetchTeam();
-    setLineupRefreshKey(Date.now());
-    toast.success("Refreshing lineup data...");
-  };
 
   return (
     <MainLayout>
@@ -174,52 +170,23 @@ export default function TeamDetail() {
             onAddPlayerClick={handleAddPlayer}
           />
 
-          <QuickLineupView key={`lineup-${lineupRefreshKey}`} team={team} />
+          <QuickLineupSection 
+            team={team}
+            lineupRefreshKey={lineupRefreshKey}
+            onEditLineup={handleEditLineupClick}
+            onRefreshLineup={handleRefreshLineup}
+          />
 
-          <div className="flex justify-between items-center mb-2">
-            <Button variant="outline" onClick={handleRefreshLineup}>
-              Refresh Lineup
-            </Button>
-            <Button onClick={handleEditLineupClick}>
-              Edit Lineup
-            </Button>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
-              <TabsTrigger value="players">Players</TabsTrigger>
-              <TabsTrigger value="coaches">Coaches</TabsTrigger>
-              <TabsTrigger value="stats">Stats</TabsTrigger>
-              <TabsTrigger value="all-members">All Members</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="players" className="space-y-4">
-              <PlayersTabContent 
-                team={team} 
-                handleAddPlayer={handleAddPlayer} 
-                handleRemovePlayer={handleRemovePlayer} 
-              />
-            </TabsContent>
-            
-            <TabsContent value="coaches" className="space-y-4">
-              <CoachesTabContent 
-                team={team} 
-                onCoachAdded={handleTeamUpdate} 
-              />
-            </TabsContent>
-            
-            <TabsContent value="stats" className="space-y-4">
-              <StatsTabContent team={team} />
-            </TabsContent>
-            
-            <TabsContent value="all-members" className="space-y-4">
-              <TeamMembersTable 
-                team={team}
-                onSendInvitations={handleSendInvitations}
-                onRemoveMember={handleRemoveMember}
-              />
-            </TabsContent>
-          </Tabs>
+          <TeamTabs 
+            team={team}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            handleAddPlayer={handleAddPlayer}
+            handleRemovePlayer={handleRemovePlayer}
+            handleTeamUpdate={handleTeamUpdate}
+            handleSendInvitations={handleSendInvitations}
+            handleRemoveMember={handleRemoveMember}
+          />
         </div>
 
         <AddPlayerDialog
