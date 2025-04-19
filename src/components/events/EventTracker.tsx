@@ -11,6 +11,7 @@ import GoalFlow from './GoalFlow';
 import PenaltyFlow from './PenaltyFlow';
 import FaceoffFlow from './FaceoffFlow';
 import ShotsFlow from './ShotsFlow';
+import HitsFlow from './HitsFlow';
 import { useEventSelection } from '@/hooks/useEventSelection';
 import { EventButtons } from './tracker/EventButtons';
 
@@ -109,6 +110,14 @@ export default function EventTracker() {
             )}
             {flowState === 'shot-flow' && (
               <ShotsFlow
+                game={game}
+                period={currentPeriod}
+                onComplete={handleFlowComplete}
+                onCancel={handleFlowCancel}
+              />
+            )}
+            {flowState === 'hits-flow' && (
+              <HitsFlow
                 game={game}
                 period={currentPeriod}
                 onComplete={handleFlowComplete}

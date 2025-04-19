@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { User, Game } from '@/types';
 import { toast } from 'sonner';
+import { refreshPlayerStats } from '@/services/stats/playerStatsService';
 
 interface HitEventData {
   gameId: string;
@@ -37,6 +38,15 @@ export const recordHitEvent = async (data: HitEventData) => {
       });
 
     if (statError) throw statError;
+
+    // Automatically refresh player stats to update aggregates
+    try {
+      await refreshPlayerStats(data.playerId);
+      console.log("Player stats refreshed after recording hit");
+    } catch (refreshError) {
+      console.error("Error refreshing player stats:", refreshError);
+      // Don't throw here to avoid affecting the main flow
+    }
 
     return eventData;
   } catch (error) {
