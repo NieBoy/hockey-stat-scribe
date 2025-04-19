@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
 
@@ -42,6 +41,7 @@ const updateOrInsertStat = async (
 };
 
 export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
+  console.log("refreshPlayerStats called for player:", playerId);
   try {
     const { data: playerData } = await supabase
       .from('team_members')
@@ -50,6 +50,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       .single();
       
     const playerName = playerData?.name || 'Unknown Player';
+    console.log("Found player:", playerName);
     
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
@@ -60,6 +61,8 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       console.error("Error fetching game stats:", gameStatsError);
       throw gameStatsError;
     }
+    
+    console.log("Raw game stats for player:", gameStats);
     
     if (!gameStats || gameStats.length === 0) {
       console.log("No game stats found for player:", playerId);
@@ -79,22 +82,25 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       statsSummary.set(statType, currentStat);
     });
     
+    console.log("Stats summary:", Object.fromEntries(statsSummary));
+    
     // Convert to PlayerStat array and update database
     const playerStats: PlayerStat[] = [];
     
     for (const [statType, data] of statsSummary.entries()) {
       const stat = {
         playerId,
-        statType: statType as StatType, // Cast the string to StatType
+        statType: statType as StatType,
         value: data.value,
         gamesPlayed: data.games.size,
         playerName
       };
       
       await updateOrInsertStat(playerId, stat);
-      playerStats.push(stat as PlayerStat); // Cast to PlayerStat
+      playerStats.push(stat as PlayerStat);
     }
     
+    console.log("Final processed stats:", playerStats);
     return playerStats;
   } catch (error) {
     console.error("Error refreshing player stats:", error);
