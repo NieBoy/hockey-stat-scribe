@@ -410,12 +410,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_game_event: {
+        Args: {
+          p_game_id: string
+          p_event_type: string
+          p_period: number
+          p_team_type: string
+        }
+        Returns: Json
+      }
       create_player_user: {
         Args: { player_name: string; player_email?: string }
         Returns: string
       }
       create_user_bypass_rls: {
         Args: { user_id: string; user_name: string; user_email: string }
+        Returns: Json
+      }
+      delete_game_event: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      get_game_events: {
+        Args: { p_game_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          event_type: string
+          game_id: string
+          id: string
+          period: number
+          team_type: string
+          time_in_period: unknown | null
+          timestamp: string
+        }[]
+      }
+      record_game_stat: {
+        Args: {
+          p_game_id: string
+          p_player_id: string
+          p_stat_type: string
+          p_period: number
+          p_value: number
+          p_details?: string
+        }
         Returns: Json
       }
     }

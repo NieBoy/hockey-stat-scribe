@@ -38,17 +38,17 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     }
     
     // Record goal stat if scorer provided
-    if (data.scorerId && data.teamType === 'home') {
+    if (data.scorerId) {
       await insertStatSafely(data.gameId, data.scorerId, 'goals', data.period, 1);
     }
     
     // Record primary assist if provided
-    if (data.primaryAssistId && data.teamType === 'home') {
+    if (data.primaryAssistId) {
       await insertStatSafely(data.gameId, data.primaryAssistId, 'assists', data.period, 1, 'primary');
     }
     
     // Record secondary assist if provided
-    if (data.secondaryAssistId && data.teamType === 'home') {
+    if (data.secondaryAssistId) {
       await insertStatSafely(data.gameId, data.secondaryAssistId, 'assists', data.period, 1, 'secondary');
     }
     
@@ -80,15 +80,13 @@ const insertStatSafely = async (
 ) => {
   try {
     const { error } = await supabase
-      .from('game_stats')
-      .insert({
-        game_id: gameId,
-        player_id: playerId,
-        stat_type: statType,
-        period: period,
-        value: value,
-        details: details,
-        timestamp: new Date().toISOString()
+      .rpc('record_game_stat', {
+        p_game_id: gameId,
+        p_player_id: playerId,
+        p_stat_type: statType,
+        p_period: period,
+        p_value: value,
+        p_details: details
       });
     
     if (error) console.error(`Error recording ${statType} stat:`, error);
