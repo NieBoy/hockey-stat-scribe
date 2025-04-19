@@ -4,18 +4,14 @@ import { GameStat, StatType } from '@/types';
 
 export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) => {
   const { data, error } = await supabase
-    .from('game_stats')
-    .insert({
-      game_id: stat.gameId,
-      player_id: stat.playerId,
-      stat_type: stat.statType,
-      period: stat.period,
-      value: stat.value,
-      details: stat.details || '',
-      timestamp: new Date().toISOString()
-    })
-    .select()
-    .single();
+    .rpc('record_game_stat', {
+      p_game_id: stat.gameId,
+      p_player_id: stat.playerId,
+      p_stat_type: stat.statType,
+      p_period: stat.period,
+      p_value: stat.value,
+      p_details: stat.details || ''
+    });
 
   if (error) throw error;
   return data;
@@ -72,24 +68,25 @@ export const recordPlusMinusStats = async (
   console.log(`Recording ${isPlus ? '+' : '-'} for ${playerIds.length} players:`, playerIds);
   
   try {
-    // Create batch of records to insert
-    const statsRecords = playerIds.map(playerId => ({
-      game_id: gameId,
-      player_id: playerId,
-      stat_type: 'plusMinus' as StatType,
-      period: period,
-      value: isPlus ? 1 : -1,
-      details: isPlus ? 'plus' : 'minus',
-      timestamp: new Date().toISOString()
-    }));
+    // Use batch processing with the RPC function
+    const batchPromises = playerIds.map(playerId => 
+      supabase.rpc('record_game_stat', {
+        p_game_id: gameId,
+        p_player_id: playerId,
+        p_stat_type: 'plusMinus',
+        p_period: period,
+        p_value: isPlus ? 1 : -1,
+        p_details: isPlus ? 'plus' : 'minus'
+      })
+    );
     
-    // Insert all stats in one batch
-    const { error } = await supabase
-      .from('game_stats')
-      .insert(statsRecords);
-      
-    if (error) {
-      console.error("Error batch recording plus/minus stats:", error);
+    // Execute all stat recordings in parallel
+    const results = await Promise.allSettled(batchPromises);
+    
+    // Check for errors
+    const errors = results.filter(r => r.status === 'rejected');
+    if (errors.length > 0) {
+      console.error(`${errors.length} errors occurred while recording plus/minus stats:`, errors);
     }
   } catch (error) {
     console.error("Error in recordPlusMinusStats:", error);

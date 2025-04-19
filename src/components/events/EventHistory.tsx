@@ -33,11 +33,9 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     console.log('Fetching events for game ID:', gameId);
     
     try {
+      // Use RPC function instead of direct table access to bypass RLS
       const { data, error } = await supabase
-        .from('game_events')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('timestamp', { ascending: false });
+        .rpc('get_game_events', { p_game_id: gameId });
 
       if (error) {
         console.error('Error fetching events:', error);
@@ -66,10 +64,9 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
 
   const deleteEvent = async (eventId: string) => {
     try {
+      // Use RPC function to delete event and bypass RLS
       const { error } = await supabase
-        .from('game_events')
-        .delete()
-        .eq('id', eventId);
+        .rpc('delete_game_event', { p_event_id: eventId });
 
       if (error) {
         toast({

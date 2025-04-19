@@ -72,16 +72,10 @@ export function PlayersOnIceStep({
         multiSelect={true}
         maxSelections={6}
         forceRefresh={forceRefreshKey > 0}
+        allowComplete={true}
+        onComplete={handleComplete}
+        completeText="Confirm Players"
       />
-      
-      <div className="mt-4 flex justify-end">
-        <Button 
-          onClick={handleComplete}
-          disabled={selectedPlayers.length === 0}
-        >
-          Confirm Players
-        </Button>
-      </div>
     </div>
   );
 }

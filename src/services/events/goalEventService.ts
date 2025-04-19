@@ -22,26 +22,20 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     if (!data.gameId || !data.period || !data.teamType) {
       throw new Error("Missing required goal event data");
     }
-    
-    // Create the game event using a simpler approach
+
+    // Instead of direct insert, we'll call the database function to bypass RLS
     const { data: eventData, error: eventError } = await supabase
-      .from('game_events')
-      .insert({
-        game_id: data.gameId,
-        event_type: 'goal',
-        period: data.period,
-        team_type: data.teamType,
-        timestamp: new Date().toISOString()
-      })
-      .select()
-      .single();
+      .rpc('create_game_event', {
+        p_game_id: data.gameId,
+        p_event_type: 'goal',
+        p_period: data.period,
+        p_team_type: data.teamType
+      });
       
     if (eventError) {
-      console.error("Error recording game event:", eventError);
+      console.error("Error calling create_game_event function:", eventError);
       throw new Error(`Failed to record goal event: ${eventError.message}`);
     }
-    
-    const eventId = eventData?.id;
     
     // Record goal stat if scorer provided
     if (data.scorerId && data.teamType === 'home') {
@@ -60,7 +54,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     
     // Record plus/minus for players on ice
     if (data.playersOnIce.length > 0) {
-      await recordPlusMinusForPlayers(
+      await recordPlusMinusStats(
         data.gameId,
         data.playersOnIce,
         data.period,
@@ -68,7 +62,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       );
     }
 
-    return { success: true, eventId };
+    return { success: true, eventId: eventData?.id };
   } catch (error) {
     console.error("Error recording goal event:", error);
     throw error;
@@ -100,40 +94,5 @@ const insertStatSafely = async (
     if (error) console.error(`Error recording ${statType} stat:`, error);
   } catch (err) {
     console.error(`Failed to record ${statType} stat:`, err);
-  }
-};
-
-// Improved function to record plus/minus for players
-const recordPlusMinusForPlayers = async (
-  gameId: string,
-  playerIds: string[],
-  period: number,
-  isPlus: boolean
-) => {
-  if (playerIds.length === 0) return;
-  
-  console.log(`Recording ${isPlus ? '+' : '-'} for ${playerIds.length} players`);
-  
-  // Use a batch insert approach for better performance
-  const statRecords = playerIds.map(playerId => ({
-    game_id: gameId,
-    player_id: playerId,
-    stat_type: 'plusMinus',
-    period: period,
-    value: isPlus ? 1 : -1,
-    details: isPlus ? 'plus' : 'minus',
-    timestamp: new Date().toISOString()
-  }));
-  
-  try {
-    const { error } = await supabase
-      .from('game_stats')
-      .insert(statRecords);
-      
-    if (error) {
-      console.error("Error batch recording plus/minus stats:", error);
-    }
-  } catch (err) {
-    console.error("Failed to record plus/minus stats:", err);
   }
 };
