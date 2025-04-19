@@ -1,34 +1,89 @@
 
-import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, TrendingUp } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
+import { Card } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { getPlayerStats } from "@/services/stats";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ColumnDef } from "@tanstack/react-table";
-import { mockPlayerStats, mockUsers } from "@/lib/mock-data";
+import { PlayerStat } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { getPlayerStatsWithRefresh } from "@/services/stats/playerStatsService";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+
+// Helper function to make stat types more readable
+const formatStatType = (statType: string): string => {
+  switch(statType) {
+    case 'goals': return 'Goals';
+    case 'assists': return 'Assists';
+    case 'faceoffs': return 'Faceoffs';
+    case 'hits': return 'Hits';
+    case 'penalties': return 'Penalties';
+    case 'saves': return 'Saves';
+    case 'plusMinus': return 'Plus/Minus';
+    default: return statType;
+  }
+};
+
+// Helper to get stat color based on the statType
+const getStatTypeColor = (statType: string): string => {
+  switch(statType) {
+    case 'goals': return 'bg-red-100 text-red-800';
+    case 'assists': return 'bg-blue-100 text-blue-800';
+    case 'faceoffs': return 'bg-amber-100 text-amber-800';
+    case 'hits': return 'bg-purple-100 text-purple-800';
+    case 'penalties': return 'bg-orange-100 text-orange-800';
+    case 'saves': return 'bg-green-100 text-green-800';
+    case 'plusMinus': return 'bg-sky-100 text-sky-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
 
 export default function Stats() {
-  const [statTab, setStatTab] = useState("players");
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const { data: stats, isLoading, error, refetch } = useQuery({
+    queryKey: ['playerStats'],
+    queryFn: getPlayerStats,
+  });
+  
+  const handleRefreshAllStats = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+      toast({
+        title: "Stats Refreshed",
+        description: "All player statistics have been recalculated."
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh statistics.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
-  // Define columns for player stats table
-  const playerStatsColumns: ColumnDef<any>[] = [
+  const columns: ColumnDef<PlayerStat>[] = [
     {
       accessorKey: "playerId",
       header: "Player",
-      cell: ({ row }) => {
-        const playerId = row.getValue("playerId") as string;
-        const player = mockUsers.find(u => u.id === playerId);
-        return player?.name || "Unknown Player";
-      }
+      cell: ({ row }) => row.original.playerId,
     },
     {
       accessorKey: "statType",
       header: "Stat Type",
-      cell: ({ row }) => {
-        const statType = row.getValue("statType") as string;
-        return statType.charAt(0).toUpperCase() + statType.slice(1);
-      }
+      cell: ({ row }) => (
+        <Badge className={getStatTypeColor(row.original.statType)}>
+          {formatStatType(row.original.statType)}
+        </Badge>
+      ),
     },
     {
       accessorKey: "value",
@@ -36,149 +91,64 @@ export default function Stats() {
     },
     {
       accessorKey: "gamesPlayed",
-      header: "Games Played",
+      header: "Games",
     },
     {
-      id: "average",
+      accessorKey: "average",
       header: "Average",
       cell: ({ row }) => {
-        const value = row.getValue("value") as number;
-        const games = row.getValue("gamesPlayed") as number;
-        return (value / games).toFixed(2);
-      }
-    }
+        const average = row.original.gamesPlayed > 0 
+          ? (row.original.value / row.original.gamesPlayed).toFixed(2) 
+          : "0.00";
+        return average;
+      },
+    },
   ];
 
-  // Group stats by player for players tab
-  const playerStats = mockPlayerStats;
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <LoadingSpinner />
+      </MainLayout>
+    );
+  }
 
-  // Group stats by team for teams tab (not implemented in mock data yet)
-  const teamStats = [];
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="text-center text-red-500">
+          Error loading stats: {(error as Error).message}
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Stats</h1>
-          <p className="text-muted-foreground">
-            View and analyze hockey performance statistics.
-          </p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="players" value={statTab} onValueChange={setStatTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="players">Players</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="players" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" /> Player Statistics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {playerStats.length > 0 ? (
-                <DataTable 
-                  columns={playerStatsColumns} 
-                  data={playerStats}
-                  searchKey="playerId"
-                />
-              ) : (
-                <div className="text-center py-10">
-                  <BarChart3 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
-                  <h3 className="mt-2 font-medium">No stats available</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Stats will appear here once games are played
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" /> Top Scorers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {playerStats.filter(s => s.statType === 'goals').length > 0 ? (
-                  <div className="space-y-4">
-                    {playerStats
-                      .filter(s => s.statType === 'goals')
-                      .sort((a, b) => b.value - a.value)
-                      .slice(0, 5)
-                      .map((stat, idx) => {
-                        const player = mockUsers.find(u => u.id === stat.playerId);
-                        return (
-                          <div key={idx} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-muted-foreground">#{idx + 1}</span>
-                              <span>{player?.name || 'Unknown Player'}</span>
-                            </div>
-                            <div className="font-semibold">{stat.value}</div>
-                          </div>
-                        );
-                      })
-                    }
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No goal data available</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" /> Top Assists
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {playerStats.filter(s => s.statType === 'assists').length > 0 ? (
-                  <div className="space-y-4">
-                    {playerStats
-                      .filter(s => s.statType === 'assists')
-                      .sort((a, b) => b.value - a.value)
-                      .slice(0, 5)
-                      .map((stat, idx) => {
-                        const player = mockUsers.find(u => u.id === stat.playerId);
-                        return (
-                          <div key={idx} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-muted-foreground">#{idx + 1}</span>
-                              <span>{player?.name || 'Unknown Player'}</span>
-                            </div>
-                            <div className="font-semibold">{stat.value}</div>
-                          </div>
-                        );
-                      })
-                    }
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No assist data available</p>
-                )}
-              </CardContent>
-            </Card>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Player Statistics</h1>
+            <p className="text-muted-foreground">View and analyze player performance</p>
           </div>
-        </TabsContent>
+          <Button 
+            onClick={handleRefreshAllStats} 
+            disabled={isRefreshing}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh All Stats
+          </Button>
+        </div>
 
-        <TabsContent value="teams" className="space-y-4">
-          <Card className="py-10 text-center">
-            <CardContent>
-              <BarChart3 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
-              <h3 className="mt-2 font-medium">Team Stats Coming Soon</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Team statistics will be available in a future update
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <Card>
+          <DataTable
+            columns={columns}
+            data={stats || []}
+            searchKey="playerId"
+          />
+        </Card>
+      </div>
     </MainLayout>
   );
 }
