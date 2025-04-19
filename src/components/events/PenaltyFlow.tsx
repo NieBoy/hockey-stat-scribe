@@ -57,7 +57,7 @@ export default function PenaltyFlow({ game, period, onComplete, onCancel }: Pena
           <PlayerSelect
             team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
             onPlayerSelect={handlePlayerSelect}
-            selectedPlayer={selectedPlayer}
+            selectedPlayers={selectedPlayer ? [selectedPlayer] : []}
             title="Select Penalized Player"
           />
         );
