@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { RefreshCw } from "lucide-react";
 import { Database } from '@/types/supabase';
 
@@ -33,7 +33,6 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     console.log('Fetching events for game ID:', gameId);
     
     try {
-      // Use direct query instead of RPC
       const { data, error } = await supabase
         .from('game_events')
         .select('*')
@@ -52,7 +51,7 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
       }
 
       console.log('Events fetched:', data);
-      setEvents(data as GameEvent[]);
+      setEvents(data || []);
     } catch (err) {
       console.error('Error in fetchEvents:', err);
       toast({
@@ -86,6 +85,7 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
         description: "The event has been successfully removed."
       });
 
+      // Refresh the events list
       fetchEvents();
       if (onEventDeleted) onEventDeleted();
     } catch (err) {
@@ -98,10 +98,31 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     }
   };
 
+  // Set up a real-time subscription to events
   useEffect(() => {
-    if (gameId) {
-      fetchEvents();
-    }
+    fetchEvents();
+    
+    // Subscribe to real-time updates for this game's events
+    const channel = supabase
+      .channel('game-events-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_events',
+          filter: `game_id=eq.${gameId}`
+        },
+        () => {
+          console.log('Game event changed, refreshing...');
+          fetchEvents();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [gameId]);
 
   return (

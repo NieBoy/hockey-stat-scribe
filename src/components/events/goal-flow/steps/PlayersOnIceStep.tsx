@@ -17,14 +17,14 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
-  // Initialize with preSelectedPlayers but create a new array to avoid reference issues
-  const [selectedPlayers, setSelectedPlayers] = useState<User[]>([...preSelectedPlayers]);
+  const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
   const [forceRefreshKey, setForceRefreshKey] = useState<number>(0);
   
-  // Update local state when preSelectedPlayers changes
+  // Initialize with preSelectedPlayers when the component mounts or when they change
   useEffect(() => {
     if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      setSelectedPlayers([...preSelectedPlayers]);
+      const uniquePlayers = [...new Map(preSelectedPlayers.map(p => [p.id, p])).values()];
+      setSelectedPlayers(uniquePlayers);
       // Force a refresh to ensure PlayerLines re-renders with correct selection
       setForceRefreshKey(prev => prev + 1);
     }
@@ -32,10 +32,18 @@ export function PlayersOnIceStep({
   
   const handlePlayersSelect = (players: User[]) => {
     console.log("PlayersOnIceStep - Selected players:", players);
-    // Create a new array to ensure reference changes
-    const updatedPlayers = [...players];
-    setSelectedPlayers(updatedPlayers);
-    onPlayersSelect(updatedPlayers);
+    
+    // Make sure we have a clean array with no duplicates
+    const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
+    setSelectedPlayers(uniquePlayers);
+    onPlayersSelect(uniquePlayers);
+  };
+
+  const handleComplete = () => {
+    // Make final check that we don't exceed the limit
+    const finalPlayers = selectedPlayers.slice(0, 6);
+    onPlayersSelect(finalPlayers);
+    onComplete();
   };
   
   return (
@@ -47,7 +55,12 @@ export function PlayersOnIceStep({
         </p>
         
         <div className="mt-3 mb-4">
-          <p className="text-sm font-medium">Selected: {selectedPlayers.length}/6 players</p>
+          <p className="text-sm font-medium">
+            Selected: {selectedPlayers.length}/6 players
+            {selectedPlayers.length > 6 && (
+              <span className="text-red-500 ml-2">(Only first 6 will be used)</span>
+            )}
+          </p>
         </div>
       </div>
       
@@ -57,12 +70,18 @@ export function PlayersOnIceStep({
         onMultiPlayerSelect={handlePlayersSelect}
         selectedPlayers={selectedPlayers}
         multiSelect={true}
-        allowComplete={true}
-        onComplete={onComplete}
-        completeText="Confirm Players"
         maxSelections={6}
         forceRefresh={forceRefreshKey > 0}
       />
+      
+      <div className="mt-4 flex justify-end">
+        <Button 
+          onClick={handleComplete}
+          disabled={selectedPlayers.length === 0}
+        >
+          Confirm Players
+        </Button>
+      </div>
     </div>
   );
 }

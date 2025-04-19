@@ -4,6 +4,7 @@ import { Team, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SimplePlayerList from '../teams/SimplePlayerList';
+import { toast } from 'sonner';
 
 interface PlayerLinesProps {
   team: Team;
@@ -37,18 +38,21 @@ export default function PlayerLines({
   forceRefresh = false
 }: PlayerLinesProps) {
   // Using player IDs for selection management
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(selectedPlayers.map(p => p.id))
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Reset selectedIds when selectedPlayers prop changes
   useEffect(() => {
+    const ids = new Set(selectedPlayers.map(p => p.id));
     console.log("PlayerLines - selectedPlayers changed:", selectedPlayers);
-    setSelectedIds(new Set(selectedPlayers.map(p => p.id)));
+    setSelectedIds(ids);
   }, [selectedPlayers, forceRefresh]);
+  
+  // Log current selection count on every render (for debugging)
+  console.log("PlayerLines - Current selected players count:", selectedIds.size);
 
   const handlePlayerClick = (player: User) => {
     if (multiSelect) {
+      // Create a new Set to avoid directly modifying state
       const newSelectedIds = new Set(selectedIds);
       
       if (selectedIds.has(player.id)) {
@@ -58,7 +62,11 @@ export default function PlayerLines({
       } else {
         // Check if we've hit the max selections limit
         if (maxSelections && newSelectedIds.size >= maxSelections) {
-          console.log(`PlayerLines - Max selections (${maxSelections}) reached`);
+          toast({
+            title: "Maximum players selected",
+            description: `You can select up to ${maxSelections} players`,
+            variant: "destructive"
+          });
           return;
         }
         // Select if not already selected
@@ -66,13 +74,14 @@ export default function PlayerLines({
         console.log(`PlayerLines - Selected player: ${player.name}`);
       }
       
+      // Update state with the new Set
       setSelectedIds(newSelectedIds);
       
       // Convert Set of IDs back to array of player objects
       if (onMultiPlayerSelect) {
         const selectedPlayersList = team.players.filter(p => newSelectedIds.has(p.id));
         console.log("PlayerLines - Updated selected players:", selectedPlayersList);
-        onMultiPlayerSelect([...selectedPlayersList]); // Create a new array to ensure reference changes
+        onMultiPlayerSelect(selectedPlayersList); 
       }
     } else if (onPlayerSelect) {
       console.log(`PlayerLines - Selected single player: ${player.name}`);
@@ -88,7 +97,6 @@ export default function PlayerLines({
   });
 
   const selectedPlayersList = sortedPlayers.filter(p => selectedIds.has(p.id));
-  console.log("PlayerLines - Current selected players count:", selectedPlayersList.length);
 
   return (
     <Card>
@@ -108,6 +116,7 @@ export default function PlayerLines({
               {skipText || "Skip"}
             </Button>
           )}
+          
           {allowComplete && onComplete && (
             <Button 
               type="button" 

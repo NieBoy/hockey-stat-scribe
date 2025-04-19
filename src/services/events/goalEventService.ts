@@ -14,8 +14,6 @@ export interface GoalEventData {
   playersOnIce: string[];
 }
 
-type GameEventResponse = Database['public']['Functions']['create_game_event']['Returns'];
-
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
     console.log("Recording goal event with data:", data);
@@ -25,7 +23,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
     
-    // Instead of using RPC, create the event directly using insert
+    // Create the game event using a simpler approach
     const { data: eventData, error: eventError } = await supabase
       .from('game_events')
       .insert({
@@ -43,95 +41,99 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error(`Failed to record goal event: ${eventError.message}`);
     }
     
-    // If we don't have an event ID back, we can't continue
-    if (!eventData) {
-      throw new Error("Failed to get event data after creation");
-    }
-    
-    const eventId = eventData.id;
-    console.log("Created game event with ID:", eventId);
+    const eventId = eventData?.id;
     
     // Record goal stat if scorer provided
     if (data.scorerId && data.teamType === 'home') {
-      try {
-        const { error: goalError } = await supabase
-          .from('game_stats')
-          .insert({
-            game_id: data.gameId,
-            player_id: data.scorerId,
-            stat_type: 'goals',
-            period: data.period,
-            value: 1,
-            timestamp: new Date().toISOString()
-          });
-        
-        if (goalError) console.error("Error recording goal stat:", goalError);
-      } catch (err) {
-        console.error("Failed to record goal stat:", err);
-      }
+      await insertStatSafely(data.gameId, data.scorerId, 'goals', data.period, 1);
     }
     
     // Record primary assist if provided
     if (data.primaryAssistId && data.teamType === 'home') {
-      try {
-        const { error: assistError } = await supabase
-          .from('game_stats')
-          .insert({
-            game_id: data.gameId,
-            player_id: data.primaryAssistId,
-            stat_type: 'assists',
-            period: data.period,
-            value: 1,
-            details: 'primary',
-            timestamp: new Date().toISOString()
-          });
-          
-        if (assistError) console.error("Error recording primary assist:", assistError);
-      } catch (err) {
-        console.error("Failed to record primary assist stat:", err);
-      }
+      await insertStatSafely(data.gameId, data.primaryAssistId, 'assists', data.period, 1, 'primary');
     }
     
     // Record secondary assist if provided
     if (data.secondaryAssistId && data.teamType === 'home') {
-      try {
-        const { error: assistError } = await supabase
-          .from('game_stats')
-          .insert({
-            game_id: data.gameId,
-            player_id: data.secondaryAssistId,
-            stat_type: 'assists',
-            period: data.period,
-            value: 1,
-            details: 'secondary',
-            timestamp: new Date().toISOString()
-          });
-          
-        if (assistError) console.error("Error recording secondary assist:", assistError);
-      } catch (err) {
-        console.error("Failed to record secondary assist stat:", err);
-      }
+      await insertStatSafely(data.gameId, data.secondaryAssistId, 'assists', data.period, 1, 'secondary');
     }
     
     // Record plus/minus for players on ice
-    if (data.playersOnIce.length > 0 && data.teamType) {
-      try {
-        console.log(`Recording ${data.teamType === 'home' ? 'plus' : 'minus'} for players:`, data.playersOnIce);
-        await recordPlusMinusStats(
-          data.gameId,
-          data.playersOnIce,
-          data.period,
-          data.teamType === 'home' // isPlus = true for home team goal
-        );
-      } catch (err) {
-        console.error("Failed to record plus/minus for players:", err);
-      }
+    if (data.playersOnIce.length > 0) {
+      await recordPlusMinusForPlayers(
+        data.gameId,
+        data.playersOnIce,
+        data.period,
+        data.teamType === 'home'
+      );
     }
 
     return { success: true, eventId };
-
   } catch (error) {
     console.error("Error recording goal event:", error);
     throw error;
+  }
+};
+
+// Helper function to safely insert stats with better error handling
+const insertStatSafely = async (
+  gameId: string,
+  playerId: string,
+  statType: string,
+  period: number,
+  value: number,
+  details: string = ''
+) => {
+  try {
+    const { error } = await supabase
+      .from('game_stats')
+      .insert({
+        game_id: gameId,
+        player_id: playerId,
+        stat_type: statType,
+        period: period,
+        value: value,
+        details: details,
+        timestamp: new Date().toISOString()
+      });
+    
+    if (error) console.error(`Error recording ${statType} stat:`, error);
+  } catch (err) {
+    console.error(`Failed to record ${statType} stat:`, err);
+  }
+};
+
+// Improved function to record plus/minus for players
+const recordPlusMinusForPlayers = async (
+  gameId: string,
+  playerIds: string[],
+  period: number,
+  isPlus: boolean
+) => {
+  if (playerIds.length === 0) return;
+  
+  console.log(`Recording ${isPlus ? '+' : '-'} for ${playerIds.length} players`);
+  
+  // Use a batch insert approach for better performance
+  const statRecords = playerIds.map(playerId => ({
+    game_id: gameId,
+    player_id: playerId,
+    stat_type: 'plusMinus',
+    period: period,
+    value: isPlus ? 1 : -1,
+    details: isPlus ? 'plus' : 'minus',
+    timestamp: new Date().toISOString()
+  }));
+  
+  try {
+    const { error } = await supabase
+      .from('game_stats')
+      .insert(statRecords);
+      
+    if (error) {
+      console.error("Error batch recording plus/minus stats:", error);
+    }
+  } catch (err) {
+    console.error("Failed to record plus/minus stats:", err);
   }
 };

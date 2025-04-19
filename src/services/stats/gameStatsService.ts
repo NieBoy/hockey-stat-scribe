@@ -12,7 +12,7 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
       period: stat.period,
       value: stat.value,
       details: stat.details || '',
-      timestamp: new Date().toISOString()  // Add the current timestamp
+      timestamp: new Date().toISOString()
     })
     .select()
     .single();
@@ -35,8 +35,6 @@ export const fetchGameStats = async (gameId: string): Promise<GameStat[]> => {
     throw error;
   }
 
-  console.log("Raw game stats data:", data);
-
   return (data || []).map(stat => ({
     id: stat.id,
     gameId: stat.game_id,
@@ -58,7 +56,7 @@ export const deleteGameStat = async (statId: string) => {
   if (error) throw error;
 };
 
-// Add a helper function to record plus/minus for multiple players
+// Add a helper function to record plus/minus for multiple players at once
 export const recordPlusMinusStats = async (
   gameId: string, 
   playerIds: string[], 
@@ -71,35 +69,29 @@ export const recordPlusMinusStats = async (
     return;
   }
 
+  console.log(`Recording ${isPlus ? '+' : '-'} for ${playerIds.length} players:`, playerIds);
+  
   try {
-    // We need to handle each player individually to prevent failures
-    const statsPromises = playerIds.map(async (playerId) => {
-      try {
-        const { error } = await supabase
-          .from('game_stats')
-          .insert({
-            game_id: gameId,
-            player_id: playerId,
-            stat_type: 'plusMinus' as StatType,
-            period: period,
-            value: isPlus ? 1 : -1,
-            details: isPlus ? 'plus' : 'minus',
-            timestamp: new Date().toISOString()
-          });
-          
-        if (error) {
-          console.error(`Error recording ${isPlus ? 'plus' : 'minus'} for player ${playerId}:`, error);
-        }
-      } catch (playerError) {
-        console.error(`Failed to process player ${playerId}:`, playerError);
-      }
-    });
+    // Create batch of records to insert
+    const statsRecords = playerIds.map(playerId => ({
+      game_id: gameId,
+      player_id: playerId,
+      stat_type: 'plusMinus' as StatType,
+      period: period,
+      value: isPlus ? 1 : -1,
+      details: isPlus ? 'plus' : 'minus',
+      timestamp: new Date().toISOString()
+    }));
     
-    // Wait for all promises to settle, but don't fail if some fail
-    await Promise.allSettled(statsPromises);
-    
+    // Insert all stats in one batch
+    const { error } = await supabase
+      .from('game_stats')
+      .insert(statsRecords);
+      
+    if (error) {
+      console.error("Error batch recording plus/minus stats:", error);
+    }
   } catch (error) {
     console.error("Error in recordPlusMinusStats:", error);
-    // Don't throw, let other operations continue
   }
 };
