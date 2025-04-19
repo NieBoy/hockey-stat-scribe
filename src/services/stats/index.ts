@@ -1,2 +1,3 @@
 
-export { getAllPlayerStats as getPlayerStats } from "./playerStatsService";
+export { getAllPlayerStats } from "./core/statsQueries";
+
