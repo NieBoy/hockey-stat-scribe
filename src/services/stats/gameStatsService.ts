@@ -45,6 +45,17 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
   try {
     console.log("Inserting game stat:", stat);
     
+    // First verify that the player exists
+    const { count } = await supabase
+      .from('team_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('id', stat.playerId);
+      
+    if (!count) {
+      console.error(`Player ID ${stat.playerId} does not exist in team_members table`);
+      throw new Error(`Player ID ${stat.playerId} does not exist`);
+    }
+    
     // Use RPC instead of direct insert to ensure timestamp is properly set
     const { data, error } = await supabase.rpc('record_game_stat', {
       p_game_id: stat.gameId,
@@ -91,6 +102,32 @@ export const recordPlusMinusStats = async (
 ) => {
   try {
     console.log(`Recording ${isPositive ? 'plus' : 'minus'} for players:`, playerIds);
+    
+    // First verify that all players exist
+    const { data: validPlayers, error: validationError } = await supabase
+      .from('team_members')
+      .select('id')
+      .in('id', playerIds);
+      
+    if (validationError) {
+      console.error("Error validating players:", validationError);
+      throw new Error("Failed to validate players");
+    }
+    
+    const validPlayerIds = validPlayers.map(p => p.id);
+    const invalidPlayers = playerIds.filter(id => !validPlayerIds.includes(id));
+    
+    if (invalidPlayers.length > 0) {
+      console.error("Invalid player IDs for plus/minus:", invalidPlayers);
+      console.log("Will only record stats for valid players:", validPlayerIds);
+      // Continue with only valid players
+      playerIds = validPlayerIds;
+    }
+    
+    if (playerIds.length === 0) {
+      console.warn("No valid players to record plus/minus stats for");
+      return false;
+    }
     
     const statPromises = playerIds.map(playerId => 
       insertGameStat({

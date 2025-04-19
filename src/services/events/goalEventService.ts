@@ -24,6 +24,64 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
 
+    // Validate player IDs before proceeding
+    if (data.scorerId) {
+      const { count: scorerExists } = await supabase
+        .from('team_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', data.scorerId);
+        
+      if (!scorerExists) {
+        console.error(`Invalid scorer ID: ${data.scorerId}`);
+        throw new Error(`Player with ID ${data.scorerId} does not exist`);
+      }
+    }
+    
+    if (data.primaryAssistId) {
+      const { count: primaryAssistExists } = await supabase
+        .from('team_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', data.primaryAssistId);
+        
+      if (!primaryAssistExists) {
+        console.error(`Invalid primary assist ID: ${data.primaryAssistId}`);
+        throw new Error(`Player with ID ${data.primaryAssistId} does not exist`);
+      }
+    }
+    
+    if (data.secondaryAssistId) {
+      const { count: secondaryAssistExists } = await supabase
+        .from('team_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', data.secondaryAssistId);
+        
+      if (!secondaryAssistExists) {
+        console.error(`Invalid secondary assist ID: ${data.secondaryAssistId}`);
+        throw new Error(`Player with ID ${data.secondaryAssistId} does not exist`);
+      }
+    }
+
+    // Validate players on ice
+    if (data.playersOnIce.length > 0) {
+      const { data: validPlayers, error: validationError } = await supabase
+        .from('team_members')
+        .select('id')
+        .in('id', data.playersOnIce);
+        
+      if (validationError) {
+        console.error("Error validating players on ice:", validationError);
+        throw new Error("Failed to validate players on ice");
+      }
+      
+      const validPlayerIds = validPlayers.map(p => p.id);
+      const invalidPlayers = data.playersOnIce.filter(id => !validPlayerIds.includes(id));
+      
+      if (invalidPlayers.length > 0) {
+        console.error("Invalid player IDs:", invalidPlayers);
+        throw new Error(`Some players on ice do not exist: ${invalidPlayers.join(', ')}`);
+      }
+    }
+
     // Create the details object with player information
     const details = {
       playerId: data.scorerId,
@@ -98,15 +156,20 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       }
     }
     
-    // Record plus/minus for players on ice
+    // Ensure the players on ice exist before recording plus/minus
     if (data.playersOnIce.length > 0) {
       console.log("Recording plus/minus for players:", data.playersOnIce);
-      await recordPlusMinusStats(
-        data.gameId,
-        data.playersOnIce,
-        data.period,
-        data.teamType === 'home'
-      );
+      try {
+        await recordPlusMinusStats(
+          data.gameId,
+          data.playersOnIce,
+          data.period,
+          data.teamType === 'home'
+        );
+      } catch (plusMinusError) {
+        console.error("Error recording plus/minus stats:", plusMinusError);
+        // Continue execution even if plus/minus stats fail
+      }
       
       // Refresh stats for all players on ice
       for (const playerId of data.playersOnIce) {
@@ -135,6 +198,17 @@ const insertStatSafely = async (
   details: string = ''
 ) => {
   try {
+    // First verify that the player exists
+    const { count } = await supabase
+      .from('team_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('id', playerId);
+      
+    if (!count) {
+      console.error(`Player ID ${playerId} does not exist`);
+      return null;
+    }
+    
     const { data, error } = await supabase
       .rpc('record_game_stat', {
         p_game_id: gameId,
