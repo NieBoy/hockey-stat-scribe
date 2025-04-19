@@ -71,49 +71,35 @@ export const recordPlusMinusStats = async (
     return;
   }
 
-  // Verify each player ID exists before trying to insert stats
   try {
-    const { data: existingPlayers, error: playerCheckError } = await supabase
-      .from('users')
-      .select('id')
-      .in('id', playerIds);
-
-    if (playerCheckError) {
-      console.error("Error checking player existence:", playerCheckError);
-      throw new Error(`Failed to verify player IDs: ${playerCheckError.message}`);
-    }
-
-    // Filter out any player IDs that don't exist in the database
-    const validPlayerIds = existingPlayers?.map(p => p.id) || [];
+    // We need to handle each player individually to prevent failures
+    const statsPromises = playerIds.map(async (playerId) => {
+      try {
+        const { error } = await supabase
+          .from('game_stats')
+          .insert({
+            game_id: gameId,
+            player_id: playerId,
+            stat_type: 'plusMinus' as StatType,
+            period: period,
+            value: isPlus ? 1 : -1,
+            details: isPlus ? 'plus' : 'minus',
+            timestamp: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error(`Error recording ${isPlus ? 'plus' : 'minus'} for player ${playerId}:`, error);
+        }
+      } catch (playerError) {
+        console.error(`Failed to process player ${playerId}:`, playerError);
+      }
+    });
     
-    if (validPlayerIds.length === 0) {
-      console.warn("None of the provided player IDs exist in the database");
-      return;
-    }
-
-    // Only insert stats for valid players
-    const statsToInsert = validPlayerIds.map(playerId => ({
-      game_id: gameId,
-      player_id: playerId,
-      stat_type: 'plusMinus' as StatType,
-      period: period,
-      value: isPlus ? 1 : -1,
-      details: isPlus ? 'plus' : 'minus',
-      timestamp: new Date().toISOString()
-    }));
-  
-    if (statsToInsert.length === 0) return;
+    // Wait for all promises to settle, but don't fail if some fail
+    await Promise.allSettled(statsPromises);
     
-    const { error } = await supabase
-      .from('game_stats')
-      .insert(statsToInsert);
-      
-    if (error) {
-      console.error("Error recording plus/minus stats:", error);
-      throw new Error(`Failed to record plus/minus stats: ${error.message}`);
-    }
   } catch (error) {
     console.error("Error in recordPlusMinusStats:", error);
-    throw error;
+    // Don't throw, let other operations continue
   }
 };

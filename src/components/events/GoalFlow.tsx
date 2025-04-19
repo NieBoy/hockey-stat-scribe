@@ -8,7 +8,6 @@ import { RefreshCw } from 'lucide-react';
 import { useGoalFlow } from './goal-flow/useGoalFlow';
 import { GoalHeader } from './goal-flow/GoalHeader';
 import { GoalActions } from './goal-flow/GoalActions';
-import SimplePlayerList from '../teams/SimplePlayerList';
 import PlayerLines from './PlayerLines';
 import { recordGoalEvent } from '@/services/events/goalEventService';
 import { useToast } from '@/hooks/use-toast';
@@ -62,11 +61,15 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
   };
 
   const handlePlayersOnIceSelect = (players: User[]) => {
+    setPlayersOnIce(players);
+  };
+
+  const handlePlayersOnIceComplete = () => {
     // Make sure scorer and assists are included in players on ice
     const essentialPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
     
     // Create a map of player IDs for quick lookup
-    const selectedIds = new Map(players.map(player => [player.id, player]));
+    const selectedIds = new Map(playersOnIce.map(player => [player.id, player]));
     
     // Add essential players if not already selected
     essentialPlayers.forEach(player => {
@@ -238,7 +241,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             selectedPlayers={preSelectedPlayers}
             multiSelect={true}
             allowComplete={true}
-            onComplete={() => handlePlayersOnIceSelect(preSelectedPlayers)}
+            onComplete={handlePlayersOnIceComplete}
             completeText="Confirm Players"
             maxSelections={6}
           />
