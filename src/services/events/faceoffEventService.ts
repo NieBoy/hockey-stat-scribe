@@ -1,6 +1,6 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { refreshPlayerStats } from '@/services/stats/playerStatsService';
 
 interface FaceoffEventData {
   gameId: string;
@@ -49,6 +49,15 @@ export const recordFaceoffEvent = async (data: FaceoffEventData) => {
     if (statError) {
       console.error("Error recording faceoff stat:", statError);
       throw new Error(statError.message);
+    }
+
+    // Automatically refresh player stats to update aggregates
+    try {
+      await refreshPlayerStats(data.playerId);
+      console.log("Player stats refreshed after recording faceoff");
+    } catch (refreshError) {
+      console.error("Error refreshing player stats:", refreshError);
+      // Don't throw here to avoid affecting the main flow
     }
 
     return { success: true, eventId: eventData?.id };

@@ -1,8 +1,8 @@
-
 import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
 import { toast } from 'sonner';
 import { Database } from '@/types/supabase';
+import { refreshPlayerStats } from '@/services/stats/playerStatsService';
 
 export interface GoalEventData {
   gameId: string;
@@ -23,7 +23,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
 
-    // Instead of direct insert, we'll call the database function to bypass RLS
+    // Record the game event
     const { data: eventData, error: eventError } = await supabase
       .rpc('create_game_event', {
         p_game_id: data.gameId,
@@ -44,6 +44,14 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       if (goalResult) {
         console.log("Successfully recorded goal stat:", goalResult);
       }
+      
+      // Refresh scorer's stats
+      try {
+        await refreshPlayerStats(data.scorerId);
+        console.log("Scorer stats refreshed");
+      } catch (refreshError) {
+        console.error("Error refreshing scorer stats:", refreshError);
+      }
     }
     
     // Record primary assist if provided
@@ -53,6 +61,14 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       if (primaryAssistResult) {
         console.log("Successfully recorded primary assist stat:", primaryAssistResult);
       }
+      
+      // Refresh primary assist player's stats
+      try {
+        await refreshPlayerStats(data.primaryAssistId);
+        console.log("Primary assist player stats refreshed");
+      } catch (refreshError) {
+        console.error("Error refreshing primary assist player stats:", refreshError);
+      }
     }
     
     // Record secondary assist if provided
@@ -61,6 +77,14 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       const secondaryAssistResult = await insertStatSafely(data.gameId, data.secondaryAssistId, 'assists', data.period, 1, 'secondary');
       if (secondaryAssistResult) {
         console.log("Successfully recorded secondary assist stat:", secondaryAssistResult);
+      }
+      
+      // Refresh secondary assist player's stats
+      try {
+        await refreshPlayerStats(data.secondaryAssistId);
+        console.log("Secondary assist player stats refreshed");
+      } catch (refreshError) {
+        console.error("Error refreshing secondary assist player stats:", refreshError);
       }
     }
     
@@ -73,6 +97,16 @@ export const recordGoalEvent = async (data: GoalEventData) => {
         data.period,
         data.teamType === 'home'
       );
+      
+      // Refresh stats for all players on ice
+      for (const playerId of data.playersOnIce) {
+        try {
+          await refreshPlayerStats(playerId);
+          console.log(`Stats refreshed for player on ice: ${playerId}`);
+        } catch (refreshError) {
+          console.error(`Error refreshing stats for player ${playerId}:`, refreshError);
+        }
+      }
     }
 
     return { success: true, eventId: eventData?.id };
@@ -82,7 +116,6 @@ export const recordGoalEvent = async (data: GoalEventData) => {
   }
 };
 
-// Helper function to safely insert stats with better error handling
 const insertStatSafely = async (
   gameId: string,
   playerId: string,

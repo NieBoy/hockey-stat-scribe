@@ -1,7 +1,7 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { PenaltyType } from '@/hooks/usePenaltyFlow';
+import { refreshPlayerStats } from '@/services/stats/playerStatsService';
 
 interface PenaltyEventData {
   gameId: string;
@@ -56,6 +56,15 @@ export const recordPenaltyEvent = async (data: PenaltyEventData) => {
     if (statError) {
       console.error("Error recording penalty stat:", statError);
       throw new Error(statError.message);
+    }
+
+    // Automatically refresh player stats to update aggregates
+    try {
+      await refreshPlayerStats(data.playerId);
+      console.log("Player stats refreshed after recording penalty");
+    } catch (refreshError) {
+      console.error("Error refreshing player stats:", refreshError);
+      // Don't throw here to avoid affecting the main flow
     }
 
     return { success: true, eventId: eventData?.id };
