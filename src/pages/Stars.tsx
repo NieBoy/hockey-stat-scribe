@@ -3,7 +3,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery } from "@tanstack/react-query";
-import { getPlayerStats } from "@/services/stats";
+import { getAllPlayerStats } from "@/services/stats";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Trophy } from "lucide-react";
@@ -44,7 +44,7 @@ export default function Stars() {
   
   const { data: stats, isLoading } = useQuery({
     queryKey: ['playerStats'],
-    queryFn: getPlayerStats
+    queryFn: getAllPlayerStats
   });
 
   // Filter stats by type if needed
