@@ -196,7 +196,32 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     console.log(`Found ${gameEvents?.length || 0} game events referencing player ${playerId}`);
     
+    // Create game stats from events if needed (do this first before checking existing stats)
+    let statsCreated = false;
+    if (gameEvents && gameEvents.length > 0) {
+      console.log("Checking if we need to create stats from events...");
+      
+      // Check if we already have stats for this player
+      const { data: existingStats, error: existingStatsError } = await supabase
+        .from('game_stats')
+        .select('count')
+        .eq('player_id', playerId)
+        .single();
+        
+      if (existingStatsError && existingStatsError.code !== 'PGRST116') { // Not found error
+        console.error("Error checking existing stats:", existingStatsError);
+      }
+      
+      // If no stats exist, create them from events
+      if (!existingStats || existingStats.count === 0) {
+        console.log("No existing stats found, creating from events...");
+        statsCreated = await createGameStatsFromEvents(playerId, gameEvents);
+        console.log("Stats created from events:", statsCreated);
+      }
+    }
+    
     // Query the game_stats table for this player specifically
+    // We do this query after potentially creating stats to ensure we get the most up-to-date data
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
       .select('stat_type, value, game_id, period, details')
@@ -209,34 +234,10 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     console.log(`Found ${gameStats?.length || 0} raw game stats for player:`, gameStats);
     
-    // If there are no game stats for this player, check if we need to create them from events
+    // If still no stats after attempted creation, return empty array
     if (!gameStats || gameStats.length === 0) {
-      console.log("No game stats found for player:", playerId);
-      
-      if (gameEvents && gameEvents.length > 0) {
-        console.log("Processing game events to create stats...");
-        // Create game stats from events if needed
-        const statsCreated = await createGameStatsFromEvents(playerId, gameEvents);
-        
-        if (statsCreated) {
-          // Re-fetch game stats after creation
-          const { data: updatedStats, error: updatedStatsError } = await supabase
-            .from('game_stats')
-            .select('stat_type, value, game_id, period, details')
-            .eq('player_id', playerId);
-            
-          if (!updatedStatsError && updatedStats) {
-            console.log(`After creation, found ${updatedStats.length} game stats`);
-            gameStats = updatedStats;
-          }
-        }
-      }
-      
-      // If still no stats after attempted creation, return empty array
-      if (!gameStats || gameStats.length === 0) {
-        console.log("No game stats available after processing events");
-        return [];
-      }
+      console.log("No game stats available after processing events");
+      return [];
     }
     
     // Calculate stats summary by type
