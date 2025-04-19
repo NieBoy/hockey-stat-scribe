@@ -23,11 +23,11 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName, "team_id:", playerData.team_id);
     
-    // Get relevant game events with fixed query format for proper OR conditions
+    // Get relevant game events with correctly formatted query for JSON fields
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
       .select('id, event_type, game_id, period, details, team_type')
-      .or(`details->'playerId'->>'text'.eq.${playerId},details->'primaryAssistId'->>'text'.eq.${playerId},details->'secondaryAssistId'->>'text'.eq.${playerId},details->'playersOnIce'.cs.{${playerId}}`);
+      .or(`details->>'playerId'=.${playerId},details->>'primaryAssistId'=.${playerId},details->>'secondaryAssistId'=.${playerId},details->'playersOnIce'::jsonb?.'${playerId}'`);
       
     if (eventsError) {
       console.error("Error fetching game events:", eventsError);

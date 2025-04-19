@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query - fixing the syntax for OR conditions 
+  // Game events query with correct format for JSON field queries
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -51,7 +51,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Fix the OR condition syntax by properly separating each condition
+        // Properly format the query for JSONB text fields
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -63,7 +63,7 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->'playerId'->>'text'.eq.${playerId},details->'primaryAssistId'->>'text'.eq.${playerId},details->'secondaryAssistId'->>'text'.eq.${playerId},details->'playersOnIce'.cs.{${playerId}}`);
+          .or(`details->>'playerId'=.${playerId},details->>'primaryAssistId'=.${playerId},details->>'secondaryAssistId'=.${playerId},details->'playersOnIce'::jsonb?.'${playerId}'`);
           
         if (eventError) {
           console.error("Error fetching player game events:", eventError);
