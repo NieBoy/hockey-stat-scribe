@@ -116,6 +116,7 @@ export interface PlayerStat {
   statType: StatType;
   value: number;
   gamesPlayed: number;
+  playerName?: string; // Added this optional property
 }
 
 // Form States

@@ -142,7 +142,7 @@ export const getPlayerStatsWithRefresh = async (playerId: string): Promise<Playe
       statType: stat.stat_type as StatType,
       value: stat.value,
       gamesPlayed: stat.games_played,
-      playerName: stat.users ? stat.users.name : 'Unknown Player'
+      playerName: stat.users ? (stat.users as any).name : 'Unknown Player'
     }));
   } catch (error) {
     console.error("Error in getPlayerStatsWithRefresh:", error);
@@ -167,7 +167,7 @@ export const getAllPlayerStats = async (): Promise<PlayerStat[]> => {
       statType: stat.stat_type as StatType,
       value: stat.value,
       gamesPlayed: stat.games_played,
-      playerName: stat.users ? stat.users.name : 'Unknown Player'
+      playerName: stat.users ? (stat.users as any).name : 'Unknown Player'
     }));
   } catch (error) {
     console.error("Error fetching all player stats:", error);

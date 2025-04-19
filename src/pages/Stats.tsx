@@ -62,7 +62,7 @@ const getPlayerStats = async (): Promise<PlayerStat[]> => {
     statType: stat.stat_type,
     value: stat.value,
     gamesPlayed: stat.games_played,
-    playerName: stat.users?.name || 'Unknown Player'
+    playerName: stat.users ? (stat.users as any).name : 'Unknown Player'
   }));
 };
 
