@@ -43,7 +43,7 @@ export default function PlayerLines({
   // Update selected IDs when prop changes
   useEffect(() => {
     setSelectedIds(new Set(selectedPlayers.map(p => p.id)));
-  }, [selectedPlayers]);
+  }, [selectedPlayers, forceRefresh]);
 
   const handlePlayerClick = (player: User) => {
     if (multiSelect) {
@@ -81,7 +81,7 @@ export default function PlayerLines({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Select Players</CardTitle>
+        <CardTitle>{multiSelect ? "Select Players" : "Select Player"}</CardTitle>
       </CardHeader>
       <CardContent>
         <SimplePlayerList 
@@ -97,7 +97,11 @@ export default function PlayerLines({
             </Button>
           )}
           {allowComplete && onComplete && (
-            <Button type="button" onClick={onComplete}>
+            <Button 
+              type="button" 
+              onClick={onComplete}
+              disabled={multiSelect && selectedPlayersList.length === 0}
+            >
               {completeText || "Complete"}
             </Button>
           )}

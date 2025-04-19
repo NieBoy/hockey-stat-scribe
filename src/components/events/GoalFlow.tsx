@@ -108,6 +108,8 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         playersOnIce: playersOnIce.map(p => p.id)
       };
       
+      console.log("Submitting goal data:", goalData);
+      
       // Call the service to record the goal event
       await recordGoalEvent(goalData);
       
@@ -141,7 +143,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
       return <TeamSelect game={game} onTeamSelect={setSelectedTeam} />;
     }
     
-    const teamPlayers = selectedTeam === 'home' ? game.homeTeam.players : game.awayTeam.players;
+    const teamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
     
     if (currentStep === 'scorer') {
       return (
@@ -159,10 +161,11 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
               Refresh Players
             </Button>
           </div>
-          <SimplePlayerList
-            players={teamPlayers}
+          <PlayerLines
+            team={teamData}
             onPlayerSelect={handlePlayerSelect}
             selectedPlayers={selectedScorer ? [selectedScorer] : []}
+            multiSelect={false}
           />
         </div>
       );
@@ -170,58 +173,57 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     
     if (currentStep === 'primary') {
       // Filter out the scorer from the list of potential assists
-      const eligiblePlayers = teamPlayers.filter(p => p.id !== selectedScorer?.id);
+      const eligiblePlayers = teamData.players.filter(p => p.id !== selectedScorer?.id);
+      const teamWithEligiblePlayers = { ...teamData, players: eligiblePlayers };
+      
       return (
         <div>
           <div className="mb-3">
             <h3 className="text-lg font-medium">Who had the primary assist?</h3>
           </div>
-          <SimplePlayerList
-            players={eligiblePlayers}
+          <PlayerLines
+            team={teamWithEligiblePlayers}
             onPlayerSelect={handlePlayerSelect}
             selectedPlayers={primaryAssist ? [primaryAssist] : []}
+            multiSelect={false}
+            allowSkip={true}
+            onSkip={handleSkipAssist}
+            skipText="Skip (No Assist)"
           />
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" onClick={handleSkipAssist}>Skip (No Assist)</Button>
-          </div>
         </div>
       );
     }
     
     if (currentStep === 'secondary') {
       // Filter out scorer and primary assist from potential secondary assists
-      const eligiblePlayers = teamPlayers.filter(
+      const eligiblePlayers = teamData.players.filter(
         p => p.id !== selectedScorer?.id && p.id !== primaryAssist?.id
       );
+      const teamWithEligiblePlayers = { ...teamData, players: eligiblePlayers };
+      
       return (
         <div>
           <div className="mb-3">
             <h3 className="text-lg font-medium">Who had the secondary assist?</h3>
           </div>
-          <SimplePlayerList
-            players={eligiblePlayers}
+          <PlayerLines
+            team={teamWithEligiblePlayers}
             onPlayerSelect={handlePlayerSelect}
             selectedPlayers={secondaryAssist ? [secondaryAssist] : []}
+            multiSelect={false}
+            allowSkip={true}
+            onSkip={handleSkipAssist}
+            skipText="Skip (No Second Assist)"
           />
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" onClick={handleSkipAssist}>Skip (No Second Assist)</Button>
-          </div>
         </div>
       );
     }
     
     if (currentStep === 'players-on-ice') {
-      // Filter out players already selected for scorer/assists
-      const selectedIds = new Set([
-        selectedScorer?.id,
-        primaryAssist?.id,
-        secondaryAssist?.id
-      ].filter(Boolean));
-      
       // Pre-select scorer and assists for players on ice
       const preSelectedPlayers = [selectedScorer, primaryAssist, secondaryAssist]
         .filter(Boolean) as User[];
-      
+        
       return (
         <div>
           <div className="mb-3">
@@ -231,7 +233,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             </p>
           </div>
           <PlayerLines 
-            team={{...game.homeTeam}}
+            team={teamData}
             onMultiPlayerSelect={handlePlayersOnIceSelect}
             selectedPlayers={preSelectedPlayers}
             multiSelect={true}

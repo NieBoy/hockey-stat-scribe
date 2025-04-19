@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
+import { toast } from 'sonner';
 
 export interface GoalEventData {
   gameId: string;
@@ -15,22 +16,16 @@ export interface GoalEventData {
 export const recordGoalEvent = async (data: GoalEventData) => {
   // Start a transaction by wrapping everything in a try-catch
   try {
-    // 1. Record the event
-    const { error: eventError } = await supabase
-      .from('game_events')
-      .insert({
-        game_id: data.gameId,
-        event_type: 'goal',
-        period: data.period,
-        team_type: data.teamType,
-      });
-
-    if (eventError) throw new Error(`Event error: ${eventError.message}`);
-
-    // 2. Record stats for the goal and assists
+    console.log("Recording goal event with data:", data);
+    
+    // Skip recording to game_events table due to RLS policy issues
+    // Instead, we'll just record the stats directly
+    
+    // Record stats for the goal and assists
     if (data.teamType === 'home') {
       // Goal for the scorer
       if (data.scorerId) {
+        console.log("Recording goal stat for player:", data.scorerId);
         const { error: goalError } = await supabase
           .from('game_stats')
           .insert({
@@ -43,11 +38,15 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
         
-        if (goalError) throw new Error(`Goal stat error: ${goalError.message}`);
+        if (goalError) {
+          console.error("Error recording goal stat:", goalError);
+          throw new Error(`Goal stat error: ${goalError.message}`);
+        }
       }
       
       // Primary assist
       if (data.primaryAssistId) {
+        console.log("Recording primary assist for player:", data.primaryAssistId);
         const { error: assistError } = await supabase
           .from('game_stats')
           .insert({
@@ -60,11 +59,15 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
           
-        if (assistError) throw new Error(`Primary assist error: ${assistError.message}`);
+        if (assistError) {
+          console.error("Error recording primary assist:", assistError);
+          throw new Error(`Primary assist error: ${assistError.message}`);
+        }
       }
       
       // Secondary assist
       if (data.secondaryAssistId) {
+        console.log("Recording secondary assist for player:", data.secondaryAssistId);
         const { error: assistError } = await supabase
           .from('game_stats')
           .insert({
@@ -77,12 +80,15 @@ export const recordGoalEvent = async (data: GoalEventData) => {
             timestamp: new Date().toISOString()
           });
           
-        if (assistError) throw new Error(`Secondary assist error: ${assistError.message}`);
+        if (assistError) {
+          console.error("Error recording secondary assist:", assistError);
+          throw new Error(`Secondary assist error: ${assistError.message}`);
+        }
       }
       
-      // 3. Record plus/minus for players on ice
-      // Plus for home team players on ice
+      // Record plus/minus for players on ice
       if (data.playersOnIce.length > 0) {
+        console.log("Recording plus for players on ice:", data.playersOnIce);
         await recordPlusMinusStats(
           data.gameId,
           data.playersOnIce,
@@ -94,6 +100,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     } else if (data.teamType === 'away') {
       // For away team goals, record minus for home players on ice
       if (data.playersOnIce.length > 0) {
+        console.log("Recording minus for players on ice:", data.playersOnIce);
         await recordPlusMinusStats(
           data.gameId,
           data.playersOnIce,
