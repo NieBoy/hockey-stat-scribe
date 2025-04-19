@@ -241,12 +241,77 @@ export interface Database {
           created_at?: string
         }
       }
+      game_events: {
+        Row: {
+          id: string
+          game_id: string
+          event_type: string
+          period: number
+          team_type: string
+          timestamp: string
+          created_at: string
+          created_by?: string
+          time_in_period?: unknown
+        }
+        Insert: {
+          id?: string
+          game_id: string
+          event_type: string
+          period: number
+          team_type: string
+          timestamp?: string
+          created_at?: string
+          created_by?: string
+          time_in_period?: unknown
+        }
+        Update: {
+          id?: string
+          game_id?: string
+          event_type?: string
+          period?: number
+          team_type?: string
+          timestamp?: string
+          created_at?: string
+          created_by?: string
+          time_in_period?: unknown
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_player_user: {
+        Args: { player_name: string, player_email?: string }
+        Returns: string
+      }
+      create_user_bypass_rls: {
+        Args: { user_id: string, user_name: string, user_email: string }
+        Returns: Json
+      }
+      get_game_events: {
+        Args: { p_game_id: string }
+        Returns: Database['public']['Tables']['game_events']['Row'][]
+      }
+      delete_game_event: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      create_game_event: {
+        Args: { 
+          p_game_id: string, 
+          p_event_type: string, 
+          p_period: number, 
+          p_team_type: string 
+        }
+        Returns: { 
+          id: string, 
+          game_id: string, 
+          event_type: string, 
+          period: number, 
+          team_type: string 
+        }
+      }
     }
     Enums: {
       [_ in never]: never

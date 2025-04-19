@@ -14,14 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { RefreshCw } from "lucide-react";
+import { Database } from '@/types/supabase';
 
-interface Event {
-  id: string;
-  event_type: string;
-  team_type: string;
-  period: number;
-  timestamp: string;
-}
+type GameEvent = Database['public']['Tables']['game_events']['Row'];
 
 interface EventHistoryProps {
   gameId: string;
@@ -29,7 +24,7 @@ interface EventHistoryProps {
 }
 
 export default function EventHistory({ gameId, onEventDeleted }: EventHistoryProps) {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<GameEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -40,7 +35,7 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     try {
       // Use direct SQL query via RPC to bypass RLS issues
       const { data, error } = await supabase
-        .rpc('get_game_events', { p_game_id: gameId });
+        .rpc<GameEvent[]>('get_game_events', { p_game_id: gameId });
 
       if (error) {
         console.error('Error fetching events:', error);
@@ -69,8 +64,8 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
 
   const deleteEvent = async (eventId: string) => {
     try {
-      const { error } = await supabase
-        .rpc('delete_game_event', { p_event_id: eventId });
+      const { data, error } = await supabase
+        .rpc<boolean>('delete_game_event', { p_event_id: eventId });
 
       if (error) {
         toast({

@@ -36,12 +36,14 @@ export default function PlayerLines({
   maxSelections,
   forceRefresh = false
 }: PlayerLinesProps) {
+  // Using player IDs for selection management
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(selectedPlayers.map(p => p.id))
   );
 
-  // Update selected IDs when prop changes
+  // Reset selectedIds when selectedPlayers prop changes
   useEffect(() => {
+    console.log("PlayerLines - selectedPlayers changed:", selectedPlayers);
     setSelectedIds(new Set(selectedPlayers.map(p => p.id)));
   }, [selectedPlayers, forceRefresh]);
 
@@ -52,23 +54,28 @@ export default function PlayerLines({
       if (selectedIds.has(player.id)) {
         // Deselect if already selected
         newSelectedIds.delete(player.id);
+        console.log(`PlayerLines - Deselected player: ${player.name}`);
       } else {
         // Check if we've hit the max selections limit
         if (maxSelections && newSelectedIds.size >= maxSelections) {
-          console.log(`Max selections (${maxSelections}) reached`);
+          console.log(`PlayerLines - Max selections (${maxSelections}) reached`);
           return;
         }
         // Select if not already selected
         newSelectedIds.add(player.id);
+        console.log(`PlayerLines - Selected player: ${player.name}`);
       }
       
       setSelectedIds(newSelectedIds);
       
+      // Convert Set of IDs back to array of player objects
       if (onMultiPlayerSelect) {
         const selectedPlayersList = team.players.filter(p => newSelectedIds.has(p.id));
+        console.log("PlayerLines - Updated selected players:", selectedPlayersList);
         onMultiPlayerSelect(selectedPlayersList);
       }
     } else if (onPlayerSelect) {
+      console.log(`PlayerLines - Selected single player: ${player.name}`);
       onPlayerSelect(player);
     }
   };
@@ -81,6 +88,7 @@ export default function PlayerLines({
   });
 
   const selectedPlayersList = sortedPlayers.filter(p => selectedIds.has(p.id));
+  console.log("PlayerLines - Current selected players count:", selectedPlayersList.length);
 
   return (
     <Card>

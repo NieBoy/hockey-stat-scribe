@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
 import { toast } from 'sonner';
+import { Database } from '@/types/supabase';
 
 export interface GoalEventData {
   gameId: string;
@@ -12,6 +13,14 @@ export interface GoalEventData {
   secondaryAssistId?: string;
   playersOnIce: string[];
 }
+
+type GameEventResponse = {
+  id: string;
+  game_id: string;
+  event_type: string;
+  period: number;
+  team_type: string;
+};
 
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
@@ -24,7 +33,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     
     // First, create the goal event with RPC to bypass RLS issues
     const { data: eventData, error: eventError } = await supabase
-      .rpc('create_game_event', {
+      .rpc<GameEventResponse>('create_game_event', {
         p_game_id: data.gameId,
         p_event_type: 'goal',
         p_period: data.period,
@@ -37,8 +46,8 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     }
     
     // If we don't have an event ID back, we can't continue
-    if (!eventData || !eventData.id) {
-      throw new Error("Failed to get event ID after creation");
+    if (!eventData) {
+      throw new Error("Failed to get event data after creation");
     }
     
     const eventId = eventData.id;

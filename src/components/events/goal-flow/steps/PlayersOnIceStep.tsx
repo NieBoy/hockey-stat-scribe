@@ -21,10 +21,13 @@ export function PlayersOnIceStep({
   
   // Update local state when preSelectedPlayers changes
   useEffect(() => {
-    setSelectedPlayers(preSelectedPlayers);
+    if (preSelectedPlayers && preSelectedPlayers.length > 0) {
+      setSelectedPlayers(preSelectedPlayers);
+    }
   }, [preSelectedPlayers]);
   
   const handlePlayersSelect = (players: User[]) => {
+    console.log("PlayersOnIceStep - Selected players:", players);
     setSelectedPlayers(players);
     onPlayersSelect(players);
   };
@@ -51,6 +54,7 @@ export function PlayersOnIceStep({
         onComplete={onComplete}
         completeText="Confirm Players"
         maxSelections={6}
+        forceRefresh={true}
       />
     </div>
   );
