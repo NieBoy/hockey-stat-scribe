@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { PlayerStat } from "@/types";
+import { PlayerStat, StatType } from "@/types";
 
 const updateOrInsertStat = async (
   playerId: string, 
@@ -85,14 +85,14 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     for (const [statType, data] of statsSummary.entries()) {
       const stat = {
         playerId,
-        statType,
+        statType: statType as StatType, // Cast the string to StatType
         value: data.value,
         gamesPlayed: data.games.size,
         playerName
       };
       
       await updateOrInsertStat(playerId, stat);
-      playerStats.push(stat);
+      playerStats.push(stat as PlayerStat); // Cast to PlayerStat
     }
     
     return playerStats;
