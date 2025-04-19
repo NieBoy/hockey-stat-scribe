@@ -39,9 +39,7 @@ export default function PlayerStats() {
       if (!id) return [];
       try {
         // This will help us see if there are any game_stats at all for this player
-        const { data, error } = await fetchGameStats(id);
-        if (error) throw error;
-        return data || [];
+        return await fetchGameStats(id);
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
         return [];
