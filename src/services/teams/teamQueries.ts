@@ -54,13 +54,15 @@ export const getTeams = async (): Promise<Team[]> => {
       const players = (teamMembers || [])
         .filter(member => member.role === 'player')
         .map(p => {
-          // Check if users exists and if it's an object before accessing properties
-          const userData = p.users ? (typeof p.users === 'object' ? p.users : null) : null;
+          // Check if users field exists and convert it to the right type
+          const userData = p.users && typeof p.users === 'object' && !Array.isArray(p.users) 
+            ? p.users 
+            : null;
           
           return {
             id: p.id, // Use the team_member id directly
-            name: p.name || (userData ? userData.name : 'Unknown Player'),
-            email: p.email || (userData ? userData.email : undefined),
+            name: p.name || (userData?.name || 'Unknown Player'),
+            email: p.email || (userData?.email || undefined),
             role: ['player'] as UserRole[],
             position: p.position as Position,
             lineNumber: p.line_number,
@@ -71,13 +73,15 @@ export const getTeams = async (): Promise<Team[]> => {
       const coaches = (teamMembers || [])
         .filter(member => member.role === 'coach')
         .map(c => {
-          // Check if users exists and if it's an object before accessing properties
-          const userData = c.users ? (typeof c.users === 'object' ? c.users : null) : null;
+          // Check if users field exists and convert it to the right type
+          const userData = c.users && typeof c.users === 'object' && !Array.isArray(c.users) 
+            ? c.users 
+            : null;
           
           return {
             id: c.id, // Use the team_member id directly
-            name: c.name || (userData ? userData.name : 'Unknown Coach'),
-            email: c.email || (userData ? userData.email : undefined),
+            name: c.name || (userData?.name || 'Unknown Coach'),
+            email: c.email || (userData?.email || undefined),
             role: ['coach'] as UserRole[]
           };
         });
@@ -85,13 +89,15 @@ export const getTeams = async (): Promise<Team[]> => {
       const parents = (teamMembers || [])
         .filter(member => member.role === 'parent')
         .map(p => {
-          // Check if users exists and if it's an object before accessing properties
-          const userData = p.users ? (typeof p.users === 'object' ? p.users : null) : null;
+          // Check if users field exists and convert it to the right type
+          const userData = p.users && typeof p.users === 'object' && !Array.isArray(p.users) 
+            ? p.users 
+            : null;
           
           return {
             id: p.id, // Use the team_member id directly
-            name: p.name || (userData ? userData.name : 'Unknown Parent'),
-            email: p.email || (userData ? userData.email : undefined),
+            name: p.name || (userData?.name || 'Unknown Parent'),
+            email: p.email || (userData?.email || undefined),
             role: ['parent'] as UserRole[]
           };
         });
@@ -162,13 +168,15 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const players = members
       .filter(member => member.role === 'player')
       .map(p => {
-        // Check if users exists and if it's an object before accessing properties
-        const userData = p.users ? (typeof p.users === 'object' ? p.users : null) : null;
+        // Check if users field exists and convert it to the right type
+        const userData = p.users && typeof p.users === 'object' && !Array.isArray(p.users) 
+          ? p.users 
+          : null;
         
         return {
           id: p.id, // Use the team_member id directly
-          name: p.name || (userData ? userData.name : 'Unknown Player'),
-          email: p.email || (userData ? userData.email : undefined),
+          name: p.name || (userData?.name || 'Unknown Player'),
+          email: p.email || (userData?.email || undefined),
           role: ['player'] as UserRole[],
           position: p.position as Position,
           lineNumber: p.line_number,
@@ -179,13 +187,15 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const coaches = members
       .filter(member => member.role === 'coach')
       .map(c => {
-        // Check if users exists and if it's an object before accessing properties
-        const userData = c.users ? (typeof c.users === 'object' ? c.users : null) : null;
+        // Check if users field exists and convert it to the right type
+        const userData = c.users && typeof c.users === 'object' && !Array.isArray(c.users) 
+          ? c.users 
+          : null;
         
         return {
           id: c.id, // Use the team_member id directly
-          name: c.name || (userData ? userData.name : 'Unknown Coach'),
-          email: c.email || (userData ? userData.email : undefined),
+          name: c.name || (userData?.name || 'Unknown Coach'),
+          email: c.email || (userData?.email || undefined),
           role: ['coach'] as UserRole[]
         };
       });
@@ -193,13 +203,15 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
     const parents = members
       .filter(member => member.role === 'parent')
       .map(p => {
-        // Check if users exists and if it's an object before accessing properties
-        const userData = p.users ? (typeof p.users === 'object' ? p.users : null) : null;
+        // Check if users field exists and convert it to the right type
+        const userData = p.users && typeof p.users === 'object' && !Array.isArray(p.users) 
+          ? p.users 
+          : null;
         
         return {
           id: p.id, // Use the team_member id directly
-          name: p.name || (userData ? userData.name : 'Unknown Parent'),
-          email: p.email || (userData ? userData.email : undefined),
+          name: p.name || (userData?.name || 'Unknown Parent'),
+          email: p.email || (userData?.email || undefined),
           role: ['parent'] as UserRole[]
         };
       });
