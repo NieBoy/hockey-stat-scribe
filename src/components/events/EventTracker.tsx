@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Trophy, Flag, Clock } from 'lucide-react';
 import { useParams } from 'react-router-dom';
@@ -10,11 +9,11 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useGameControl } from '@/hooks/useGameControl';
 import GoalFlow from './GoalFlow';
+import PenaltyFlow from './PenaltyFlow';
 import { useQuery } from '@tanstack/react-query';
 import { getGameById } from '@/services/games';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
-// Define the EventType type
 type EventType = 'goal' | 'penalty' | 'timeout';
 type FlowState = 'buttons' | 'goal-flow' | 'penalty-flow' | 'timeout-flow';
 
@@ -41,7 +40,6 @@ export default function EventTracker() {
     enabled: !!gameId && gameStatus === 'in-progress'
   });
 
-  // Improved logging to track component state
   console.log('EventTracker rendering with:', { 
     gameStatus, 
     period: currentPeriod, 
@@ -58,14 +56,11 @@ export default function EventTracker() {
 
     setSelectedEvent(eventType);
 
-    // Determine which flow to show based on the event type
     if (eventType === 'goal') {
       setFlowState('goal-flow');
     } else if (eventType === 'penalty') {
-      // For now, just record a basic penalty event until we implement the flow
-      recordBasicEvent(eventType);
+      setFlowState('penalty-flow');
     } else if (eventType === 'timeout') {
-      // For now, just record a basic timeout event until we implement the flow
       recordBasicEvent(eventType);
     }
   };
@@ -174,6 +169,15 @@ export default function EventTracker() {
 
         {gameStatus === 'in-progress' && flowState === 'goal-flow' && game && (
           <GoalFlow 
+            game={game}
+            period={currentPeriod}
+            onComplete={handleFlowComplete}
+            onCancel={handleFlowCancel}
+          />
+        )}
+
+        {gameStatus === 'in-progress' && flowState === 'penalty-flow' && game && (
+          <PenaltyFlow
             game={game}
             period={currentPeriod}
             onComplete={handleFlowComplete}
