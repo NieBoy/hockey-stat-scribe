@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { GameStat } from '@/types';
 
@@ -44,21 +45,22 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
   try {
     console.log("Inserting game stat:", stat);
     
-    const { data, error } = await supabase.from('game_stats').insert({
-      game_id: stat.gameId,
-      player_id: stat.playerId,
-      stat_type: stat.statType,
-      period: stat.period,
-      value: stat.value,
-      details: stat.details || ''
-    }).select();
+    // Use RPC instead of direct insert to ensure timestamp is properly set
+    const { data, error } = await supabase.rpc('record_game_stat', {
+      p_game_id: stat.gameId,
+      p_player_id: stat.playerId,
+      p_stat_type: stat.statType,
+      p_period: stat.period,
+      p_value: stat.value,
+      p_details: stat.details || ''
+    });
     
     if (error) {
       console.error("Error inserting game stat:", error);
       throw error;
     }
     
-    return data?.[0];
+    return data;
   } catch (error) {
     console.error("Error in insertGameStat:", error);
     throw error;
