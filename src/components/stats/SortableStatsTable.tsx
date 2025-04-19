@@ -10,10 +10,39 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
-import { PlayerStat } from "@/types";
+import { PlayerStat, StatType } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
 type SortDirection = "asc" | "desc" | null;
-type SortField = "name" | "value" | "gamesPlayed" | "average";
+type SortField = "name" | "value" | "gamesPlayed" | "average" | "statType";
+
+// Helper function to make stat types more readable
+const formatStatType = (statType: StatType): string => {
+  switch(statType) {
+    case 'goals': return 'Goals';
+    case 'assists': return 'Assists';
+    case 'faceoffs': return 'Faceoffs';
+    case 'hits': return 'Hits';
+    case 'penalties': return 'Penalties';
+    case 'saves': return 'Saves';
+    case 'plusMinus': return 'Plus/Minus';
+    default: return statType;
+  }
+};
+
+// Helper to get stat color based on the statType
+const getStatTypeColor = (statType: StatType): string => {
+  switch(statType) {
+    case 'goals': return 'bg-red-100 text-red-800';
+    case 'assists': return 'bg-blue-100 text-blue-800';
+    case 'faceoffs': return 'bg-amber-100 text-amber-800';
+    case 'hits': return 'bg-purple-100 text-purple-800';
+    case 'penalties': return 'bg-orange-100 text-orange-800';
+    case 'saves': return 'bg-green-100 text-green-800';
+    case 'plusMinus': return 'bg-sky-100 text-sky-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
 
 interface SortableStatsTableProps {
   stats: PlayerStat[];
@@ -48,9 +77,13 @@ export function SortableStatsTable({ stats, getPlayerName }: SortableStatsTableP
           aValue = getPlayerName(a.playerId).toLowerCase();
           bValue = getPlayerName(b.playerId).toLowerCase();
           break;
+        case "statType":
+          aValue = a.statType;
+          bValue = b.statType;
+          break;
         case "average":
-          aValue = a.value / a.gamesPlayed;
-          bValue = b.value / b.gamesPlayed;
+          aValue = a.gamesPlayed > 0 ? a.value / a.gamesPlayed : 0;
+          bValue = b.gamesPlayed > 0 ? b.value / b.gamesPlayed : 0;
           break;
         default:
           aValue = a[sortField];
@@ -81,10 +114,10 @@ export function SortableStatsTable({ stats, getPlayerName }: SortableStatsTableP
             <TableHead>
               <Button
                 variant="ghost"
-                onClick={() => handleSort("name")}
+                onClick={() => handleSort("statType")}
                 className="h-8 flex items-center gap-1"
               >
-                Player {getSortIcon("name")}
+                Stat Type {getSortIcon("statType")}
               </Button>
             </TableHead>
             <TableHead>
@@ -120,13 +153,17 @@ export function SortableStatsTable({ stats, getPlayerName }: SortableStatsTableP
           {sortedStats.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
-                No stats available
+                No stats available for this player
               </TableCell>
             </TableRow>
           ) : (
             sortedStats.map((stat) => (
               <TableRow key={`${stat.playerId}-${stat.statType}`}>
-                <TableCell>{getPlayerName(stat.playerId)}</TableCell>
+                <TableCell>
+                  <Badge className={getStatTypeColor(stat.statType)}>
+                    {formatStatType(stat.statType)}
+                  </Badge>
+                </TableCell>
                 <TableCell>{stat.value}</TableCell>
                 <TableCell>{stat.gamesPlayed}</TableCell>
                 <TableCell>
