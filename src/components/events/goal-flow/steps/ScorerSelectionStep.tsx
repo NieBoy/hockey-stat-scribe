@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Team, User } from '@/types';
-import PlayerLines from '../../PlayerLines';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import SimplePlayerList from '@/components/teams/SimplePlayerList';
 
 interface ScorerSelectionStepProps {
   team: Team;
@@ -35,12 +36,16 @@ export function ScorerSelectionStep({
           Refresh Players
         </Button>
       </div>
-      <PlayerLines
-        team={team}
-        onPlayerSelect={onPlayerSelect}
-        selectedPlayers={selectedScorer ? [selectedScorer] : []}
-        multiSelect={false}
-      />
+      
+      <Card>
+        <CardContent className="p-4">
+          <SimplePlayerList
+            players={team.players}
+            onPlayerSelect={onPlayerSelect}
+            selectedPlayers={selectedScorer ? [selectedScorer] : []}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

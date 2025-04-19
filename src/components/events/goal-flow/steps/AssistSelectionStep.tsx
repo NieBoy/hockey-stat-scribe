@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Team, User } from '@/types';
-import PlayerLines from '../../PlayerLines';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import SimplePlayerList from '@/components/teams/SimplePlayerList';
 
 interface AssistSelectionStepProps {
   team: Team;
@@ -33,15 +35,22 @@ export function AssistSelectionStep({
           Who had the {isPrimary ? 'primary' : 'secondary'} assist?
         </h3>
       </div>
-      <PlayerLines
-        team={eligiblePlayers}
-        onPlayerSelect={onPlayerSelect}
-        selectedPlayers={selectedAssist ? [selectedAssist] : []}
-        multiSelect={false}
-        allowSkip={true}
-        onSkip={onSkip}
-        skipText={`Skip (No ${isPrimary ? '' : 'Second'} Assist)`}
-      />
+      
+      <Card>
+        <CardContent className="p-4">
+          <SimplePlayerList
+            players={eligiblePlayers.players}
+            onPlayerSelect={onPlayerSelect}
+            selectedPlayers={selectedAssist ? [selectedAssist] : []}
+          />
+          
+          <div className="mt-4 flex justify-end">
+            <Button variant="ghost" onClick={onSkip}>
+              Skip (No {isPrimary ? '' : 'Second'} Assist)
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Team, User } from '@/types';
-import PlayerLines from '../../PlayerLines';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import SimplePlayerList from '@/components/teams/SimplePlayerList';
 
 interface PlayersOnIceStepProps {
   team: Team;
@@ -17,35 +18,31 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
-  const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
-  const [forceRefreshKey, setForceRefreshKey] = useState<number>(0);
-  
-  // Initialize with preSelectedPlayers when the component mounts or when they change
+  const [selectedPlayers, setSelectedPlayers] = useState<User[]>(preSelectedPlayers);
+
   useEffect(() => {
     if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      const uniquePlayers = [...new Map(preSelectedPlayers.map(p => [p.id, p])).values()];
-      setSelectedPlayers(uniquePlayers);
-      // Force a refresh to ensure PlayerLines re-renders with correct selection
-      setForceRefreshKey(prev => prev + 1);
+      setSelectedPlayers([...new Map(preSelectedPlayers.map(p => [p.id, p])).values()]);
     }
   }, [preSelectedPlayers]);
-  
-  const handlePlayersSelect = (players: User[]) => {
-    console.log("PlayersOnIceStep - Selected players:", players);
+
+  const handlePlayerSelect = (player: User) => {
+    const isSelected = selectedPlayers.some(p => p.id === player.id);
+    let newSelection: User[];
     
-    // Make sure we have a clean array with no duplicates
-    const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
-    setSelectedPlayers(uniquePlayers);
-    onPlayersSelect(uniquePlayers);
+    if (isSelected) {
+      newSelection = selectedPlayers.filter(p => p.id !== player.id);
+    } else {
+      if (selectedPlayers.length >= 6) {
+        return; // Maximum players reached
+      }
+      newSelection = [...selectedPlayers, player];
+    }
+    
+    setSelectedPlayers(newSelection);
+    onPlayersSelect(newSelection);
   };
 
-  const handleComplete = () => {
-    // Make final check that we don't exceed the limit
-    const finalPlayers = selectedPlayers.slice(0, 6);
-    onPlayersSelect(finalPlayers);
-    onComplete();
-  };
-  
   return (
     <div>
       <div className="mb-3">
@@ -57,25 +54,28 @@ export function PlayersOnIceStep({
         <div className="mt-3 mb-4">
           <p className="text-sm font-medium">
             Selected: {selectedPlayers.length}/6 players
-            {selectedPlayers.length > 6 && (
-              <span className="text-red-500 ml-2">(Only first 6 will be used)</span>
-            )}
           </p>
         </div>
       </div>
       
-      <PlayerLines 
-        key={`player-lines-${forceRefreshKey}`}
-        team={team}
-        onMultiPlayerSelect={handlePlayersSelect}
-        selectedPlayers={selectedPlayers}
-        multiSelect={true}
-        maxSelections={6}
-        forceRefresh={forceRefreshKey > 0}
-        allowComplete={true}
-        onComplete={handleComplete}
-        completeText="Confirm Players"
-      />
+      <Card>
+        <CardContent className="p-4">
+          <SimplePlayerList
+            players={team.players}
+            onPlayerSelect={handlePlayerSelect}
+            selectedPlayers={selectedPlayers}
+          />
+          
+          <div className="mt-4 flex justify-end">
+            <Button 
+              onClick={onComplete}
+              disabled={selectedPlayers.length === 0}
+            >
+              Confirm Players
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
