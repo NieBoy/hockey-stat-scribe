@@ -61,14 +61,23 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       return [];
     }
 
-    // Group stats by player and stat type
-    const statsByPlayer = gameStats.reduce((acc, stat) => {
+    // Define the type for our stats accumulator
+    interface StatAccumulator {
+      playerId: string;
+      playerName: string;
+      statType: StatType;
+      value: number;
+      gamesPlayed: Set<string>;
+    }
+
+    // Group stats by player and stat type with proper typing
+    const statsByPlayer = gameStats.reduce((acc: Record<string, StatAccumulator>, stat: any) => {
       const key = `${stat.player_id}-${stat.stat_type}`;
       if (!acc[key]) {
         acc[key] = {
           playerId: stat.player_id,
           playerName: stat.team_members?.name || 'Unknown Player',
-          statType: stat.stat_type,
+          statType: stat.stat_type as StatType,
           value: 0,
           gamesPlayed: new Set()
         };
@@ -76,15 +85,15 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       acc[key].value += stat.value;
       acc[key].gamesPlayed.add(stat.game_id);
       return acc;
-    }, {} as Record<string, any>);
+    }, {});
 
     console.log("Aggregated stats by player:", statsByPlayer);
 
-    // Convert to array and format
-    const aggregatedStats = Object.values(statsByPlayer).map(stat => ({
+    // Convert to array and format with proper typing
+    const aggregatedStats: PlayerStat[] = Object.values(statsByPlayer).map((stat: StatAccumulator) => ({
       playerId: stat.playerId,
       playerName: stat.playerName,
-      statType: stat.statType as StatType,
+      statType: stat.statType,
       value: stat.value,
       gamesPlayed: stat.gamesPlayed.size
     }));
