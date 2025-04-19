@@ -101,6 +101,7 @@ export default function PlayerLines({
   return (
     <Card>
       <CardHeader>
+        {/* Fix: Replace the title prop with a CardTitle component */}
         <CardTitle>{multiSelect ? "Select Players" : "Select Player"}</CardTitle>
       </CardHeader>
       <CardContent>
