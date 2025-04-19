@@ -33,6 +33,7 @@ export function PlayersOnIceStep({
         onComplete={onComplete}
         completeText="Confirm Players"
         maxSelections={6}
+        forceRefresh={true} // Force refresh to ensure selection state updates
       />
     </div>
   );

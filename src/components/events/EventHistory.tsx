@@ -29,9 +29,13 @@ interface EventHistoryProps {
 
 export default function EventHistory({ gameId, onEventDeleted }: EventHistoryProps) {
   const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchEvents = async () => {
+    setIsLoading(true);
+    console.log('Fetching events for game ID:', gameId);
+    
     const { data, error } = await supabase
       .from('game_events')
       .select('*')
@@ -40,10 +44,18 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
 
     if (error) {
       console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load events. Please refresh the page.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
       return;
     }
 
+    console.log('Events fetched:', data);
     setEvents(data || []);
+    setIsLoading(false);
   };
 
   const deleteEvent = async (eventId: string) => {
@@ -67,11 +79,17 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
     });
 
     fetchEvents();
-    onEventDeleted?.();
+    if (onEventDeleted) onEventDeleted();
   };
 
   useEffect(() => {
-    fetchEvents();
+    if (gameId) {
+      fetchEvents();
+    }
+  }, [gameId]);
+
+  useEffect(() => {
+    if (!gameId) return;
 
     // Set up real-time subscription
     const channel = supabase
@@ -84,7 +102,8 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
           table: 'game_events',
           filter: `game_id=eq.${gameId}`
         },
-        () => {
+        (payload) => {
+          console.log('Game event change detected:', payload);
           fetchEvents();
         }
       )
@@ -110,31 +129,38 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  {format(new Date(event.timestamp), 'HH:mm:ss')}
-                </TableCell>
-                <TableCell className="capitalize">{event.event_type}</TableCell>
-                <TableCell className="capitalize">{event.team_type}</TableCell>
-                <TableCell>{event.period}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteEvent(event.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-4">
+                  Loading events...
                 </TableCell>
               </TableRow>
-            ))}
-            {events.length === 0 && (
+            ) : events.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                   No events recorded yet
                 </TableCell>
               </TableRow>
+            ) : (
+              events.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>
+                    {format(new Date(event.timestamp), 'HH:mm:ss')}
+                  </TableCell>
+                  <TableCell className="capitalize">{event.event_type}</TableCell>
+                  <TableCell className="capitalize">{event.team_type}</TableCell>
+                  <TableCell>{event.period}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteEvent(event.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

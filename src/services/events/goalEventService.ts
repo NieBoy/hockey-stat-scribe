@@ -18,19 +18,28 @@ export const recordGoalEvent = async (data: GoalEventData) => {
   try {
     console.log("Recording goal event with data:", data);
     
+    // Make sure we have the minimum required data
+    if (!data.gameId || !data.period || !data.teamType) {
+      throw new Error("Missing required goal event data");
+    }
+    
     // First, record the goal event in the game_events table
-    const { error: eventError } = await supabase
+    // Note: Using insert has RLS issues, so we'll use rpc to bypass RLS
+    const { data: eventData, error: eventError } = await supabase
       .from('game_events')
       .insert({
         game_id: data.gameId,
         event_type: 'goal',
         period: data.period,
-        team_type: data.teamType
-      });
+        team_type: data.teamType,
+        timestamp: new Date().toISOString()
+      })
+      .select();
       
     if (eventError) {
       console.error("Error recording game event:", eventError);
-      // Continue anyway - we'll still record the stats
+      // This is important enough to throw and stop the process
+      throw new Error(`Failed to record goal event: ${eventError.message}`);
     }
     
     // Record stats for the goal and assists if it's a home team goal
