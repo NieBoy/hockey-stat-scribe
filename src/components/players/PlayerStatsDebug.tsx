@@ -57,9 +57,29 @@ export default function PlayerStatsDebug({
               playerGameEvents.map((event, index) => (
                 <div key={event.id} className="mb-2">
                   <h5 className="text-xs font-semibold">Event #{index + 1} ({event.event_type})</h5>
-                  <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
-                    {JSON.stringify(event, null, 2)}
-                  </pre>
+                  <div className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                    <div>
+                      <span className="font-semibold">ID:</span> {event.id}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Game ID:</span> {event.game_id}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Period:</span> {event.period}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Team:</span> {event.team_type}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Time:</span> {new Date(event.timestamp).toLocaleString()}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Details:</span>
+                      <pre className="bg-slate-200 p-1 mt-1 rounded-sm">
+                        {JSON.stringify(event.details, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (

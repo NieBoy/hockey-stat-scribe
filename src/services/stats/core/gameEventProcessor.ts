@@ -13,7 +13,15 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
       console.log("Event details:", JSON.stringify(event.details, null, 2));
       
       if (event.event_type === 'goal' && event.details) {
-        statsCreated = await processGoalEvent(event, playerId) || statsCreated;
+        // Check the structure of the details object
+        console.log("Goal event details structure:", Object.keys(event.details));
+        
+        // Convert details to proper format if needed
+        const details = typeof event.details === 'string' 
+          ? JSON.parse(event.details) 
+          : event.details;
+          
+        statsCreated = await processGoalEvent(event, playerId, details) || statsCreated;
       }
     }
     
@@ -24,40 +32,58 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
   }
 };
 
-const processGoalEvent = async (event: any, playerId: string): Promise<boolean> => {
+const processGoalEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
   let statsCreated = false;
   
   // Log the details to better understand the structure
-  console.log("Processing goal event details:", JSON.stringify(event.details, null, 2));
+  console.log("Processing goal event details:", JSON.stringify(details, null, 2));
+  console.log("Player ID to check:", playerId);
+  console.log("Scorer ID in event:", details.playerId);
+  console.log("Primary assist ID in event:", details.primaryAssistId);
+  console.log("Secondary assist ID in event:", details.secondaryAssistId);
   
   // Process scorer
-  if (event.details.playerId === playerId) {
+  if (details.playerId === playerId) {
     console.log("Player is the scorer, creating goal stat");
     statsCreated = await createGameStat(event, playerId, 'goals') || statsCreated;
   }
   
   // Process primary assist
-  if (event.details.primaryAssistId === playerId) {
+  if (details.primaryAssistId === playerId) {
     console.log("Player has primary assist, creating assist stat");
     statsCreated = await createGameStat(event, playerId, 'assists', 'primary') || statsCreated;
   }
   
   // Process secondary assist
-  if (event.details.secondaryAssistId === playerId) {
+  if (details.secondaryAssistId === playerId) {
     console.log("Player has secondary assist, creating assist stat");
     statsCreated = await createGameStat(event, playerId, 'assists', 'secondary') || statsCreated;
   }
   
-  // Process plus/minus
-  if (Array.isArray(event.details.playersOnIce) && event.details.playersOnIce.includes(playerId)) {
-    console.log("Player is on ice, creating plus/minus stat");
-    statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
-  } else if (event.details.playersOnIce && typeof event.details.playersOnIce === 'object') {
-    // Handle case where playersOnIce might be an object instead of array
-    console.log("Checking playersOnIce object:", event.details.playersOnIce);
-    const playerIds = Object.keys(event.details.playersOnIce);
-    if (playerIds.includes(playerId)) {
-      console.log("Player ID found in playersOnIce object, creating plus/minus stat");
+  // Process plus/minus - handle various formats of playersOnIce
+  if (details.playersOnIce) {
+    console.log("Checking playersOnIce:", details.playersOnIce);
+    
+    let playerFound = false;
+    
+    // Check if it's an array
+    if (Array.isArray(details.playersOnIce)) {
+      console.log("playersOnIce is array, checking for player:", playerId);
+      playerFound = details.playersOnIce.includes(playerId);
+    } 
+    // Check if it's an object
+    else if (typeof details.playersOnIce === 'object') {
+      console.log("playersOnIce is object, checking for player:", playerId);
+      playerFound = Object.keys(details.playersOnIce).includes(playerId);
+    }
+    // Check if it's a string that contains the player ID
+    else if (typeof details.playersOnIce === 'string') {
+      console.log("playersOnIce is string, checking for player:", playerId);
+      playerFound = details.playersOnIce.includes(playerId);
+    }
+    
+    if (playerFound) {
+      console.log("Player found in playersOnIce, creating plus/minus stat");
       statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
     }
   }

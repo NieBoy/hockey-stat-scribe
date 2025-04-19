@@ -51,7 +51,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Use proper PostgreSQL JSON operators for filtering
+        // Fixed query with proper quotes and PostgreSQL syntax
         const { data: eventData, error: eventError } = await supabase
           .from('game_events')
           .select(`
@@ -63,15 +63,15 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->'playersOnIce'.cs.{"${playerId}"}`);
-          
+          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId},details->'playersOnIce'->0.eq.${playerId}`);
+        
         if (eventError) {
           console.error("Error fetching player game events:", eventError);
           throw eventError;
         }
         
         // Log the event data to see what we're getting
-        console.log(`Found ${eventData?.length || 0} game events for player`, eventData);
+        console.log(`Found ${eventData?.length || 0} game events for player:`, eventData);
         return eventData || [];
       } catch (error) {
         console.error("Error in fetchPlayerGameEvents:", error);
