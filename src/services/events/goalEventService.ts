@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
 import { toast } from 'sonner';
@@ -23,13 +24,22 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
 
-    // Record the game event
+    // Create the details object with player information
+    const details = {
+      playerId: data.scorerId,
+      primaryAssistId: data.primaryAssistId,
+      secondaryAssistId: data.secondaryAssistId,
+      playersOnIce: data.playersOnIce
+    };
+
+    // Record the game event with details explicitly passed as a parameter
     const { data: eventData, error: eventError } = await supabase
       .rpc('create_game_event', {
         p_game_id: data.gameId,
         p_event_type: 'goal',
         p_period: data.period,
-        p_team_type: data.teamType
+        p_team_type: data.teamType,
+        p_details: details
       });
       
     if (eventError) {
