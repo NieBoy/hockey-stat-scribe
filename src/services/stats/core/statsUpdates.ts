@@ -21,13 +21,12 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     const playerName = playerData?.name || 'Unknown Player';
-    console.log("Found player:", playerName, "team_id:", playerData.team_id);
+    console.log("Found player:", playerName);
     
-    // Get relevant game events with properly formatted PostgreSQL JSON query
-    // This is what was causing the error - we need to use the proper JSON query syntax
+    // Fetch game events with improved query
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
-      .select('id, event_type, game_id, period, details, team_type')
+      .select('*')
       .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`)
       .contains('details', { playersOnIce: [playerId] });
       
@@ -36,28 +35,18 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw eventsError;
     }
     
-    console.log(`Found ${gameEvents?.length || 0} game events referencing player ${playerId}`);
-    console.log("Game events data:", gameEvents);
+    console.log(`Found ${gameEvents?.length || 0} game events for player ${playerId}`);
     
-    // Process events into game stats if needed
-    if (gameEvents?.length > 0) {
-      // First check if we have any existing stats
-      const { data: existingStats, error: existingStatsError } = await supabase
-        .from('game_stats')
-        .select('count')
-        .eq('player_id', playerId)
-        .single();
-        
-      if (existingStatsError || !existingStats?.count) {
-        console.log("No existing game stats found, creating from events...");
-        await createGameStatsFromEvents(playerId, gameEvents);
-      }
+    // Process events into game stats
+    if (gameEvents && gameEvents.length > 0) {
+      const statsCreated = await createGameStatsFromEvents(playerId, gameEvents);
+      console.log(`Game stats creation result: ${statsCreated}`);
     }
     
-    // Get all game stats
+    // Get all game stats after processing
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
-      .select('stat_type, value, game_id, period, details')
+      .select('*')
       .eq('player_id', playerId);
       
     if (gameStatsError) {
@@ -65,13 +54,10 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw gameStatsError;
     }
     
-    if (!gameStats?.length) {
-      console.log("No game stats found after processing events");
-      return [];
-    }
+    console.log(`Found ${gameStats?.length || 0} game stats after processing`);
     
-    // Calculate stats summary and create player stats
-    const statsSummary = calculateStatsSummary(gameStats);
+    // Calculate and update player stats
+    const statsSummary = calculateStatsSummary(gameStats || []);
     const playerStats = createPlayerStatsFromSummary(playerId, playerName, statsSummary);
     
     // Update or insert each stat

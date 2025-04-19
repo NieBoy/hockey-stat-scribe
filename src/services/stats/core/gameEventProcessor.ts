@@ -7,22 +7,26 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     
     let statsCreated = false;
     
-    // Process goal events
+    // Process each event
     for (const event of events) {
-      console.log(`Processing event type: ${event.event_type}`, event);
-      console.log("Event details:", JSON.stringify(event.details, null, 2));
+      console.log(`Processing event:`, event);
       
-      if (event.event_type === 'goal' && event.details) {
-        // Check the structure of the details object
-        console.log("Goal event details structure:", Object.keys(event.details));
+      // Convert details to proper format if needed
+      const details = typeof event.details === 'string' 
+        ? JSON.parse(event.details) 
+        : event.details;
         
-        // Convert details to proper format if needed
-        const details = typeof event.details === 'string' 
-          ? JSON.parse(event.details) 
-          : event.details;
-          
+      if (event.event_type === 'goal') {
+        // Process goal event
         statsCreated = await processGoalEvent(event, playerId, details) || statsCreated;
       }
+      // Add other event types as needed
+    }
+    
+    if (statsCreated) {
+      console.log(`Successfully created stats from events for player ${playerId}`);
+    } else {
+      console.log(`No stats were created from events for player ${playerId}`);
     }
     
     return statsCreated;
@@ -35,157 +39,130 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
 const processGoalEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
   let statsCreated = false;
   
-  // Log the details to better understand the structure
-  console.log("Processing goal event details:", JSON.stringify(details, null, 2));
-  console.log("Player ID to check:", playerId);
-  console.log("Scorer ID in event:", details.playerId);
-  console.log("Primary assist ID in event:", details.primaryAssistId);
-  console.log("Secondary assist ID in event:", details.secondaryAssistId);
-  
-  // Process scorer
-  if (details.playerId === playerId) {
-    console.log("Player is the scorer, creating goal stat");
-    statsCreated = await createGameStat(event, playerId, 'goals') || statsCreated;
-  }
-  
-  // Process primary assist
-  if (details.primaryAssistId === playerId) {
-    console.log("Player has primary assist, creating assist stat");
-    statsCreated = await createGameStat(event, playerId, 'assists', 'primary') || statsCreated;
-  }
-  
-  // Process secondary assist
-  if (details.secondaryAssistId === playerId) {
-    console.log("Player has secondary assist, creating assist stat");
-    statsCreated = await createGameStat(event, playerId, 'assists', 'secondary') || statsCreated;
-  }
-  
-  // Process plus/minus - handle various formats of playersOnIce
-  if (details.playersOnIce) {
-    console.log("Checking playersOnIce:", details.playersOnIce);
-    
-    let playerFound = false;
-    
-    // Check if it's an array
-    if (Array.isArray(details.playersOnIce)) {
-      console.log("playersOnIce is array, checking for player:", playerId);
-      playerFound = details.playersOnIce.includes(playerId);
-    } 
-    // Check if it's an object
-    else if (typeof details.playersOnIce === 'object') {
-      console.log("playersOnIce is object, checking for player:", playerId);
-      playerFound = Object.keys(details.playersOnIce).includes(playerId) || 
-                    Object.values(details.playersOnIce).includes(playerId);
-    }
-    // Check if it's a string that contains the player ID
-    else if (typeof details.playersOnIce === 'string') {
-      console.log("playersOnIce is string, checking for player:", playerId);
-      playerFound = details.playersOnIce.includes(playerId);
-    }
-    
-    if (playerFound) {
-      console.log("Player found in playersOnIce, creating plus/minus stat");
-      statsCreated = await createPlusMinusStat(event, playerId) || statsCreated;
-    } else {
-      console.log("Player NOT found in playersOnIce");
-    }
-  }
-  
-  return statsCreated;
-};
-
-const createGameStat = async (
-  event: any,
-  playerId: string,
-  statType: string,
-  details: string = ''
-): Promise<boolean> => {
   try {
-    console.log(`Creating ${statType} stat for player ${playerId} from event:`, event.id);
-    
-    // First check if this stat already exists to avoid duplicates
-    const { data: existingStat, error: checkError } = await supabase
-      .from('game_stats')
-      .select('id')
-      .eq('game_id', event.game_id)
-      .eq('player_id', playerId)
-      .eq('stat_type', statType)
-      .eq('period', event.period)
-      .maybeSingle();
-      
-    if (checkError) {
-      console.error("Error checking for existing stat:", checkError);
+    // Check if player is scorer
+    if (details.playerId === playerId) {
+      console.log(`Creating goal stat for player ${playerId}`);
+      const goalStat = await createGameStat(event.game_id, playerId, 'goals', event.period);
+      statsCreated = goalStat || statsCreated;
     }
     
-    if (existingStat) {
-      console.log("Stat already exists, skipping creation");
-      return true;
+    // Check for assists
+    if (details.primaryAssistId === playerId) {
+      console.log(`Creating primary assist stat for player ${playerId}`);
+      const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'primary');
+      statsCreated = assistStat || statsCreated;
     }
     
-    const { error } = await supabase.rpc('record_game_stat', {
-      p_game_id: event.game_id,
-      p_player_id: playerId,
-      p_stat_type: statType,
-      p_period: event.period,
-      p_value: 1,
-      p_details: details
-    });
-    
-    if (error) {
-      console.error(`Error recording ${statType} stat:`, error);
-      return false;
+    if (details.secondaryAssistId === playerId) {
+      console.log(`Creating secondary assist stat for player ${playerId}`);
+      const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'secondary');
+      statsCreated = assistStat || statsCreated;
     }
     
-    console.log(`Successfully created ${statType} stat from event`);
-    return true;
+    // Check if player was on ice
+    const playersOnIce = details.playersOnIce || [];
+    if (Array.isArray(playersOnIce) && playersOnIce.includes(playerId)) {
+      console.log(`Creating plus/minus stat for player ${playerId}`);
+      const plusMinusStat = await createPlusMinus(event, playerId);
+      statsCreated = plusMinusStat || statsCreated;
+    }
+    
+    return statsCreated;
   } catch (error) {
-    console.error(`Error creating ${statType} stat:`, error);
+    console.error(`Error processing goal event for player ${playerId}:`, error);
     return false;
   }
 };
 
-const createPlusMinusStat = async (event: any, playerId: string): Promise<boolean> => {
+const createGameStat = async (
+  gameId: string,
+  playerId: string,
+  statType: string,
+  period: number,
+  details: string = ''
+): Promise<boolean> => {
   try {
-    // In a real implementation, this would determine if it's a plus or minus based on team comparison
-    const isPlus = true;
-    
-    // First check if this stat already exists to avoid duplicates
-    const { data: existingStat, error: checkError } = await supabase
+    // First check if stat already exists
+    const { data: existingStat } = await supabase
       .from('game_stats')
       .select('id')
-      .eq('game_id', event.game_id)
+      .eq('game_id', gameId)
       .eq('player_id', playerId)
-      .eq('stat_type', 'plusMinus')
-      .eq('period', event.period)
+      .eq('stat_type', statType)
+      .eq('period', period)
       .maybeSingle();
       
-    if (checkError) {
-      console.error("Error checking for existing plus/minus stat:", checkError);
-    }
-    
     if (existingStat) {
-      console.log("Plus/minus stat already exists, skipping creation");
+      console.log(`Stat already exists for ${statType} in period ${period}`);
       return true;
     }
     
-    const { error } = await supabase.rpc('record_game_stat', {
-      p_game_id: event.game_id,
-      p_player_id: playerId,
-      p_stat_type: 'plusMinus',
-      p_period: event.period,
-      p_value: 1,
-      p_details: isPlus ? 'plus' : 'minus'
-    });
-    
+    // Create new stat
+    const { error } = await supabase
+      .from('game_stats')
+      .insert({
+        game_id: gameId,
+        player_id: playerId,
+        stat_type: statType,
+        period: period,
+        value: 1,
+        details: details,
+        timestamp: new Date().toISOString()
+      });
+      
     if (error) {
-      console.error("Error recording plus/minus stat:", error);
+      console.error(`Error creating ${statType} stat:`, error);
       return false;
     }
     
-    console.log("Successfully created plus/minus stat from event");
+    console.log(`Successfully created ${statType} stat`);
     return true;
   } catch (error) {
-    console.error("Error creating plus/minus stat:", error);
+    console.error(`Error in createGameStat:`, error);
+    return false;
+  }
+};
+
+const createPlusMinus = async (event: any, playerId: string): Promise<boolean> => {
+  try {
+    // Get player's team info
+    const { data: playerTeam } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('id', playerId)
+      .single();
+      
+    if (!playerTeam) {
+      console.error(`Could not find team for player ${playerId}`);
+      return false;
+    }
+    
+    // Get game info to determine if it's a plus or minus
+    const { data: game } = await supabase
+      .from('games')
+      .select('home_team_id, away_team_id')
+      .eq('id', event.game_id)
+      .single();
+      
+    if (!game) {
+      console.error(`Could not find game ${event.game_id}`);
+      return false;
+    }
+    
+    const isHomeTeam = playerTeam.team_id === game.home_team_id;
+    const isHomeTeamGoal = event.team_type === 'home';
+    const isPlus = isHomeTeam === isHomeTeamGoal;
+    
+    return await createGameStat(
+      event.game_id,
+      playerId,
+      'plusMinus',
+      event.period,
+      isPlus ? 'plus' : 'minus'
+    );
+  } catch (error) {
+    console.error(`Error creating plus/minus stat:`, error);
     return false;
   }
 };
