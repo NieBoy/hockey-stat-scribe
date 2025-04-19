@@ -7,11 +7,12 @@ import { getStatsByPlayerId } from "@/services/stats";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { usePlayerDetails } from "@/hooks/usePlayerDetails";
+import { useEffect } from "react";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['playerStats', id],
     queryFn: () => getStatsByPlayerId(id || ''),
     enabled: !!id
@@ -19,10 +20,29 @@ export default function PlayerStats() {
 
   const { player, loading: playerLoading } = usePlayerDetails(id);
 
+  useEffect(() => {
+    console.log('Player Stats Debug:');
+    console.log('Player ID:', id);
+    console.log('Stats:', stats);
+    console.log('Stats Loading:', statsLoading);
+    console.log('Stats Error:', statsError);
+    console.log('Player:', player);
+  }, [id, stats, player]);
+
   const isLoading = statsLoading || playerLoading;
 
   if (isLoading) {
     return <LoadingSpinner />;
+  }
+
+  if (statsError) {
+    return (
+      <MainLayout>
+        <div className="text-center text-red-500">
+          Error loading stats: {statsError.message}
+        </div>
+      </MainLayout>
+    );
   }
 
   return (
@@ -44,13 +64,16 @@ export default function PlayerStats() {
             <CardTitle>Statistics Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <SortableStatsTable 
-              stats={stats || []} 
-              getPlayerName={(playerId) => {
-                // For a single player page, we can just return the player's name
-                return player?.name || "Player";
-              }}
-            />
+            {stats && stats.length > 0 ? (
+              <SortableStatsTable 
+                stats={stats} 
+                getPlayerName={(playerId) => player?.name || "Player"}
+              />
+            ) : (
+              <div className="text-center text-muted-foreground">
+                No statistics available for this player.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
