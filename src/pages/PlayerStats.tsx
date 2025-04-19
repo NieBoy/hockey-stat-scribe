@@ -9,13 +9,12 @@ import { usePlayerDetails } from "@/hooks/usePlayerDetails";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { getPlayerStatsWithRefresh, refreshPlayerStats } from "@/services/stats/playerStatsService";
-import { useToast } from "@/hooks/use-toast";
+import { getPlayerStats, refreshPlayerStats } from "@/services/stats";
+import { toast } from "sonner";
 import { fetchGameStats } from "@/services/stats/gameStatsService";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [gameStatsDebug, setGameStatsDebug] = useState<any[]>([]);
 
@@ -26,7 +25,7 @@ export default function PlayerStats() {
     refetch: refetchStats 
   } = useQuery({
     queryKey: ['playerStats', id],
-    queryFn: () => getPlayerStatsWithRefresh(id || ''),
+    queryFn: () => getPlayerStats(id || ''),
     enabled: !!id
   });
 
@@ -72,15 +71,12 @@ export default function PlayerStats() {
       // Force a refresh of the player's stats
       await refreshPlayerStats(id);
       await refetchStats();
-      toast({
-        title: "Stats Refreshed",
+      toast.success("Stats Refreshed", {
         description: "Player statistics have been recalculated from game data."
       });
     } catch (error) {
-      toast({
-        title: "Refresh Failed",
-        description: "Failed to refresh player statistics.",
-        variant: "destructive"
+      toast.error("Refresh Failed", {
+        description: "Failed to refresh player statistics."
       });
     } finally {
       setIsRefreshing(false);

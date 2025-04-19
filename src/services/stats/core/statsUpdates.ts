@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
 
@@ -52,6 +53,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName);
     
+    // First, check if the player has any game stats
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
       .select('stat_type, value, game_id')

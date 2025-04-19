@@ -44,28 +44,115 @@ export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> 
 export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
   console.log("fetchAllPlayerStats called");
   try {
-    // First, fetch game stats
-    const { data: gameStats, error: gameStatsError } = await supabase
+    // Let's check if we have any game stats at all first
+    const { data: gameStatsCount, error: countError } = await supabase
       .from('game_stats')
+      .select('id', { count: 'exact', head: true });
+      
+    if (countError) {
+      console.error("Error checking game stats count:", countError);
+    } else {
+      console.log(`Total game stats in database: ${gameStatsCount?.length || 0}`);
+    }
+    
+    // Now let's get the player_stats which should have been aggregated
+    const { data: playerStats, error: statsError } = await supabase
+      .from('player_stats')
       .select('*');
-
-    if (gameStatsError) {
-      console.error("Error fetching game stats:", gameStatsError);
-      throw gameStatsError;
+      
+    if (statsError) {
+      console.error("Error fetching player_stats:", statsError);
+      throw statsError;
     }
+    
+    console.log("Raw player_stats:", playerStats);
+    
+    if (!playerStats || playerStats.length === 0) {
+      console.log("No player_stats found, will try to recalculate from game_stats");
+      
+      // If there are no player_stats, let's get data from game_stats instead
+      const { data: gameStats, error: gameStatsError } = await supabase
+        .from('game_stats')
+        .select('*');
 
-    console.log("Raw game stats:", gameStats);
+      if (gameStatsError) {
+        console.error("Error fetching game stats:", gameStatsError);
+        throw gameStatsError;
+      }
 
-    if (!gameStats || gameStats.length === 0) {
-      console.log("No game stats found");
-      return [];
+      console.log("Raw game stats:", gameStats);
+
+      if (!gameStats || gameStats.length === 0) {
+        console.log("No game stats found either");
+        return [];
+      }
+
+      // Get all unique player IDs from game stats
+      const playerIds = [...new Set(gameStats.map(stat => stat.player_id))];
+      console.log("Unique player IDs:", playerIds);
+
+      // Fetch player names in a separate query
+      const { data: players, error: playersError } = await supabase
+        .from('team_members')
+        .select('id, name')
+        .in('id', playerIds);
+        
+      if (playersError) {
+        console.error("Error fetching player names:", playersError);
+      }
+      
+      // Create a map of player IDs to names
+      const playerNameMap = new Map();
+      players?.forEach(player => {
+        playerNameMap.set(player.id, player.name);
+      });
+      
+      console.log("Player name map:", Object.fromEntries(playerNameMap));
+
+      // Define the type for our stats accumulator
+      interface StatAccumulator {
+        playerId: string;
+        playerName: string;
+        statType: StatType;
+        value: number;
+        gamesPlayed: Set<string>;
+      }
+
+      // Group stats by player and stat type with proper typing
+      const statsByPlayer = gameStats.reduce((acc: Record<string, StatAccumulator>, stat: any) => {
+        const key = `${stat.player_id}-${stat.stat_type}`;
+        if (!acc[key]) {
+          acc[key] = {
+            playerId: stat.player_id,
+            playerName: playerNameMap.get(stat.player_id) || 'Unknown Player',
+            statType: stat.stat_type as StatType,
+            value: 0,
+            gamesPlayed: new Set()
+          };
+        }
+        acc[key].value += stat.value;
+        acc[key].gamesPlayed.add(stat.game_id);
+        return acc;
+      }, {});
+
+      console.log("Aggregated stats by player:", statsByPlayer);
+
+      // Convert to array and format with proper typing
+      const aggregatedStats: PlayerStat[] = Object.values(statsByPlayer).map((stat: StatAccumulator) => ({
+        playerId: stat.playerId,
+        playerName: stat.playerName,
+        statType: stat.statType,
+        value: stat.value,
+        gamesPlayed: stat.gamesPlayed.size
+      }));
+
+      console.log("Final aggregated stats:", aggregatedStats);
+      return aggregatedStats;
     }
-
-    // Get all unique player IDs from game stats
-    const playerIds = [...new Set(gameStats.map(stat => stat.player_id))];
-    console.log("Unique player IDs:", playerIds);
-
-    // Fetch player names in a separate query
+    
+    // If we have player_stats, let's fetch the player names
+    const playerIds = [...new Set(playerStats.map(stat => stat.player_id))];
+    
     const { data: players, error: playersError } = await supabase
       .from('team_members')
       .select('id, name')
@@ -81,47 +168,16 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       playerNameMap.set(player.id, player.name);
     });
     
-    console.log("Player name map:", Object.fromEntries(playerNameMap));
-
-    // Define the type for our stats accumulator
-    interface StatAccumulator {
-      playerId: string;
-      playerName: string;
-      statType: StatType;
-      value: number;
-      gamesPlayed: Set<string>;
-    }
-
-    // Group stats by player and stat type with proper typing
-    const statsByPlayer = gameStats.reduce((acc: Record<string, StatAccumulator>, stat: any) => {
-      const key = `${stat.player_id}-${stat.stat_type}`;
-      if (!acc[key]) {
-        acc[key] = {
-          playerId: stat.player_id,
-          playerName: playerNameMap.get(stat.player_id) || 'Unknown Player',
-          statType: stat.stat_type as StatType,
-          value: 0,
-          gamesPlayed: new Set()
-        };
-      }
-      acc[key].value += stat.value;
-      acc[key].gamesPlayed.add(stat.game_id);
-      return acc;
-    }, {});
-
-    console.log("Aggregated stats by player:", statsByPlayer);
-
-    // Convert to array and format with proper typing
-    const aggregatedStats: PlayerStat[] = Object.values(statsByPlayer).map((stat: StatAccumulator) => ({
-      playerId: stat.playerId,
-      playerName: stat.playerName,
-      statType: stat.statType,
+    // Map the player_stats with player names
+    const mappedStats: PlayerStat[] = playerStats.map(stat => ({
+      playerId: stat.player_id,
+      playerName: playerNameMap.get(stat.player_id) || 'Unknown Player',
+      statType: stat.stat_type as StatType,
       value: stat.value,
-      gamesPlayed: stat.gamesPlayed.size
+      gamesPlayed: stat.games_played
     }));
-
-    console.log("Final aggregated stats:", aggregatedStats);
-    return aggregatedStats;
+    
+    return mappedStats;
   } catch (error) {
     console.error("Error in fetchAllPlayerStats:", error);
     return [];
