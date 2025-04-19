@@ -6,38 +6,55 @@ const updateOrInsertStat = async (
   playerId: string, 
   stat: Partial<PlayerStat>
 ) => {
-  const { data: existingStat } = await supabase
-    .from('player_stats')
-    .select('id')
-    .eq('player_id', playerId)
-    .eq('stat_type', stat.statType)
-    .maybeSingle();
+  try {
+    console.log(`Updating/inserting stat for player ${playerId}:`, stat);
     
-  if (existingStat) {
-    const { error: updateError } = await supabase
+    const { data: existingStat } = await supabase
       .from('player_stats')
-      .update({
-        value: stat.value,
-        games_played: stat.gamesPlayed
-      })
-      .eq('id', existingStat.id);
+      .select('id')
+      .eq('player_id', playerId)
+      .eq('stat_type', stat.statType)
+      .maybeSingle();
       
-    if (updateError) {
-      console.error("Error updating player stat:", updateError);
-    }
-  } else {
-    const { error: insertError } = await supabase
-      .from('player_stats')
-      .insert({
-        player_id: playerId,
-        stat_type: stat.statType,
-        value: stat.value,
-        games_played: stat.gamesPlayed
-      });
+    if (existingStat) {
+      console.log(`Found existing stat with id ${existingStat.id}, updating...`);
+      const { error: updateError } = await supabase
+        .from('player_stats')
+        .update({
+          value: stat.value,
+          games_played: stat.gamesPlayed
+        })
+        .eq('id', existingStat.id);
+        
+      if (updateError) {
+        console.error("Error updating player stat:", updateError);
+        throw updateError;
+      }
       
-    if (insertError) {
-      console.error("Error inserting player stat:", insertError);
+      console.log(`Successfully updated stat id ${existingStat.id}`);
+    } else {
+      console.log(`No existing stat found, inserting new stat...`);
+      const { error: insertError } = await supabase
+        .from('player_stats')
+        .insert({
+          player_id: playerId,
+          stat_type: stat.statType,
+          value: stat.value,
+          games_played: stat.gamesPlayed
+        });
+        
+      if (insertError) {
+        console.error("Error inserting player stat:", insertError);
+        throw insertError;
+      }
+      
+      console.log(`Successfully inserted new stat for player ${playerId}`);
     }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error in updateOrInsertStat for player ${playerId}:`, error);
+    return false;
   }
 };
 
@@ -53,7 +70,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       
     if (playerError) {
       console.error("Error fetching player data:", playerError);
-      return [];
+      throw playerError;
     }
     
     const playerName = playerData?.name || 'Unknown Player';
@@ -70,32 +87,10 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw gameStatsError;
     }
     
-    console.log("Raw game stats for player:", gameStats);
+    console.log(`Found ${gameStats?.length || 0} raw game stats for player:`, gameStats);
     
-    // If there are no game stats for this player, let's see if there are ANY game stats in the database
+    // If there are no game stats for this player, return empty array
     if (!gameStats || gameStats.length === 0) {
-      const { count, error: countError } = await supabase
-        .from('game_stats')
-        .select('*', { count: 'exact', head: true });
-        
-      if (countError) {
-        console.error("Error counting game stats:", countError);
-      } else {
-        console.log("Total game stats in database:", count);
-      }
-      
-      // Also check games this player might be part of
-      const { data: playerGames, error: playerGamesError } = await supabase
-        .from('games')
-        .select('id, home_team_id, away_team_id')
-        .or(`home_team_id.eq.${playerData.team_id},away_team_id.eq.${playerData.team_id}`);
-        
-      if (playerGamesError) {
-        console.error("Error checking player games:", playerGamesError);
-      } else {
-        console.log("Games for player's team:", playerGames);
-      }
-      
       console.log("No game stats found for player:", playerId);
       return [];
     }
@@ -118,7 +113,9 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       statsSummary.set(statType, currentStat);
     });
     
-    console.log("Stats summary:", Object.fromEntries(statsSummary));
+    console.log("Stats summary:", Array.from(statsSummary.entries()).map(([key, val]) => 
+      `${key}: ${val.value} (${val.games.size} games)`
+    ));
     
     // Convert to PlayerStat array and update database
     const playerStats: PlayerStat[] = [];
@@ -132,8 +129,10 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
         playerName
       };
       
-      await updateOrInsertStat(playerId, stat);
-      playerStats.push(stat as PlayerStat);
+      const updated = await updateOrInsertStat(playerId, stat);
+      if (updated) {
+        playerStats.push(stat as PlayerStat);
+      }
     }
     
     console.log("Final processed stats:", playerStats);

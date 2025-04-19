@@ -4,7 +4,7 @@ import { User, Game } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { recordGoalEvent } from '@/services/events/goalEventService';
 
-type FlowStep = 'team-select' | 'scorer-select' | 'primary-assist' | 'secondary-assist' | 'players-on-ice' | 'opponent-players-on-ice';
+type FlowStep = 'team-select' | 'scorer-select' | 'primary-assist' | 'secondary-assist' | 'players-on-ice' | 'submit';
 
 export function useGoalFlow(game: Game, period: number, onComplete: () => void) {
   const [currentStep, setCurrentStep] = useState<FlowStep>('team-select');
@@ -79,6 +79,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     const limitedPlayers = allPlayers.slice(0, 6);
     console.log("Final players on ice set to:", limitedPlayers);
     setPlayersOnIce(limitedPlayers);
+    setCurrentStep('submit');
   };
 
   const handleSubmit = async () => {
