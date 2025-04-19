@@ -60,6 +60,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   };
 
   const handlePlayersOnIceSelect = (players: User[]) => {
+    console.log("handlePlayersOnIceSelect called with players:", players);
+    
     const allPlayers = [...players];
     
     if (selectedScorer && !players.some(p => p.id === selectedScorer.id)) {
@@ -75,6 +77,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     }
     
     const limitedPlayers = allPlayers.slice(0, 6);
+    console.log("Final players on ice set to:", limitedPlayers);
     setPlayersOnIce(limitedPlayers);
   };
 
@@ -86,6 +89,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     }
 
     setIsSubmitting(true);
+    console.log("Submitting goal with players:", playersOnIce);
 
     try {
       // Create the goal data with the base properties
@@ -110,7 +114,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
         if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
         if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
       }
-
+      
+      console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
 
       toast({

@@ -37,23 +37,24 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error(`Failed to record goal event: ${eventError.message}`);
     }
     
-    // Record goal stat if scorer provided
-    if (data.scorerId) {
+    // Record goal stat if scorer provided (only for home team goals)
+    if (data.scorerId && data.teamType === 'home') {
       await insertStatSafely(data.gameId, data.scorerId, 'goals', data.period, 1);
     }
     
-    // Record primary assist if provided
-    if (data.primaryAssistId) {
+    // Record primary assist if provided (only for home team goals)
+    if (data.primaryAssistId && data.teamType === 'home') {
       await insertStatSafely(data.gameId, data.primaryAssistId, 'assists', data.period, 1, 'primary');
     }
     
-    // Record secondary assist if provided
-    if (data.secondaryAssistId) {
+    // Record secondary assist if provided (only for home team goals)
+    if (data.secondaryAssistId && data.teamType === 'home') {
       await insertStatSafely(data.gameId, data.secondaryAssistId, 'assists', data.period, 1, 'secondary');
     }
     
     // Record plus/minus for players on ice
     if (data.playersOnIce.length > 0) {
+      console.log("Recording plus/minus for players:", data.playersOnIce);
       await recordPlusMinusStats(
         data.gameId,
         data.playersOnIce,
