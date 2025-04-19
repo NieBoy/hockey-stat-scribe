@@ -23,25 +23,29 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName, "team_id:", playerData.team_id);
     
-    // Get relevant game events
+    // Get relevant game events with fixed query syntax
     const { data: gameEvents, error: eventsError } = await supabase
       .from('game_events')
       .select('id, event_type, game_id, period, details, team_type')
-      .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId},details->playersOnIce.cs.{${playerId}}`);
+      .or(`details->playerId.eq."${playerId}",details->primaryAssistId.eq."${playerId}",details->secondaryAssistId.eq."${playerId}",details->playersOnIce.cs.{"${playerId}"}`);
       
     if (eventsError) {
       console.error("Error fetching game events:", eventsError);
     }
     
-    // Create game stats from events if needed
+    console.log(`Found ${gameEvents?.length || 0} game events referencing player ${playerId}`);
+    
+    // Process events into game stats if needed
     if (gameEvents?.length > 0) {
-      const { data: existingStats } = await supabase
+      // First check if we have any existing stats
+      const { data: existingStats, error: existingStatsError } = await supabase
         .from('game_stats')
         .select('count')
         .eq('player_id', playerId)
-        .maybeSingle();
+        .single();
         
-      if (!existingStats?.count) {
+      if (existingStatsError || !existingStats?.count) {
+        console.log("No existing game stats found, creating from events...");
         await createGameStatsFromEvents(playerId, gameEvents);
       }
     }
@@ -58,6 +62,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     if (!gameStats?.length) {
+      console.log("No game stats found after processing events");
       return [];
     }
     
