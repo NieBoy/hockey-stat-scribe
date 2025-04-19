@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Game, User } from '@/types';
@@ -53,13 +52,18 @@ export default function PenaltyFlow({ game, period, onComplete, onCancel }: Pena
         
       case 'player-select':
         if (!selectedTeam) return null;
+        const team = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
         return (
-          <PlayerSelect
-            team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
-            onPlayerSelect={handlePlayerSelect}
-            selectedPlayers={selectedPlayer ? [selectedPlayer] : []}
-            title="Select Penalized Player"
-          />
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Select Penalized Player</h3>
+            <PlayerSelect
+              team={team}
+              onPlayerSelect={handlePlayerSelect}
+              selectedPlayers={selectedPlayer ? [selectedPlayer] : []}
+              title="Select Penalized Player"
+              showLineups={true}
+            />
+          </div>
         );
         
       case 'penalty-type':
