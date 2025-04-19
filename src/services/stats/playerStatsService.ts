@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
 
@@ -16,14 +15,29 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       .select('stat_type, value, game_id')
       .eq('player_id', playerId);
       
-    if (gameStatsError) throw gameStatsError;
+    if (gameStatsError) {
+      console.error("Error fetching game stats:", gameStatsError);
+      throw gameStatsError;
+    }
     
     if (!gameStats || gameStats.length === 0) {
       console.log("No game stats found for player:", playerId);
+      
+      // For debugging: Check if player has any events with this ID
+      const { data: checkData, error: checkError } = await supabase
+        .from('game_events')
+        .select('event_type, team_type')
+        .eq('created_by', playerId)
+        .limit(5);
+        
+      if (!checkError && checkData && checkData.length > 0) {
+        console.log("Found events created by this player:", checkData);
+      }
+      
       return [];
     }
     
-    console.log("Found game stats:", gameStats.length);
+    console.log("Found game stats:", gameStats.length, gameStats);
     
     // Calculate stats summary by type
     const statsSummary = new Map<string, { value: number, games: Set<string> }>();
@@ -66,6 +80,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       
       if (existingStat) {
         // Update existing stat
+        console.log("Updating existing stat:", existingStat.id, stat);
         const { error: updateError } = await supabase
           .from('player_stats')
           .update({
@@ -79,6 +94,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
         }
       } else {
         // Insert new stat
+        console.log("Inserting new stat:", stat);
         const { error: insertError } = await supabase
           .from('player_stats')
           .insert({

@@ -1,3 +1,4 @@
+
 import {
   createBrowserRouter,
   RouterProvider,
@@ -124,6 +125,11 @@ function AppRoutes() {
       <Route path="/stats" element={
         <RequireAuth>
           <Stats />
+        </RequireAuth>
+      } />
+      <Route path="/stars" element={
+        <RequireAuth>
+          <Stars />
         </RequireAuth>
       } />
       <Route path="*" element={<NotFound />} />

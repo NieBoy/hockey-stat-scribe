@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStatsByPlayerId } from "@/services/stats";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { usePlayerDetails } from "@/hooks/usePlayerDetails";
@@ -12,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { getPlayerStatsWithRefresh } from "@/services/stats/playerStatsService";
 import { useToast } from "@/hooks/use-toast";
+import { fetchGameStats } from "@/services/stats/gameStatsService";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [gameStatsDebug, setGameStatsDebug] = useState<any[]>([]);
 
   const { 
     data: stats, 
@@ -31,6 +32,24 @@ export default function PlayerStats() {
 
   const { player, loading: playerLoading } = usePlayerDetails(id);
 
+  // Add debug query to check game_stats directly
+  const { data: rawGameStats } = useQuery({
+    queryKey: ['rawGameStats', id],
+    queryFn: async () => {
+      if (!id) return [];
+      try {
+        // This will help us see if there are any game_stats at all for this player
+        const { data, error } = await fetchGameStats(id);
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching raw game stats:", error);
+        return [];
+      }
+    },
+    enabled: !!id
+  });
+
   useEffect(() => {
     console.log('Player Stats Debug:');
     console.log('Player ID:', id);
@@ -38,7 +57,12 @@ export default function PlayerStats() {
     console.log('Stats Loading:', statsLoading);
     console.log('Stats Error:', statsError);
     console.log('Player:', player);
-  }, [id, stats, player, statsError]);
+    console.log('Raw Game Stats:', rawGameStats);
+    
+    if (rawGameStats && rawGameStats.length > 0) {
+      setGameStatsDebug(rawGameStats);
+    }
+  }, [id, stats, player, statsError, rawGameStats]);
 
   const isLoading = statsLoading || playerLoading;
   
@@ -118,6 +142,14 @@ export default function PlayerStats() {
                   <li>No stats have been recorded for this player</li>
                   <li>Stats need to be refreshed from game data</li>
                 </ul>
+                
+                {gameStatsDebug && gameStatsDebug.length > 0 && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-left">
+                    <p className="font-medium mb-2">Debug Information:</p>
+                    <p>Found {gameStatsDebug.length} raw game stats for this player that need to be processed.</p>
+                    <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from game data.</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { GameStat, StatType } from '@/types';
 
@@ -17,14 +16,21 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
   return data;
 };
 
-export const fetchGameStats = async (gameId: string): Promise<GameStat[]> => {
-  console.log("Fetching game stats for game:", gameId);
+export const fetchGameStats = async (gameId: string, playerId?: string): Promise<GameStat[]> => {
+  console.log("Fetching game stats for game:", gameId, "player:", playerId || "all");
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('game_stats')
-    .select('*')
-    .eq('game_id', gameId)
-    .order('timestamp', { ascending: true });
+    .select('*');
+  
+  // If gameId is a UUID, fetch by game_id; otherwise, assume it's a playerId
+  if (playerId) {
+    query = query.eq('player_id', playerId);
+  } else {
+    query = query.eq('game_id', gameId);
+  }
+
+  const { data, error } = await query.order('timestamp', { ascending: true });
 
   if (error) {
     console.error("Error fetching game stats:", error);
