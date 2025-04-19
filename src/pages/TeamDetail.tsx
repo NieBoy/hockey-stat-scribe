@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -210,7 +209,7 @@ export default function TeamDetail() {
             </TabsContent>
             
             <TabsContent value="stats" className="space-y-4">
-              <StatsTabContent />
+              <StatsTabContent team={team} />
             </TabsContent>
             
             <TabsContent value="all-members" className="space-y-4">
