@@ -6,7 +6,8 @@ import {
   Users,
   Building,
   BarChart3,
-  Mail
+  Mail,
+  Trophy
 } from "lucide-react";
 import { User } from "@/types";
 
@@ -38,6 +39,10 @@ export default function NavLinks({ user }: NavLinksProps) {
       <Link to="/stats" className="flex items-center gap-2 text-sm font-medium">
         <BarChart3 className="h-4 w-4" />
         Stats
+      </Link>
+      <Link to="/stars" className="flex items-center gap-2 text-sm font-medium">
+        <Trophy className="h-4 w-4" />
+        Stars
       </Link>
       <Link to="/invitations" className="flex items-center gap-2 text-sm font-medium">
         <Mail className="h-4 w-4" />

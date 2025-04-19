@@ -1,4 +1,3 @@
-
 import {
   createBrowserRouter,
   RouterProvider,
@@ -29,6 +28,7 @@ import PlayerDetail from "@/pages/PlayerDetail";
 import PlayerStats from "@/pages/PlayerStats";
 import NotFound from "@/pages/NotFound";
 import Stats from "@/pages/Stats";
+import Stars from "@/pages/Stars";
 
 const queryClient = new QueryClient();
 
