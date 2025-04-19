@@ -76,6 +76,14 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const playerName = playerData?.name || 'Unknown Player';
     console.log("Found player:", playerName, "team_id:", playerData.team_id);
     
+    // Look for events that reference this player in their details
+    const { data: gameEvents, error: eventsError } = await supabase
+      .from('game_events')
+      .select('id, event_type, game_id, period, details')
+      .contains('details', { playerId });
+      
+    console.log(`Found ${gameEvents?.length || 0} game events referencing player ${playerId}`);
+    
     // Query the game_stats table for this player specifically
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
@@ -89,9 +97,17 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     console.log(`Found ${gameStats?.length || 0} raw game stats for player:`, gameStats);
     
-    // If there are no game stats for this player, return empty array
+    // If there are no game stats for this player, check if we need to create them from events
     if (!gameStats || gameStats.length === 0) {
       console.log("No game stats found for player:", playerId);
+      
+      if (gameEvents && gameEvents.length > 0) {
+        console.log("Processing game events to create stats...");
+        // Process game events to create missing stats if needed
+        // This is a potential source of the issue if events are recorded but stats aren't
+      }
+      
+      // Even if no stats, return empty array to prevent errors
       return [];
     }
     

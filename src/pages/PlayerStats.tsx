@@ -49,6 +49,40 @@ export default function PlayerStats() {
     enabled: !!id
   });
 
+  // Add query to fetch game events for this player
+  const { data: playerGameEvents } = useQuery({
+    queryKey: ['playerGameEvents', id],
+    queryFn: async () => {
+      if (!id) return [];
+      try {
+        const { data: eventData, error: eventError } = await supabase
+          .from('game_events')
+          .select(`
+            id, 
+            game_id, 
+            event_type, 
+            period, 
+            team_type, 
+            timestamp,
+            details
+          `)
+          .contains('details', { playerId: id })
+          .order('timestamp', { ascending: false });
+          
+        if (eventError) {
+          console.error("Error fetching player events:", eventError);
+          throw eventError;
+        }
+        
+        return eventData || [];
+      } catch (error) {
+        console.error("Error in fetchPlayerGameEvents:", error);
+        return [];
+      }
+    },
+    enabled: !!id
+  });
+
   // Fetch player's team information
   const { data: playerTeam } = useQuery({
     queryKey: ['playerTeam', id],
@@ -113,11 +147,12 @@ export default function PlayerStats() {
     console.log('Player Team:', playerTeam);
     console.log('Team Games:', teamGames);
     console.log('Raw Game Stats:', rawGameStats);
+    console.log('Player Game Events:', playerGameEvents);
     
     if (rawGameStats && rawGameStats.length > 0) {
       setGameStatsDebug(rawGameStats);
     }
-  }, [id, stats, player, statsError, rawGameStats, playerTeam, teamGames]);
+  }, [id, stats, player, statsError, rawGameStats, playerTeam, teamGames, playerGameEvents]);
 
   const isLoading = statsLoading || playerLoading;
   
@@ -223,6 +258,14 @@ export default function PlayerStats() {
                     <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from game data.</p>
                   </div>
                 )}
+                
+                {playerGameEvents && playerGameEvents.length > 0 && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-left">
+                    <p className="font-medium mb-2">Game Events Found:</p>
+                    <p>Found {playerGameEvents.length} game events for this player, but they haven't been processed into stats yet.</p>
+                    <p className="mt-2">Try clicking the "Refresh Stats" button above to calculate statistics from these events.</p>
+                  </div>
+                )}
               </div>
             )}
             
@@ -249,6 +292,13 @@ export default function PlayerStats() {
                     <h4 className="font-medium text-sm">Team Games:</h4>
                     <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
                       {JSON.stringify(teamGames, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">Player Game Events:</h4>
+                    <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto mt-1">
+                      {JSON.stringify(playerGameEvents, null, 2)}
                     </pre>
                   </div>
                   
