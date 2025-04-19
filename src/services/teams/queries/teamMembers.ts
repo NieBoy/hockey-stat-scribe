@@ -31,9 +31,9 @@ export const getTeamMembers = async (teamId: string): Promise<TeamMemberData[]> 
   const transformedMembers: TeamMemberData[] = teamMembers?.map(member => ({
     ...member,
     users: member.users ? {
-      id: member.users.id,
-      name: member.users.name,
-      email: member.users.email
+      id: member.users.id as string,
+      name: member.users.name as string,
+      email: member.users.email as string
     } : null
   })) || [];
   
