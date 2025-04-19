@@ -1,3 +1,4 @@
+
 import MainLayout from "@/components/layout/MainLayout";
 import { DataTable } from "@/components/ui/data-table";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getAllPlayerStats, refreshAllPlayerStats } from "@/services/stats/playerStatsService";
 
 // Helper function to make stat types more readable
 const formatStatType = (statType: string): string => {
@@ -40,163 +42,13 @@ const getStatTypeColor = (statType: string): string => {
   }
 };
 
-// Direct function to get player stats from the database
-const getPlayerStats = async (): Promise<PlayerStat[]> => {
-  console.log("Fetching player stats from database");
-  
-  const { data, error } = await supabase
-    .from('player_stats')
-    .select('id, player_id, stat_type, value, games_played, users(name)')
-    .order('value', { ascending: false });
-    
-  if (error) {
-    console.error("Error fetching player stats:", error);
-    throw error;
-  }
-  
-  console.log("Received player stats data:", data);
-  
-  // Transform the data to match our PlayerStat type
-  return (data || []).map(stat => ({
-    playerId: stat.player_id,
-    statType: stat.stat_type,
-    value: stat.value,
-    gamesPlayed: stat.games_played,
-    playerName: stat.users ? (stat.users as any).name : 'Unknown Player'
-  }));
-};
-
-// Function to recalculate all player stats
-const refreshAllPlayerStats = async (): Promise<void> => {
-  console.log("Refreshing all player stats");
-  
-  // Get all players with game stats
-  const { data: players, error: playersError } = await supabase
-    .from('game_stats')
-    .select('player_id')
-    .eq('player_id', 'player_id') // Add a dummy condition to avoid distinct()
-    .then(result => {
-      // Process the result to get unique player IDs
-      if (result.data) {
-        const uniquePlayerIds = [...new Set(result.data.map(row => row.player_id))];
-        return {
-          ...result,
-          data: uniquePlayerIds.map(id => ({ player_id: id }))
-        };
-      }
-      return result;
-    });
-    
-  if (playersError) {
-    console.error("Error getting players with stats:", playersError);
-    throw playersError;
-  }
-  
-  console.log(`Found ${players?.length || 0} players with game stats`);
-  
-  // For each player, calculate their stats
-  if (players && players.length > 0) {
-    for (const player of players) {
-      await refreshPlayerStats(player.player_id);
-    }
-  }
-};
-
-// Function to calculate stats for a single player
-const refreshPlayerStats = async (playerId: string): Promise<void> => {
-  try {
-    console.log(`Refreshing stats for player ${playerId}`);
-    
-    // Get all game stats for this player
-    const { data: gameStats, error: gameStatsError } = await supabase
-      .from('game_stats')
-      .select('stat_type, value, game_id')
-      .eq('player_id', playerId);
-      
-    if (gameStatsError) {
-      console.error(`Error fetching game stats for player ${playerId}:`, gameStatsError);
-      return;
-    }
-    
-    if (!gameStats || gameStats.length === 0) {
-      console.log(`No game stats found for player ${playerId}`);
-      return;
-    }
-    
-    // Calculate stats summary by type
-    const statsSummary = new Map<string, { value: number, games: Set<string> }>();
-    
-    gameStats.forEach(stat => {
-      const statType = stat.stat_type;
-      const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
-      
-      currentStat.value += stat.value;
-      currentStat.games.add(stat.game_id);
-      
-      statsSummary.set(statType, currentStat);
-    });
-    
-    // Update each stat type for this player
-    for (const [statType, data] of statsSummary.entries()) {
-      // Check if this stat already exists
-      const { data: existingStat, error: checkError } = await supabase
-        .from('player_stats')
-        .select('id')
-        .eq('player_id', playerId)
-        .eq('stat_type', statType)
-        .single();
-        
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected
-        console.error(`Error checking for existing stat for player ${playerId}:`, checkError);
-        continue;
-      }
-      
-      if (existingStat) {
-        // Update existing stat
-        console.log(`Updating existing ${statType} stat for player ${playerId}`);
-        const { error: updateError } = await supabase
-          .from('player_stats')
-          .update({
-            value: data.value,
-            games_played: data.games.size
-          })
-          .eq('id', existingStat.id);
-          
-        if (updateError) {
-          console.error(`Error updating ${statType} stat for player ${playerId}:`, updateError);
-        }
-      } else {
-        // Insert new stat
-        console.log(`Creating new ${statType} stat for player ${playerId}`);
-        const { error: insertError } = await supabase
-          .from('player_stats')
-          .insert({
-            player_id: playerId,
-            stat_type: statType,
-            value: data.value,
-            games_played: data.games.size
-          });
-          
-        if (insertError) {
-          console.error(`Error inserting ${statType} stat for player ${playerId}:`, insertError);
-        }
-      }
-    }
-    
-    console.log(`Successfully refreshed stats for player ${playerId}`);
-  } catch (error) {
-    console.error(`Error in refreshPlayerStats for ${playerId}:`, error);
-  }
-};
-
 export default function Stats() {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ['playerStats'],
-    queryFn: getPlayerStats,
+    queryFn: getAllPlayerStats,
   });
   
   const handleRefreshAllStats = async () => {
@@ -223,7 +75,11 @@ export default function Stats() {
     {
       accessorKey: "playerId",
       header: "Player",
-      cell: ({ row }) => row.original.playerName || row.original.playerId,
+      cell: ({ row }) => {
+        const playerId = row.original.playerId;
+        const playerName = row.original.playerName || 'Unknown Player';
+        return <a href={`/players/${playerId}/stats`} className="text-primary hover:underline">{playerName}</a>;
+      },
     },
     {
       accessorKey: "statType",
@@ -298,7 +154,7 @@ export default function Stats() {
             <DataTable
               columns={columns}
               data={stats}
-              searchKey="playerId"
+              searchKey="playerName"
             />
           </Card>
         ) : (

@@ -19,14 +19,14 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
 export const fetchGameStats = async (gameId: string, playerId?: string): Promise<GameStat[]> => {
   console.log("Fetching game stats for game:", gameId, "player:", playerId || "all");
 
-  let query = supabase
-    .from('game_stats')
-    .select('*');
+  let query = supabase.from('game_stats').select('*');
   
-  // If gameId is a UUID, fetch by game_id; otherwise, assume it's a playerId
+  // If playerId is provided, filter by player_id
   if (playerId) {
     query = query.eq('player_id', playerId);
-  } else {
+  } 
+  // Otherwise, if gameId is provided, filter by game_id
+  else if (gameId) {
     query = query.eq('game_id', gameId);
   }
 

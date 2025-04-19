@@ -39,7 +39,7 @@ export default function PlayerStats() {
       if (!id) return [];
       try {
         // This will help us see if there are any game_stats at all for this player
-        return await fetchGameStats(id);
+        return await fetchGameStats('', id);
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
         return [];
@@ -88,7 +88,11 @@ export default function PlayerStats() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <MainLayout>
+        <LoadingSpinner />
+      </MainLayout>
+    );
   }
 
   if (statsError) {
