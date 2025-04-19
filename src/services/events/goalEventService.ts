@@ -14,13 +14,13 @@ export interface GoalEventData {
   playersOnIce: string[];
 }
 
-type GameEventResponse = {
+interface GameEventResponse {
   id: string;
   game_id: string;
   event_type: string;
   period: number;
   team_type: string;
-};
+}
 
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
@@ -33,7 +33,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     
     // First, create the goal event with RPC to bypass RLS issues
     const { data: eventData, error: eventError } = await supabase
-      .rpc<GameEventResponse>('create_game_event', {
+      .rpc('create_game_event', {
         p_game_id: data.gameId,
         p_event_type: 'goal',
         p_period: data.period,
@@ -50,7 +50,15 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Failed to get event data after creation");
     }
     
-    const eventId = eventData.id;
+    // Parse the response data to get the event ID
+    let eventId: string;
+    if (typeof eventData === 'object' && eventData !== null && 'id' in eventData) {
+      eventId = eventData.id as string;
+    } else {
+      console.error("Unexpected event data format:", eventData);
+      throw new Error("Could not get event ID from response");
+    }
+    
     console.log("Created game event with ID:", eventId);
     
     // Record goal stat if scorer provided
