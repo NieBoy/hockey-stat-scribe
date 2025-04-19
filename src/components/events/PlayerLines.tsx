@@ -72,7 +72,7 @@ export default function PlayerLines({
       if (onMultiPlayerSelect) {
         const selectedPlayersList = team.players.filter(p => newSelectedIds.has(p.id));
         console.log("PlayerLines - Updated selected players:", selectedPlayersList);
-        onMultiPlayerSelect(selectedPlayersList);
+        onMultiPlayerSelect([...selectedPlayersList]); // Create a new array to ensure reference changes
       }
     } else if (onPlayerSelect) {
       console.log(`PlayerLines - Selected single player: ${player.name}`);

@@ -25,14 +25,18 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
     
-    // First, create the goal event with RPC to bypass RLS issues
+    // Instead of using RPC, create the event directly using insert
     const { data: eventData, error: eventError } = await supabase
-      .rpc('create_game_event', {
-        p_game_id: data.gameId,
-        p_event_type: 'goal',
-        p_period: data.period,
-        p_team_type: data.teamType
-      });
+      .from('game_events')
+      .insert({
+        game_id: data.gameId,
+        event_type: 'goal',
+        period: data.period,
+        team_type: data.teamType,
+        timestamp: new Date().toISOString()
+      })
+      .select()
+      .single();
       
     if (eventError) {
       console.error("Error recording game event:", eventError);
@@ -44,15 +48,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Failed to get event data after creation");
     }
     
-    // Parse the response data to get the event ID
-    let eventId: string;
-    if (typeof eventData === 'object' && eventData !== null && 'id' in eventData) {
-      eventId = eventData.id as string;
-    } else {
-      console.error("Unexpected event data format:", eventData);
-      throw new Error("Could not get event ID from response");
-    }
-    
+    const eventId = eventData.id;
     console.log("Created game event with ID:", eventId);
     
     // Record goal stat if scorer provided
