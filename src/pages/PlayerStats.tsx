@@ -9,7 +9,7 @@ import { usePlayerDetails } from "@/hooks/usePlayerDetails";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { getPlayerStatsWithRefresh } from "@/services/stats/playerStatsService";
+import { getPlayerStatsWithRefresh, refreshPlayerStats } from "@/services/stats/playerStatsService";
 import { useToast } from "@/hooks/use-toast";
 import { fetchGameStats } from "@/services/stats/gameStatsService";
 
@@ -69,6 +69,8 @@ export default function PlayerStats() {
     
     setIsRefreshing(true);
     try {
+      // Force a refresh of the player's stats
+      await refreshPlayerStats(id);
       await refetchStats();
       toast({
         title: "Stats Refreshed",
@@ -93,7 +95,7 @@ export default function PlayerStats() {
     return (
       <MainLayout>
         <div className="text-center text-red-500">
-          Error loading stats: {statsError.message}
+          Error loading stats: {(statsError as Error).message}
         </div>
       </MainLayout>
     );

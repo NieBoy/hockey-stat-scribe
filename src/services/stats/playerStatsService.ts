@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
 
@@ -70,10 +71,9 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
         .select('id')
         .eq('player_id', playerId)
         .eq('stat_type', stat.statType)
-        .single();
+        .maybeSingle();
         
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected
+      if (checkError) {
         console.error("Error checking for existing stat:", checkError);
         continue;
       }
@@ -125,7 +125,7 @@ export const getPlayerStatsWithRefresh = async (playerId: string): Promise<Playe
     // First try to get existing stats
     const { data: existingStats, error } = await supabase
       .from('player_stats')
-      .select('id, player_id, stat_type, value, games_played')
+      .select('id, player_id, stat_type, value, games_played, users(name)')
       .eq('player_id', playerId);
       
     if (error) throw error;
@@ -141,10 +141,63 @@ export const getPlayerStatsWithRefresh = async (playerId: string): Promise<Playe
       playerId: stat.player_id,
       statType: stat.stat_type as StatType,
       value: stat.value,
-      gamesPlayed: stat.games_played
+      gamesPlayed: stat.games_played,
+      playerName: stat.users?.name || 'Unknown Player'
     }));
   } catch (error) {
     console.error("Error in getPlayerStatsWithRefresh:", error);
     return [];
+  }
+};
+
+/**
+ * Retrieves all player stats from the database
+ */
+export const getAllPlayerStats = async (): Promise<PlayerStat[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('player_stats')
+      .select('id, player_id, stat_type, value, games_played, users(name)')
+      .order('value', { ascending: false });
+      
+    if (error) throw error;
+    
+    return (data || []).map(stat => ({
+      playerId: stat.player_id,
+      statType: stat.stat_type as StatType,
+      value: stat.value,
+      gamesPlayed: stat.games_played,
+      playerName: stat.users?.name || 'Unknown Player'
+    }));
+  } catch (error) {
+    console.error("Error fetching all player stats:", error);
+    return [];
+  }
+};
+
+/**
+ * Refreshes stats for all players who have game stats recorded
+ */
+export const refreshAllPlayerStats = async (): Promise<void> => {
+  try {
+    // Get all unique player IDs with game stats
+    const { data: players, error: playersError } = await supabase
+      .from('game_stats')
+      .select('player_id')
+      .distinct();
+      
+    if (playersError) throw playersError;
+    
+    console.log(`Found ${players?.length || 0} players with game stats`);
+    
+    // Process each player's stats
+    if (players && players.length > 0) {
+      for (const player of players) {
+        await refreshPlayerStats(player.player_id);
+      }
+    }
+  } catch (error) {
+    console.error("Error refreshing all player stats:", error);
+    throw error;
   }
 };
