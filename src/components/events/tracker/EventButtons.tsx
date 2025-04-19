@@ -1,5 +1,5 @@
 
-import { Trophy, Flag, Target } from 'lucide-react';
+import { Trophy, Flag, Target, Shield } from 'lucide-react';
 import EventButton from '../EventButton';
 import { EventType } from '@/types/events';
 
@@ -33,6 +33,12 @@ export function EventButtons({ onEventSelect }: EventButtonsProps) {
         icon={<Target className="h-8 w-8" />}
         onClick={() => onEventSelect('shot')}
         className="bg-purple-500 hover:bg-purple-600"
+      />
+      <EventButton
+        label="Hit"
+        icon={<Shield className="h-8 w-8" />}
+        onClick={() => onEventSelect('hits')}
+        className="bg-orange-500 hover:bg-orange-600"
       />
     </div>
   );

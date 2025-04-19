@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { EventType, FlowState } from '@/types/events';
 
@@ -26,6 +25,9 @@ export function useEventSelection() {
         break;
       case 'shot':
         setFlowState('shot-flow');
+        break;
+      case 'hits':
+        setFlowState('hits-flow');
         break;
     }
   };
