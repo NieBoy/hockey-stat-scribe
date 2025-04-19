@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          details: Json | null
           event_type: string
           game_id: string
           id: string
@@ -62,6 +63,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          details?: Json | null
           event_type: string
           game_id: string
           id?: string
@@ -73,6 +75,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          details?: Json | null
           event_type?: string
           game_id?: string
           id?: string
@@ -411,12 +414,20 @@ export type Database = {
     }
     Functions: {
       create_game_event: {
-        Args: {
-          p_game_id: string
-          p_event_type: string
-          p_period: number
-          p_team_type: string
-        }
+        Args:
+          | {
+              p_game_id: string
+              p_event_type: string
+              p_period: number
+              p_team_type: string
+            }
+          | {
+              p_game_id: string
+              p_event_type: string
+              p_period: number
+              p_team_type: string
+              p_details?: Json
+            }
         Returns: Json
       }
       create_player_user: {
@@ -436,6 +447,7 @@ export type Database = {
         Returns: {
           created_at: string
           created_by: string | null
+          details: Json | null
           event_type: string
           game_id: string
           id: string

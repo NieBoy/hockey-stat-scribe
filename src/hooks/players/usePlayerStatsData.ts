@@ -32,7 +32,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query
+  // Updated game events query to use details column
   const { data: playerGameEvents } = useQuery({
     queryKey: ['playerGameEvents', playerId],
     queryFn: async () => {
@@ -49,7 +49,7 @@ export function usePlayerStatsData(playerId: string) {
             timestamp,
             details
           `)
-          .contains('details', { playerId })
+          .filter('details', 'cs', JSON.stringify({ playerId }))
           .order('timestamp', { ascending: false });
           
         if (eventError) throw eventError;
