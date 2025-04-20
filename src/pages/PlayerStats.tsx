@@ -49,27 +49,42 @@ export default function PlayerStats() {
       
       // Create game stats from events
       console.log("Creating game stats from events");
-      const statsCreated = await createStatsFromEvents(id);
-      console.log("Stats created from events:", statsCreated);
-      
-      // Now refresh the player stats from all available game stats
-      console.log("Refreshing player stats aggregates");
-      await refreshPlayerStats(id);
-      
-      // Refetch stats to update the UI
-      console.log("Refetching stats to update UI");
-      await refetchStats();
-      await refetchRawStats();
-      
-      // Show appropriate toast message
-      if (statsCreated) {
-        toast.success("Stats Calculated", {
-          description: "Player statistics have been calculated from game data."
-        });
-      } else {
-        toast.info("No New Stats", {
-          description: "No new statistics were generated from the game events."
-        });
+      try {
+        const statsCreated = await createStatsFromEvents(id);
+        console.log("Stats created from events:", statsCreated);
+        
+        // Now refresh the player stats from all available game stats
+        console.log("Refreshing player stats aggregates");
+        
+        if (statsCreated) {
+          await refreshPlayerStats(id);
+          
+          // Refetch stats to update the UI
+          console.log("Refetching stats to update UI");
+          await refetchStats();
+          await refetchRawStats();
+          
+          toast.success("Stats Calculated", {
+            description: "Player statistics have been calculated from game data."
+          });
+        } else {
+          toast.info("No New Stats", {
+            description: "No new statistics were generated from the game events."
+          });
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("user_id")) {
+          toast.error("Player User ID Issue", {
+            description: "This player doesn't have a valid user ID association in the database. Please check the debug information."
+          });
+          // Automatically show debug info when we encounter this error
+          setShowDebugInfo(true);
+        } else {
+          toast.error("Stats Calculation Failed", {
+            description: "Failed to calculate statistics: " + (error instanceof Error ? error.message : String(error))
+          });
+        }
+        console.error("Error in stats creation process:", error);
       }
     } catch (error) {
       console.error("Error refreshing stats:", error);

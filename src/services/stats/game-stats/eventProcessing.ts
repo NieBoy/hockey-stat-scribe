@@ -7,10 +7,10 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
   try {
     console.log(`Creating game stats from events for player: ${playerId}`);
     
-    // First verify player exists in team_members table - this is a critical check
-    const { data: playerExists, error: playerError } = await supabase
+    // First verify player exists in team_members table AND has a valid user_id
+    const { data: playerData, error: playerError } = await supabase
       .from('team_members')
-      .select('id, name')
+      .select('id, name, user_id')
       .eq('id', playerId)
       .maybeSingle();
       
@@ -19,12 +19,17 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
       throw new Error(`Player verification failed: ${playerError.message}`);
     }
     
-    if (!playerExists) {
+    if (!playerData) {
       console.error(`Player ${playerId} does not exist in team_members table`);
       throw new Error(`Player ID ${playerId} not found in team_members table`);
     }
     
-    console.log(`Found player name: ${playerExists.name}`);
+    if (!playerData.user_id) {
+      console.error(`Player ${playerId} (${playerData.name}) exists but has no user_id in team_members table`);
+      throw new Error(`Player ID ${playerId} does not have a valid user_id association`);
+    }
+    
+    console.log(`Found player name: ${playerData.name}, user_id: ${playerData.user_id}`);
     
     // Get all game events that reference this player
     // Using the approach that successfully finds events in usePlayerStatsData.ts
@@ -88,7 +93,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerId)
+              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
               .eq('stat_type', 'goals')
               .eq('period', event.period)
               .maybeSingle();
@@ -96,7 +101,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             if (!existingStat) {
               await insertGameStat({
                 gameId: event.game_id,
-                playerId: playerId,
+                playerId: playerId, // Keep using team_member ID for consistency 
                 statType: 'goals',
                 period: event.period,
                 value: 1,
@@ -121,7 +126,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerId)
+              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
               .eq('stat_type', 'assists')
               .eq('period', event.period)
               .eq('details', 'primary')
@@ -154,7 +159,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerId)
+              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
               .eq('stat_type', 'assists')
               .eq('period', event.period)
               .eq('details', 'secondary')
@@ -179,44 +184,8 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
           }
         }
         
-        // Temporarily disable plus/minus calculation as it may be causing issues
-        /* 
-        // Create plus/minus stat if player was on ice
-        if (details.playersOnIce && 
-            Array.isArray(details.playersOnIce) && 
-            details.playersOnIce.includes(playerId)) {
-          try {
-            console.log(`Player ${playerId} was on ice, calculating plus/minus`);
-            
-            const { data: existingPlusMinus } = await supabase
-              .from('game_stats')
-              .select('id')
-              .eq('game_id', event.game_id)
-              .eq('player_id', playerId)
-              .eq('stat_type', 'plusMinus')
-              .eq('period', event.period)
-              .maybeSingle();
-              
-            if (!existingPlusMinus) {
-              const isPlus = await calculatePlusMinus(event.game_id, playerId, event.team_type);
-              await insertGameStat({
-                gameId: event.game_id,
-                playerId: playerId,
-                statType: 'plusMinus',
-                period: event.period,
-                value: isPlus ? 1 : -1,
-                details: isPlus ? 'plus' : 'minus'
-              });
-              statsCreated = true;
-              console.log(`Added plus/minus stat for player ${playerId} (${isPlus ? 'plus' : 'minus'})`);
-            } else {
-              console.log(`Plus/minus stat already exists for this event`);
-            }
-          } catch (error) {
-            console.error("Error creating plus/minus stat:", error);
-          }
-        }
-        */
+        // Plus/minus calculation is temporarily disabled
+    
       }
     }
     
@@ -224,7 +193,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     if (statsCreated) {
       try {
         // Update aggregate player stats
-        const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
+        const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerData.user_id });
         if (error) {
           console.error("Error calling refresh_player_stats function:", error);
         } else {

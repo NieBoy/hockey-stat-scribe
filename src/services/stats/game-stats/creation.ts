@@ -1,27 +1,32 @@
 
 import { supabase } from '@/lib/supabase';
 import { GameStat } from '@/types';
-import { calculatePlusMinus } from './plusMinus';
 
 export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) => {
   try {
     console.log("Inserting game stat:", stat);
     
-    // First verify that the player exists
-    const { count } = await supabase
+    // Get user_id from team_members table
+    const { data: teamMember, error: memberError } = await supabase
       .from('team_members')
-      .select('*', { count: 'exact', head: true })
-      .eq('id', stat.playerId);
+      .select('user_id')
+      .eq('id', stat.playerId)
+      .single();
       
-    if (!count) {
-      console.error(`Player ID ${stat.playerId} does not exist in team_members table`);
-      throw new Error(`Player ID ${stat.playerId} does not exist`);
+    if (memberError || !teamMember || !teamMember.user_id) {
+      console.error(`Cannot insert stat: Unable to find a valid user_id for team_member ${stat.playerId}`);
+      console.log("Team member lookup error or missing user_id:", memberError || "No user_id found");
+      
+      // Important: This prevents the stats calculation from proceeding with an invalid user_id
+      throw new Error(`Player ID ${stat.playerId} does not have a valid user_id in team_members`);
     }
     
-    // Use RPC instead of direct insert to ensure timestamp is properly set
+    console.log(`Found user_id ${teamMember.user_id} for team member ${stat.playerId}`);
+    
+    // Use RPC with the user_id instead of team_member.id
     const { data, error } = await supabase.rpc('record_game_stat', {
       p_game_id: stat.gameId,
-      p_player_id: stat.playerId,
+      p_player_id: teamMember.user_id, // This is the key change - using user_id instead of team_member.id
       p_stat_type: stat.statType,
       p_period: stat.period,
       p_value: stat.value,
@@ -33,6 +38,7 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
       throw error;
     }
     
+    console.log("Successfully inserted game stat with user_id");
     return data;
   } catch (error) {
     console.error("Error in insertGameStat:", error);
@@ -49,45 +55,41 @@ export const recordPlusMinusStats = async (
   try {
     console.log(`Recording ${isPositive ? 'plus' : 'minus'} for players:`, playerIds);
     
-    // First verify that all players exist
+    // First get user_ids for all team members
     const { data: validPlayers, error: validationError } = await supabase
       .from('team_members')
-      .select('id')
-      .in('id', playerIds);
+      .select('id, user_id')
+      .in('id', playerIds)
+      .filter('user_id', 'not.is', null); // Only include team members with valid user_ids
       
     if (validationError) {
       console.error("Error validating players:", validationError);
       throw new Error("Failed to validate players");
     }
     
-    const validPlayerIds = validPlayers.map(p => p.id);
-    const invalidPlayers = playerIds.filter(id => !validPlayerIds.includes(id));
+    // Filter to only include players with valid user_ids
+    const validPlayerPairs = validPlayers.filter(p => p.user_id);
     
-    if (invalidPlayers.length > 0) {
-      console.error("Invalid player IDs for plus/minus:", invalidPlayers);
-      console.log("Will only record stats for valid players:", validPlayerIds);
-      // Continue with only valid players
-      playerIds = validPlayerIds;
-    }
-    
-    if (playerIds.length === 0) {
-      console.warn("No valid players to record plus/minus stats for");
+    if (validPlayerPairs.length === 0) {
+      console.warn("No valid players with user_ids to record plus/minus stats for");
       return false;
     }
     
-    const statPromises = playerIds.map(playerId => 
+    console.log(`Found ${validPlayerPairs.length} players with valid user_ids out of ${playerIds.length} requested`);
+    
+    const statPromises = validPlayerPairs.map(player => 
       insertGameStat({
         gameId,
-        playerId,
+        playerId: player.id, // We keep using team_member.id in the function params for consistency
         statType: 'plusMinus',
         period,
-        value: 1,
+        value: isPositive ? 1 : -1,
         details: isPositive ? 'plus' : 'minus'
       })
     );
     
     await Promise.all(statPromises);
-    console.log(`Successfully recorded ${isPositive ? 'plus' : 'minus'} stats for ${playerIds.length} players`);
+    console.log(`Successfully recorded ${isPositive ? 'plus' : 'minus'} stats for ${validPlayerPairs.length} players`);
     return true;
   } catch (error) {
     console.error("Error recording plus/minus stats:", error);
