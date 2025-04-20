@@ -1,10 +1,12 @@
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Info, UserPlus } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { getOrCreatePlayerUser } from "@/services/teams/userService";
+import InvalidPlayerError from "./stats/empty-state/InvalidPlayerError";
+import MissingUserAssociation from "./stats/empty-state/MissingUserAssociation";
+import EmptyStatsContent from "./stats/empty-state/EmptyStatsContent";
 
 interface PlayerStatsEmptyProps {
   gameStatsDebug: any[];
@@ -28,7 +30,6 @@ export default function PlayerStatsEmpty({
   const [creatingUser, setCreatingUser] = useState(false);
   const [retries, setRetries] = useState(0);
 
-  // Check if player exists in the team_members table and has a valid user_id
   useEffect(() => {
     const checkPlayerExists = async () => {
       if (!playerId) {
@@ -39,7 +40,6 @@ export default function PlayerStatsEmpty({
 
       setChecking(true);
       try {
-        // Check if player exists in team_members and has a valid user_id
         const { data: memberData, error: memberError } = await supabase
           .from('team_members')
           .select('id, name, email, user_id')
@@ -52,23 +52,14 @@ export default function PlayerStatsEmpty({
         }
         
         if (memberData) {
-          // Player exists in team_members
           setIsPlayerValid(true);
           setPlayerName(memberData.name || 'Unknown Player');
           setPlayerEmail(memberData.email || null);
-          
-          // Check if the player has a valid user_id
-          if (memberData.user_id) {
-            setHasValidUserId(true);
-            setErrorDetails(null);
-          } else {
-            setHasValidUserId(false);
-            setErrorDetails("Player exists but does not have a user_id in the team_members table");
-          }
+          setHasValidUserId(!!memberData.user_id);
+          setErrorDetails(memberData.user_id ? null : "Player exists but does not have a user_id in the team_members table");
           return;
         }
         
-        // As fallback, check users table directly
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id')
@@ -80,14 +71,9 @@ export default function PlayerStatsEmpty({
           throw userError;
         }
         
-        if (userData) {
-          setIsPlayerValid(true);
-          setHasValidUserId(true);
-          setErrorDetails(null);
-        } else {
-          setIsPlayerValid(false);
-          setErrorDetails("Player ID exists in game events but not in users or team_members tables");
-        }
+        setIsPlayerValid(!!userData);
+        setHasValidUserId(!!userData);
+        setErrorDetails(userData ? null : "Player ID exists in game events but not in users or team_members tables");
       } catch (error) {
         console.error("Error validating player:", error);
         setIsPlayerValid(false);
@@ -118,7 +104,6 @@ export default function PlayerStatsEmpty({
     onRefresh();
   };
 
-  // Create user for this player and associate them
   const handleCreateUserForPlayer = async () => {
     if (!playerName) {
       toast.error("Missing player name", {
@@ -129,7 +114,6 @@ export default function PlayerStatsEmpty({
 
     setCreatingUser(true);
     try {
-      // Get or create a user for this player using the database function approach
       const userId = await getOrCreatePlayerUser({
         name: playerName,
         email: playerEmail || undefined
@@ -137,7 +121,6 @@ export default function PlayerStatsEmpty({
 
       console.log(`Created/found user with ID ${userId} for player ${playerId}`);
 
-      // Associate the user_id with this player in team_members table
       const { error: updateError } = await supabase
         .from('team_members')
         .update({ user_id: userId })
@@ -152,13 +135,11 @@ export default function PlayerStatsEmpty({
         description: "Successfully created and linked a user account for this player"
       });
 
-      // Update local state by triggering a re-fetch
       setRetries(prev => prev + 1);
       
     } catch (error) {
       console.error("Error creating user for player:", error);
       
-      // Provide a more specific error message
       let errorMessage = "An unexpected error occurred";
       if (error && typeof error === 'object' && 'message' in error) {
         errorMessage = String(error.message);
@@ -176,71 +157,20 @@ export default function PlayerStatsEmpty({
     }
   };
 
-  // Show warning if player ID is invalid
   if (isPlayerValid === false) {
-    return (
-      <div className="text-center text-red-600 p-4 bg-red-50 border border-red-200 rounded-md">
-        <div className="flex justify-center mb-4">
-          <AlertCircle className="h-12 w-12" />
-        </div>
-        <h3 className="font-medium text-lg mb-2">Player ID Not Found</h3>
-        <p>The player ID ({playerId}) does not exist in the database.</p>
-        {errorDetails && (
-          <div className="mt-4 p-3 bg-red-100 text-red-800 rounded text-sm">
-            <p className="font-medium">Error details:</p>
-            <p>{errorDetails}</p>
-          </div>
-        )}
-        <div className="mt-4">
-          <p>This is likely a data integrity issue. Possible causes:</p>
-          <ul className="list-disc list-inside text-left mt-2 text-sm">
-            <li>The player was deleted but still has game events</li>
-            <li>The player ID was changed or migrated incorrectly</li>
-            <li>There's a mismatch between team_members and users tables</li>
-          </ul>
-        </div>
-      </div>
-    );
+    return <InvalidPlayerError playerId={playerId} errorDetails={errorDetails} />;
   }
 
-  // Show warning if player has no valid user_id
   if (hasValidUserId === false) {
     return (
-      <div className="text-center text-amber-600 p-4 bg-amber-50 border border-amber-200 rounded-md">
-        <div className="flex justify-center mb-4">
-          <Info className="h-12 w-12" />
-        </div>
-        <h3 className="font-medium text-lg mb-2">Missing User Association</h3>
-        <p>This player exists in the team_members table but doesn't have a user_id.</p>
-        
-        <div className="mt-4">
-          <p>This is a data consistency issue that needs to be fixed:</p>
-          <ul className="list-disc list-inside text-left mt-2 text-sm">
-            <li>The player needs to be associated with a user in the database</li>
-            <li>Stats can only be recorded for players with a valid user_id</li>
-            <li>This typically happens when a player is created through the team roster but not linked to a user account</li>
-          </ul>
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <Button 
-            onClick={handleCreateUserForPlayer} 
-            className="gap-2" 
-            disabled={creatingUser}
-          >
-            <UserPlus className="h-4 w-4" />
-            {creatingUser ? "Creating User..." : "Fix User Association"}
-          </Button>
-        </div>
-        
-        <div className="mt-4 text-sm text-amber-700">
-          <p>This will create a new user account for "{playerName}" and link it to this player record.</p>
-        </div>
-      </div>
+      <MissingUserAssociation 
+        playerName={playerName}
+        onCreateUser={handleCreateUserForPlayer}
+        creatingUser={creatingUser}
+      />
     );
   }
 
-  // Show checking state
   if (checking || isPlayerValid === null) {
     return (
       <div className="text-center text-muted-foreground">
@@ -253,42 +183,12 @@ export default function PlayerStatsEmpty({
   }
 
   return (
-    <div className="text-center text-muted-foreground">
-      <p>No statistics available for this player.</p>
-      <p className="mt-2 text-sm">This could mean:</p>
-      <ul className="list-disc list-inside mt-1 text-sm">
-        <li>The player hasn't participated in any games</li>
-        <li>No stats have been recorded for this player</li>
-        <li>Stats need to be refreshed from game data</li>
-      </ul>
-      
-      {gameStatsDebug && gameStatsDebug.length > 0 && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-left">
-          <p className="font-medium mb-2">Debug Information:</p>
-          <p>Found {gameStatsDebug.length} raw game stats for this player that need to be processed.</p>
-          <p className="mt-2">Try clicking the "Calculate Stats" button below to calculate statistics from game data.</p>
-        </div>
-      )}
-      
-      {playerGameEvents && playerGameEvents.length > 0 && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-left">
-          <p className="font-medium mb-2">Game Events Found:</p>
-          <p>Found {playerGameEvents.length} game events for this player, but they haven't been processed into stats yet.</p>
-          <p className="mt-2">Click the button below to create stats from these events.</p>
-        </div>
-      )}
-
-      <div className="mt-4">
-        <Button 
-          onClick={handleRefresh} 
-          className="gap-2"
-          disabled={(!playerGameEvents || playerGameEvents.length === 0) || !isPlayerValid || !hasValidUserId}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Calculate Stats from Game Data
-          {(!playerGameEvents || playerGameEvents.length === 0) && " (No Events Found)"}
-        </Button>
-      </div>
-    </div>
+    <EmptyStatsContent
+      onRefresh={handleRefresh}
+      gameStatsDebug={gameStatsDebug}
+      playerGameEvents={playerGameEvents}
+      isPlayerValid={isPlayerValid}
+      hasValidUserId={hasValidUserId}
+    />
   );
 }
