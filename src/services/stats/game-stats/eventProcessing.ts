@@ -8,8 +8,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     console.log(`Creating game stats from events for player: ${playerId}`);
     
     // Get all game events that reference this player
-    // The problem was that we were using a different query approach than what works in usePlayerStatsData.ts
-    // Let's use the same approach that successfully finds events
+    // Using the approach that successfully finds events in usePlayerStatsData.ts
     
     // First get events where player is directly referenced in specific fields
     const { data: directEvents, error: eventsError } = await supabase
@@ -22,6 +21,8 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
       return false;
     }
     
+    console.log(`Found ${directEvents?.length || 0} events with direct references to player ${playerId}`);
+    
     // Then get events where player is in the playersOnIce array
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
@@ -33,26 +34,33 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
       return false;
     }
     
+    console.log(`Found ${onIceEvents?.length || 0} events with player ${playerId} on ice`);
+    
     // Combine both result sets and remove duplicates
     const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
     const events = allEvents.filter((event, index, self) =>
       index === self.findIndex((e) => e.id === event.id)
     );
     
-    console.log(`Found ${events?.length || 0} game events for player to process`);
+    console.log(`Found ${events?.length || 0} total unique game events for player to process`);
     
     if (!events || events.length === 0) {
+      console.log(`No events found for player ${playerId} to process`);
       return false;
     }
     
     let statsCreated = false;
     
+    // Process each event and create appropriate stats
     for (const event of events) {
       if (event.event_type === 'goal' && event.details) {
         console.log(`Processing goal event: ${event.id}`);
         
+        // Make sure details is properly parsed if it's a string
+        const details = typeof event.details === 'string' ? JSON.parse(event.details) : event.details;
+        
         // Create goal stat if player is the scorer
-        if (event.details.playerId === playerId) {
+        if (details.playerId === playerId) {
           try {
             console.log(`Player ${playerId} is the scorer, adding goal stat`);
             
@@ -86,7 +94,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
         }
         
         // Create assist stats
-        if (event.details.primaryAssistId === playerId) {
+        if (details.primaryAssistId === playerId) {
           try {
             console.log(`Player ${playerId} has primary assist, adding assist stat`);
             
@@ -119,7 +127,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
           }
         }
         
-        if (event.details.secondaryAssistId === playerId) {
+        if (details.secondaryAssistId === playerId) {
           try {
             console.log(`Player ${playerId} has secondary assist, adding assist stat`);
             
@@ -153,9 +161,9 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
         }
         
         // Create plus/minus stat if player was on ice
-        if (event.details.playersOnIce && 
-            Array.isArray(event.details.playersOnIce) && 
-            event.details.playersOnIce.includes(playerId)) {
+        if (details.playersOnIce && 
+            Array.isArray(details.playersOnIce) && 
+            details.playersOnIce.includes(playerId)) {
           try {
             console.log(`Player ${playerId} was on ice, calculating plus/minus`);
             
@@ -175,7 +183,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
                 playerId: playerId,
                 statType: 'plusMinus',
                 period: event.period,
-                value: 1,
+                value: isPlus ? 1 : -1, // Fix: Set correct +/- value
                 details: isPlus ? 'plus' : 'minus'
               });
               statsCreated = true;
@@ -187,6 +195,21 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             console.error("Error creating plus/minus stat:", error);
           }
         }
+      }
+    }
+    
+    // After processing all events, refresh player stats
+    if (statsCreated) {
+      try {
+        // Update aggregate player stats
+        const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
+        if (error) {
+          console.error("Error calling refresh_player_stats function:", error);
+        } else {
+          console.log("Successfully refreshed aggregated player stats");
+        }
+      } catch (error) {
+        console.error("Error updating aggregated player stats:", error);
       }
     }
     

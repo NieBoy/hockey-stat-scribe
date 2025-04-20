@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query - Improved to properly fetch all relevant events
+  // Game events query
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -69,6 +69,8 @@ export function usePlayerStatsData(playerId: string) {
           console.error("Error fetching player game events (direct):", directError);
           throw directError;
         }
+        
+        console.log(`Found ${directEvents?.length || 0} direct events for player ${playerId}`);
 
         // Fetch events where player is in playersOnIce array
         const { data: onIceEvents, error: onIceError } = await supabase
@@ -86,6 +88,9 @@ export function usePlayerStatsData(playerId: string) {
 
         if (onIceError) {
           console.error("Error fetching on-ice events:", onIceError);
+          // Don't throw here, we might still have directEvents
+        } else {
+          console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerId}`);
         }
         
         // Combine both result sets and remove duplicates
@@ -94,7 +99,7 @@ export function usePlayerStatsData(playerId: string) {
           index === self.findIndex((e) => e.id === event.id)
         );
         
-        console.log(`Found ${uniqueEvents.length} game events for player:`, uniqueEvents);
+        console.log(`Found ${uniqueEvents.length} total unique game events for player ${playerId}`);
         return uniqueEvents;
       } catch (error) {
         console.error("Error in fetchPlayerGameEvents:", error);

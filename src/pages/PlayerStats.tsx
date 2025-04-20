@@ -39,49 +39,42 @@ export default function PlayerStats() {
     
     console.log("Refresh stats button clicked for player:", id);
     setIsRefreshing(true);
+    
     try {
-      // First refresh events to make sure we have the latest data
-      const eventsResult = await refetchEvents();
-      const events = eventsResult.data || [];
-      console.log(`Retrieved ${events.length} game events for processing`);
+      console.log("Starting stats refresh process");
       
-      // Clear existing stats before creating new ones
-      console.log("Generating game stats from events...");
-      if (events && events.length > 0) {
-        console.log(`Found ${events.length} game events to process`);
-        
-        // Create game stats from events
-        const statsCreated = await createStatsFromEvents(id);
-        console.log("Stats created from events:", statsCreated);
-        
-        // Now refresh the player stats from all available game stats
-        console.log("Refreshing player stats aggregates");
-        await refreshPlayerStats(id);
-        console.log("Player stats refreshed");
-        
-        // Refetch stats to update the UI
-        await refetchStats();
-        await refetchRawStats();
-        
-        if (statsCreated) {
-          toast.success("Stats Calculated", {
-            description: "Player statistics have been calculated from game data."
-          });
-        } else {
-          toast.info("No New Stats", {
-            description: "No new statistics were generated from the game events."
-          });
-        }
+      // First refresh events to make sure we have the latest data
+      console.log("Refreshing game events");
+      await refetchEvents();
+      
+      // Create game stats from events
+      console.log("Creating game stats from events");
+      const statsCreated = await createStatsFromEvents(id);
+      console.log("Stats created from events:", statsCreated);
+      
+      // Now refresh the player stats from all available game stats
+      console.log("Refreshing player stats aggregates");
+      await refreshPlayerStats(id);
+      
+      // Refetch stats to update the UI
+      console.log("Refetching stats to update UI");
+      await refetchStats();
+      await refetchRawStats();
+      
+      // Show appropriate toast message
+      if (statsCreated) {
+        toast.success("Stats Calculated", {
+          description: "Player statistics have been calculated from game data."
+        });
       } else {
-        console.log("No game events found to process");
-        toast.warning("No Events Found", {
-          description: "No game events were found for this player."
+        toast.info("No New Stats", {
+          description: "No new statistics were generated from the game events."
         });
       }
     } catch (error) {
       console.error("Error refreshing stats:", error);
       toast.error("Refresh Failed", {
-        description: "Failed to refresh player statistics."
+        description: "Failed to refresh player statistics: " + (error instanceof Error ? error.message : String(error))
       });
     } finally {
       setIsRefreshing(false);

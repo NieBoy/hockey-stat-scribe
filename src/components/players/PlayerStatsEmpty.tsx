@@ -13,16 +13,6 @@ export default function PlayerStatsEmpty({
   playerGameEvents,
   onRefresh 
 }: PlayerStatsEmptyProps) {
-  
-  const handleRefreshClick = () => {
-    console.log("Calculate Stats button clicked");
-    // Add a small delay to ensure the click is registered
-    setTimeout(() => {
-      console.log("Executing onRefresh callback");
-      onRefresh();
-    }, 10);
-  };
-
   return (
     <div className="text-center text-muted-foreground">
       <p>No statistics available for this player.</p>
@@ -51,7 +41,7 @@ export default function PlayerStatsEmpty({
 
       <div className="mt-4">
         <Button 
-          onClick={handleRefreshClick} 
+          onClick={onRefresh} 
           className="gap-2"
           disabled={!playerGameEvents || playerGameEvents.length === 0}
         >
