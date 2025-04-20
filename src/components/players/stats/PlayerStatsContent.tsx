@@ -1,6 +1,7 @@
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { PlayerStat, GameStat } from "@/types";
 import EmptyStatsContent from "@/components/players/stats/empty-state/EmptyStatsContent";
@@ -78,20 +79,29 @@ export default function PlayerStatsContent({
   const [gameId, setGameId] = useState<string>("all");
   const [period, setPeriod] = useState<string>("all");
   const [statType, setStatType] = useState<string>("all");
+  const [isFixingUser, setIsFixingUser] = useState(false);
+
+  useEffect(() => {
+    // Reset filters when player data changes
+    setGameId("all");
+    setPeriod("all");
+    setStatType("all");
+  }, [playerId, player?.id]);
 
   // Process games data for the filter dropdown
   const games = useMemo(
-    () =>
-      [...new Map(
-        rawGameStats.map((g) => [g.gameId, { 
-          id: g.gameId, 
-          date: (() => {
-            const match = teamGames?.find(tm => tm.id === g.gameId);
-            if (match) return match.date;
-            return new Date().toISOString();
-          })() 
-        }])
-      ).values()],
+    () => {
+      const gamesMap = new Map();
+      rawGameStats.forEach((g) => {
+        const match = teamGames?.find(tm => tm.id === g.gameId);
+        if (match) {
+          gamesMap.set(g.gameId, { id: g.gameId, date: match.date });
+        } else {
+          gamesMap.set(g.gameId, { id: g.gameId, date: new Date().toISOString() });
+        }
+      });
+      return Array.from(gamesMap.values());
+    },
     [rawGameStats, teamGames]
   );
 
@@ -107,64 +117,77 @@ export default function PlayerStatsContent({
 
   const hasRawGameStats = rawGameStats && rawGameStats.length > 0;
   const isPlayerValid = !!player;
-  const hasValidUserId = !!player?.id;
+  const hasValidUserId = !!player?.user_id;
   const hasGameEvents = playerGameEvents && playerGameEvents.length > 0;
+
+  const checkPlayerUserAssociation = async () => {
+    if (!player) return { valid: false, userId: null };
+    
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('id, name, user_id, email')
+        .eq('id', playerId)
+        .single();
+        
+      if (error || !data) {
+        return { valid: false, userId: null };
+      }
+      
+      return { valid: true, userId: data.user_id, email: data.email, name: data.name };
+    } catch (err) {
+      console.error("Error checking player user association:", err);
+      return { valid: false, userId: null };
+    }
+  };
 
   // Function to manually fix user ID association if needed
   const handleFixUserAssociation = async () => {
-    if (!player || !playerId) {
+    if (!playerId) {
       toast.error("Cannot fix user association without valid player data");
       return;
     }
 
+    setIsFixingUser(true);
     try {
-      toast.info("Attempting to fix user ID association...");
+      toast.info("Checking user ID association...");
       
-      // First get the team member record
-      const { data: memberData, error: memberError } = await supabase
-        .from('team_members')
-        .select('id, name, email, user_id')
-        .eq('id', playerId)
-        .single();
-        
-      if (memberError) {
-        console.error("Error fetching team member:", memberError);
-        toast.error(`Could not fetch team member: ${memberError.message}`);
+      // First check the current state
+      const checkResult = await checkPlayerUserAssociation();
+      if (!checkResult.valid) {
+        toast.error("Cannot retrieve player data");
+        setIsFixingUser(false);
         return;
       }
       
-      if (!memberData) {
-        toast.error("Team member not found");
-        return;
-      }
-      
-      // If there's already a user_id, check if that user exists
-      if (memberData.user_id) {
+      if (checkResult.userId) {
+        // Verify if user exists
         const { data: existingUser } = await supabase
           .from('users')
           .select('id, name, email')
-          .eq('id', memberData.user_id)
+          .eq('id', checkResult.userId)
           .single();
           
         if (existingUser) {
-          toast.success("User association already exists and is valid", { 
-            description: `Player ${memberData.name} is linked to user ${existingUser.name || existingUser.email}`
+          toast.success("User association already valid", { 
+            description: `Player is already linked to user ${existingUser.name || existingUser.email}`
           });
+          setIsFixingUser(false);
           return;
         }
+        // User ID exists in team_members but not in users table - need to fix
       }
       
-      // Try to create or find a user based on email
-      if (memberData.email) {
-        // Check if user with this email already exists
+      // Try to find existing user with player's email
+      if (checkResult.email) {
         const { data: emailUser } = await supabase
           .from('users')
           .select('id')
-          .eq('email', memberData.email)
+          .eq('email', checkResult.email)
           .single();
           
         if (emailUser) {
-          // Update the team member with this user_id
+          // Update team_member with this user_id
           const { error: updateError } = await supabase
             .from('team_members')
             .update({ user_id: emailUser.id })
@@ -172,66 +195,90 @@ export default function PlayerStatsContent({
             
           if (updateError) {
             toast.error("Failed to update team member with existing user ID");
+            setIsFixingUser(false);
             return;
           }
           
           toast.success("Fixed user association", { 
-            description: `Linked player to existing user with email ${memberData.email}`
+            description: `Linked player to existing user with email ${checkResult.email}`
           });
           
           setTimeout(() => {
             onRefresh();
           }, 1000);
+          setIsFixingUser(false);
           return;
         }
-        
-        // Create a new user
-        const newUserId = crypto.randomUUID();
-        
-        // Create user in users table
-        const { error: createError } = await supabase
-          .from('users')
-          .insert({
-            id: newUserId,
-            name: memberData.name,
-            email: memberData.email
-          });
-          
-        if (createError) {
-          toast.error(`Failed to create user: ${createError.message}`);
-          return;
-        }
-        
-        // Update team member
-        const { error: updateError } = await supabase
-          .from('team_members')
-          .update({ user_id: newUserId })
-          .eq('id', playerId);
-          
-        if (updateError) {
-          toast.error(`Failed to update team member: ${updateError.message}`);
-          return;
-        }
-        
-        toast.success("Created new user and linked to player", {
-          description: "Please refresh the page to see the changes"
+      }
+      
+      // Need to create new user
+      const newUserId = crypto.randomUUID();
+      
+      // Create user in users table
+      const { error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: newUserId,
+          name: checkResult.name || 'Player',
+          email: checkResult.email || `player_${newUserId.substring(0, 8)}@example.com`
         });
         
-        setTimeout(() => {
-          onRefresh();
-        }, 1000);
+      if (createError) {
+        console.error("Failed to create user:", createError);
+        toast.error(`Failed to create user: ${createError.message}`);
+        setIsFixingUser(false);
         return;
       }
       
-      toast.error("Cannot fix user association", {
-        description: "Player doesn't have an email address to link to a user account"
+      // Update team member
+      const { error: updateError } = await supabase
+        .from('team_members')
+        .update({ user_id: newUserId })
+        .eq('id', playerId);
+        
+      if (updateError) {
+        console.error("Failed to update team member:", updateError);
+        toast.error(`Failed to update team member: ${updateError.message}`);
+        setIsFixingUser(false);
+        return;
+      }
+      
+      toast.success("Created new user and linked to player", {
+        description: "Please refresh the page to see the changes"
       });
       
+      setTimeout(() => {
+        onRefresh();
+      }, 1000);
     } catch (error) {
       console.error("Error fixing user association:", error);
       toast.error("An unexpected error occurred");
+    } finally {
+      setIsFixingUser(false);
     }
   };
+
+  const displayNoStats = () => (
+    <div className="mb-4">
+      <p className="text-muted-foreground">No stats available for this player.</p>
+      
+      {!hasValidUserId && (
+        <div className="mt-4 border border-orange-300 bg-orange-50 p-4 rounded-md">
+          <h3 className="text-orange-800 font-medium">Missing User Association</h3>
+          <p className="text-orange-700 mt-2">
+            This player doesn't have a valid user ID connection, which prevents stats from being recorded properly.
+          </p>
+          <button 
+            className="mt-2 bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md"
+            onClick={handleFixUserAssociation}
+            disabled={isFixingUser}
+          >
+            {isFixingUser ? "Fixing..." : "Fix User Association"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Card>
@@ -255,26 +302,7 @@ export default function PlayerStatsContent({
               hidePlayerFilter={true} // Hide player filter as this is a single player view
             />
           </div>
-        ) : (
-          <div className="mb-4">
-            <p className="text-muted-foreground">No stats available for this player.</p>
-            
-            {!hasValidUserId && (
-              <div className="mt-4 border border-orange-300 bg-orange-50 p-4 rounded-md">
-                <h3 className="text-orange-800 font-medium">Missing User Association</h3>
-                <p className="text-orange-700 mt-2">
-                  This player doesn't have a valid user ID connection, which may prevent stats from being recorded properly.
-                </p>
-                <button 
-                  className="mt-2 bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md"
-                  onClick={handleFixUserAssociation}
-                >
-                  Fix User Association
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        ) : displayNoStats()}
 
         {filteredRawStats && filteredRawStats.length > 0 ? (
           <>
@@ -328,12 +356,13 @@ export default function PlayerStatsContent({
 
         {!hasValidUserId && !hasRawGameStats && (
           <div className="mt-4">
-            <button 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={handleFixUserAssociation}
+              disabled={isFixingUser}
             >
-              Fix User Association
-            </button>
+              {isFixingUser ? "Creating User Association..." : "Fix User Association"}
+            </Button>
             <p className="text-sm text-muted-foreground mt-2">
               Click this button to create and link a user account for this player.
             </p>
