@@ -4,21 +4,55 @@ import { Link, useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PlayerHeader from "@/components/players/PlayerHeader";
 import PlayerDetails from "@/components/players/PlayerDetails";
 import PlayerStats from "@/components/players/PlayerStats";
 import PlayerParents from "@/components/players/PlayerParents";
 import { usePlayerDetails } from "@/hooks/usePlayerDetails";
+import EditMemberDialog from "@/components/profile/EditMemberDialog";
+import { toast } from "sonner";
+import { updateTeamMemberInfo } from "@/services/teams/memberUpdateService";
 
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>();
-  const { player, loading, error } = usePlayerDetails(id);
+  const { player, loading, error, refetchPlayer } = usePlayerDetails(id);
   const [activeTab, setActiveTab] = useState("details");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Determine if this is a parent profile rather than a player
   const isParentProfile = player?.role?.includes('parent');
+
+  const handleEditSubmit = async (updatedData: {
+    name?: string;
+    email?: string;
+    position?: string;
+    number?: string;
+  }) => {
+    if (!player?.id) return;
+    
+    try {
+      // Get the team ID from the player's teams array
+      const teamId = player.teams?.[0]?.id;
+      if (!teamId) {
+        throw new Error("No team found for this player");
+      }
+
+      await updateTeamMemberInfo(teamId, player.id, updatedData);
+      
+      toast.success("Profile updated successfully");
+      setIsEditDialogOpen(false);
+      // Refresh player data
+      refetchPlayer();
+    } catch (error: any) {
+      console.error("Error updating player:", error);
+      toast.error("Failed to update profile", {
+        description: error.message,
+        duration: 5000
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -59,6 +93,14 @@ export default function PlayerDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Teams
             </Link>
+          </Button>
+          <Button 
+            onClick={() => setIsEditDialogOpen(true)}
+            size="sm"
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Profile
           </Button>
         </div>
 
@@ -124,6 +166,12 @@ export default function PlayerDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <EditMemberDialog 
+        member={isEditDialogOpen ? player : null}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSubmit={handleEditSubmit}
+      />
     </MainLayout>
   );
 }
