@@ -8,9 +8,7 @@ interface GameStatsFilterProps {
   players: User[];
   games: { id: string; date: string }[];
   onFilter: (filtered: GameStat[]) => void;
-  // Add controlled props
-  playerId?: string;
-  onPlayerIdChange?: (playerId: string) => void;
+  // Controlled props
   gameId?: string;
   onGameIdChange?: (gameId: string) => void;
   period?: string;
@@ -20,16 +18,15 @@ interface GameStatsFilterProps {
   search?: string;
   onSearchChange?: (search: string) => void;
   hidePlayerFilter?: boolean;
+  playerId?: string;
+  onPlayerIdChange?: (playerId: string) => void;
 }
 
 export default function GameStatsFilter({ 
   stats, 
   players, 
   games, 
-  onFilter,
   // Controlled props with default values
-  playerId = "all", 
-  onPlayerIdChange,
   gameId = "all", 
   onGameIdChange,
   period = "all", 
@@ -38,39 +35,11 @@ export default function GameStatsFilter({
   onStatTypeChange,
   search = "", 
   onSearchChange,
-  hidePlayerFilter = false
+  hidePlayerFilter = false,
+  playerId = "all",
+  onPlayerIdChange
 }: GameStatsFilterProps) {
-  // Use controlled props handlers
-  const handlePlayerChange = (value: string) => {
-    if (onPlayerIdChange) {
-      onPlayerIdChange(value);
-    }
-  };
   
-  const handleGameChange = (value: string) => {
-    if (onGameIdChange) {
-      onGameIdChange(value);
-    }
-  };
-  
-  const handlePeriodChange = (value: string) => {
-    if (onPeriodChange) {
-      onPeriodChange(value);
-    }
-  };
-  
-  const handleStatTypeChange = (value: string) => {
-    if (onStatTypeChange) {
-      onStatTypeChange(value);
-    }
-  };
-  
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (onSearchChange) {
-      onSearchChange(e.target.value);
-    }
-  };
-
   // Make sure we have unique stat types for the filter
   const statTypes = [...new Set(stats.map(stat => stat.statType))];
 
@@ -80,13 +49,13 @@ export default function GameStatsFilter({
         <Input
           placeholder="Search player name"
           value={search}
-          onChange={handleSearchChange}
+          onChange={(e) => onSearchChange?.(e.target.value)}
           className="w-full"
         />
       )}
       
       {!hidePlayerFilter && players.length > 1 && (
-        <Select value={playerId} onValueChange={handlePlayerChange}>
+        <Select value={playerId} onValueChange={(value) => onPlayerIdChange?.(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Filter by player" />
           </SelectTrigger>
@@ -99,7 +68,7 @@ export default function GameStatsFilter({
         </Select>
       )}
       
-      <Select value={gameId} onValueChange={handleGameChange}>
+      <Select value={gameId} onValueChange={(value) => onGameIdChange?.(value)}>
         <SelectTrigger>
           <SelectValue placeholder="Filter by game" />
         </SelectTrigger>
@@ -113,7 +82,7 @@ export default function GameStatsFilter({
         </SelectContent>
       </Select>
       
-      <Select value={period} onValueChange={handlePeriodChange}>
+      <Select value={period} onValueChange={(value) => onPeriodChange?.(value)}>
         <SelectTrigger>
           <SelectValue placeholder="Filter by period" />
         </SelectTrigger>
@@ -125,7 +94,7 @@ export default function GameStatsFilter({
         </SelectContent>
       </Select>
       
-      <Select value={statType} onValueChange={handleStatTypeChange}>
+      <Select value={statType} onValueChange={(value) => onStatTypeChange?.(value)}>
         <SelectTrigger>
           <SelectValue placeholder="Filter by stat type" />
         </SelectTrigger>
