@@ -44,30 +44,45 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     
     console.log(`Preparing to send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
     
-    // In a production implementation, we would call a server endpoint here to send emails
-    // For now, we'll log to console and simulate successful sending
-    
+    // Create invitation records for members with emails
     for (const member of membersWithEmail) {
-      // Create an invitation record in the database
-      const { data: invitation, error: invitationError } = await supabase
-        .from('invitations')
-        .insert({
-          team_id: teamId,
-          email: member.email,
-          status: 'pending',
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        })
-        .select()
-        .single();
+      try {
+        // Check if invitation already exists
+        const { data: existingInvitation, error: checkError } = await supabase
+          .from('invitations')
+          .select('id')
+          .eq('email', member.email)
+          .eq('team_id', teamId)
+          .eq('status', 'pending')
+          .maybeSingle();
+          
+        if (checkError) {
+          console.error(`Error checking existing invitation for ${member.email}:`, checkError);
+        } else if (existingInvitation) {
+          console.log(`Invitation already exists for ${member.email}, skipping`);
+          continue;
+        }
         
-      if (invitationError) {
-        console.error(`Error creating invitation for ${member.email}:`, invitationError);
-        // Continue with other invitations even if one fails
-      } else {
-        console.log(`Created invitation in database for ${member.email}:`, invitation?.id);
-        
-        // Here you would normally call your email service
-        console.log(`[EMAIL SIMULATION] Sending invitation email to ${member.email}`);
+        // Create an invitation record
+        const { data: invitation, error: invitationError } = await supabase
+          .from('invitations')
+          .insert({
+            team_id: teamId,
+            email: member.email,
+            status: 'pending',
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+          });
+          
+        if (invitationError) {
+          console.error(`Error creating invitation for ${member.email}:`, invitationError);
+        } else {
+          console.log(`Created invitation for ${member.email}`);
+          
+          // Here you would normally call your email service
+          console.log(`[EMAIL SIMULATION] Sending invitation email to ${member.email}`);
+        }
+      } catch (memberError) {
+        console.error(`Error processing invitation for ${member.email}:`, memberError);
       }
     }
     

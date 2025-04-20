@@ -15,8 +15,8 @@ export {
   getTeamMembers as getTeamMembersList
 } from './memberQueryService';
 
-// Export invitationService with a rename to avoid conflict
+// Export invitationService functions
 export {
-  sendTeamInvitations as sendInvitationsToTeamMembers,
+  sendTeamInvitations,
   acceptInvitation
 } from './invitationService';

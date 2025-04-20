@@ -42,8 +42,9 @@ export const TableHeader = ({
           onClick={onSendInvitations}
           disabled={selectedCount === 0}
           variant={selectedCount > 0 ? "default" : "outline"}
+          className="flex items-center gap-2"
         >
-          <Mail className="mr-2 h-4 w-4" />
+          <Mail className="h-4 w-4" />
           {selectedCount > 0 
             ? `Send Invitations (${selectedCount})`
             : "Select Members to Invite"
