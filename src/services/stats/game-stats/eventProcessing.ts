@@ -7,6 +7,25 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
   try {
     console.log(`Creating game stats from events for player: ${playerId}`);
     
+    // First verify player exists in team_members table - this is a critical check
+    const { data: playerExists, error: playerError } = await supabase
+      .from('team_members')
+      .select('id, name')
+      .eq('id', playerId)
+      .maybeSingle();
+      
+    if (playerError) {
+      console.error("Error verifying player existence:", playerError);
+      throw new Error(`Player verification failed: ${playerError.message}`);
+    }
+    
+    if (!playerExists) {
+      console.error(`Player ${playerId} does not exist in team_members table`);
+      throw new Error(`Player ID ${playerId} not found in team_members table`);
+    }
+    
+    console.log(`Found player name: ${playerExists.name}`);
+    
     // Get all game events that reference this player
     // Using the approach that successfully finds events in usePlayerStatsData.ts
     
@@ -160,6 +179,8 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
           }
         }
         
+        // Temporarily disable plus/minus calculation as it may be causing issues
+        /* 
         // Create plus/minus stat if player was on ice
         if (details.playersOnIce && 
             Array.isArray(details.playersOnIce) && 
@@ -183,7 +204,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
                 playerId: playerId,
                 statType: 'plusMinus',
                 period: event.period,
-                value: isPlus ? 1 : -1, // Fix: Set correct +/- value
+                value: isPlus ? 1 : -1,
                 details: isPlus ? 'plus' : 'minus'
               });
               statsCreated = true;
@@ -195,6 +216,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             console.error("Error creating plus/minus stat:", error);
           }
         }
+        */
       }
     }
     

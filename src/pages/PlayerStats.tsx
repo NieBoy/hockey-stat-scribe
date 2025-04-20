@@ -144,6 +144,7 @@ export default function PlayerStats() {
                 gameStatsDebug={rawGameStats || []}
                 playerGameEvents={playerGameEvents}
                 onRefresh={handleRefreshStats}
+                playerId={id || ''}
               />
             )}
             
