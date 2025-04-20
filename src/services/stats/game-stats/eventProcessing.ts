@@ -183,9 +183,6 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             console.error("Error creating secondary assist stat:", error);
           }
         }
-        
-        // Plus/minus calculation is temporarily disabled
-    
       }
     }
     

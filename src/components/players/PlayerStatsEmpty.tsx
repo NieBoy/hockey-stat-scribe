@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Info, UserPlus } from "lucide-react";
@@ -128,7 +129,7 @@ export default function PlayerStatsEmpty({
 
     setCreatingUser(true);
     try {
-      // Get or create a user for this player
+      // Get or create a user for this player using the database function approach
       const userId = await getOrCreatePlayerUser({
         name: playerName,
         email: playerEmail || undefined
