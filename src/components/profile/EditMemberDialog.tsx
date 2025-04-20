@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,12 +32,24 @@ export default function EditMemberDialog({ member, onClose, onSubmit }: EditMemb
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: member?.name || "",
-      email: member?.email || "",
-      position: member?.position || "",
-      number: member?.number || "",
+      name: "",
+      email: "",
+      position: "",
+      number: ""
     }
   });
+
+  // Reset form with member data when dialog opens
+  useEffect(() => {
+    if (member) {
+      form.reset({
+        name: member.name || "",
+        email: member.email || "",
+        position: member.position || "",
+        number: member.number || "",
+      });
+    }
+  }, [member, form]);
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     const cleanedValues = {
@@ -86,7 +98,7 @@ export default function EditMemberDialog({ member, onClose, onSubmit }: EditMemb
               )}
             />
 
-            {member?.role?.includes('player') && (
+            {!member?.role?.includes('parent') && (
               <>
                 <FormField
                   control={form.control}
