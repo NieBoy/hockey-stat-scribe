@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTeams } from "@/hooks/useTeams";
 import { toast } from "sonner";
 import { User } from "@/types";
-import { sendInvitationsToTeamMembers, deleteTeamMember } from "@/services/teams";
+import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
 
 export function useTeamData(teamId: string) {
   const [activeTab, setActiveTab] = useState("players");
@@ -61,16 +61,22 @@ export function useTeamData(teamId: string) {
     
     try {
       console.log(`TeamDetail - Sending invitations to ${memberIds.length} members`);
-      const success = await sendInvitationsToTeamMembers(teamId, memberIds);
+      toast.loading("Sending invitations...");
+      
+      const success = await sendTeamInvitations(teamId, memberIds);
       
       if (success) {
         toast.success(`Invitations sent to ${memberIds.length} team members`);
       } else {
-        toast.error("Failed to send invitations");
+        toast.error("Failed to send invitations", {
+          description: "Please check that members have email addresses."
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending invitations:", error);
-      toast.error("Error sending invitations");
+      toast.error("Error sending invitations", {
+        description: error.message || "An unexpected error occurred."
+      });
     }
   };
 

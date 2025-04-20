@@ -4,6 +4,7 @@ import { useTeamMembers } from "@/hooks/teams/useTeamMembers";
 import { TableHeader } from "./members/TableHeader";
 import { MembersTableContent } from "./members/MembersTableContent";
 import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
+import { toast } from "sonner";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -30,7 +31,23 @@ const TeamMembersTable = ({
   } = useTeamMembers(team, () => onRemoveMember?.(memberToDelete!));
   
   const handleSendInvitations = () => {
+    if (selectedMembers.length === 0) {
+      toast.warning("Please select members to invite");
+      return;
+    }
+    
     if (onSendInvitations) {
+      // Check if any selected member has no email
+      const selectedMemberObjects = allMembers.filter(m => selectedMembers.includes(m.id));
+      const membersWithoutEmail = selectedMemberObjects.filter(m => !m.email);
+      
+      if (membersWithoutEmail.length > 0) {
+        const names = membersWithoutEmail.map(m => m.name).join(", ");
+        toast.warning(`Some members don't have email addresses: ${names}`, {
+          description: "Please add email addresses before sending invitations."
+        });
+      }
+      
       onSendInvitations(selectedMembers);
     }
   };

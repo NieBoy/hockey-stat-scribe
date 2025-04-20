@@ -14,9 +14,13 @@ export const TableHeader = ({ selectedCount, onSendInvitations }: TableHeaderPro
       <Button 
         onClick={onSendInvitations}
         disabled={selectedCount === 0}
+        variant={selectedCount > 0 ? "default" : "outline"}
       >
         <Mail className="mr-2 h-4 w-4" />
-        Send Invitations ({selectedCount})
+        {selectedCount > 0 
+          ? `Send Invitations (${selectedCount})`
+          : "Select Members to Invite"
+        }
       </Button>
     </div>
   );
