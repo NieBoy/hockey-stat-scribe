@@ -61,20 +61,24 @@ export function useTeamData(teamId: string) {
     
     try {
       console.log(`TeamDetail - Sending invitations to ${memberIds.length} members`);
-      toast.loading("Sending invitations...");
+      toast.loading("Sending invitations...", { id: "send-invitations" });
       
       const success = await sendTeamInvitations(teamId, memberIds);
       
       if (success) {
-        toast.success(`Invitations sent to ${memberIds.length} team members`);
+        toast.success(`Invitations sent successfully`, {
+          id: "send-invitations"
+        });
       } else {
-        toast.error("Failed to send invitations", {
+        toast.error("No invitations were sent", {
+          id: "send-invitations",
           description: "Please check that members have email addresses."
         });
       }
     } catch (error: any) {
       console.error("Error sending invitations:", error);
       toast.error("Error sending invitations", {
+        id: "send-invitations",
         description: error.message || "An unexpected error occurred."
       });
     }

@@ -5,6 +5,7 @@ import { TableHeader } from "./members/TableHeader";
 import { MembersTableContent } from "./members/MembersTableContent";
 import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
 import { toast } from "sonner";
+import { useCallback, useMemo } from "react";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -30,15 +31,24 @@ const TeamMembersTable = ({
     setMemberToDelete
   } = useTeamMembers(team, () => onRemoveMember?.(memberToDelete!));
   
-  const handleSendInvitations = () => {
+  // Find selected members that have no email
+  const selectedMemberObjects = useMemo(() => 
+    allMembers.filter(m => selectedMembers.includes(m.id)), 
+    [allMembers, selectedMembers]
+  );
+  
+  const hasMembersWithoutEmail = useMemo(() => 
+    selectedMemberObjects.some(m => !m.email),
+    [selectedMemberObjects]
+  );
+  
+  const handleSendInvitations = useCallback(() => {
     if (selectedMembers.length === 0) {
       toast.warning("Please select members to invite");
       return;
     }
     
     if (onSendInvitations) {
-      // Check if any selected member has no email
-      const selectedMemberObjects = allMembers.filter(m => selectedMembers.includes(m.id));
       const membersWithoutEmail = selectedMemberObjects.filter(m => !m.email);
       
       if (membersWithoutEmail.length > 0) {
@@ -50,13 +60,14 @@ const TeamMembersTable = ({
       
       onSendInvitations(selectedMembers);
     }
-  };
+  }, [selectedMembers, selectedMemberObjects, onSendInvitations]);
   
   return (
     <div className="space-y-4">
       <TableHeader 
         selectedCount={selectedMembers.length}
         onSendInvitations={handleSendInvitations}
+        hasMembersWithoutEmail={hasMembersWithoutEmail}
       />
       
       <MembersTableContent 

@@ -12,7 +12,6 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
       return false;
     }
     
-    // Implementation for sending batch invitations would go here
     console.log(`Sending invitations to ${memberIds.length} members of team ${teamId}`);
     
     // Fetch team members to get their emails
@@ -23,34 +22,34 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
       
     if (teamMembersError) {
       console.error("Error fetching team members for invitations:", teamMembersError);
-      throw teamMembersError;
+      throw new Error(`Error fetching team members: ${teamMembersError.message}`);
+    }
+    
+    if (!teamMembers || teamMembers.length === 0) {
+      throw new Error("No team members found with the provided IDs");
     }
     
     // Filter out members without emails
-    const membersWithEmail = teamMembers?.filter(member => member.email) || [];
-    const membersWithoutEmail = teamMembers?.filter(member => !member.email) || [];
+    const membersWithEmail = teamMembers.filter(member => member.email) || [];
+    const membersWithoutEmail = teamMembers.filter(member => !member.email) || [];
     
     if (membersWithEmail.length === 0) {
       console.warn("No members with emails to invite");
       if (membersWithoutEmail.length > 0) {
-        throw new Error("Selected members don't have email addresses. Please add emails before sending invitations.");
+        const names = membersWithoutEmail.map(m => m.name).join(", ");
+        throw new Error(`Selected members don't have email addresses: ${names}`);
       }
       return false;
     }
     
     console.log(`Would send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
     
-    // Send invitation emails - this would call your email service
-    // For now, we'll just simulate success
-    const sentCount = membersWithEmail.length;
+    // In a real implementation, we would call an email service here
+    // For now, we'll simulate successful sending
     
-    if (membersWithoutEmail.length > 0) {
-      console.warn(`${membersWithoutEmail.length} members don't have email addresses and won't receive invitations`);
-    }
-    
-    // Return true if at least one invitation was sent
-    return sentCount > 0;
-  } catch (error) {
+    // Return true if at least one invitation was successfully "sent"
+    return membersWithEmail.length > 0;
+  } catch (error: any) {
     console.error("Error sending team invitations:", error);
     throw error;
   }
