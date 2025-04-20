@@ -42,12 +42,42 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
       return false;
     }
     
-    console.log(`Would send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
+    console.log(`Preparing to send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
     
-    // In a real implementation, we would call an email service here
-    // For now, we'll simulate successful sending
+    // In a production implementation, we would call a server endpoint here to send emails
+    // For now, we'll log to console and simulate successful sending
     
-    // Return true if at least one invitation was successfully "sent"
+    for (const member of membersWithEmail) {
+      // Create an invitation record in the database
+      const { data: invitation, error: invitationError } = await supabase
+        .from('invitations')
+        .insert({
+          team_id: teamId,
+          email: member.email,
+          status: 'pending',
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        })
+        .select()
+        .single();
+        
+      if (invitationError) {
+        console.error(`Error creating invitation for ${member.email}:`, invitationError);
+        // Continue with other invitations even if one fails
+      } else {
+        console.log(`Created invitation in database for ${member.email}:`, invitation?.id);
+        
+        // Here you would normally call your email service
+        console.log(`[EMAIL SIMULATION] Sending invitation email to ${member.email}`);
+      }
+    }
+    
+    // Let user know about members without email addresses
+    if (membersWithoutEmail.length > 0) {
+      const names = membersWithoutEmail.map(m => m.name).join(", ");
+      console.warn(`Could not send invitations to members without email addresses: ${names}`);
+    }
+    
+    // Return true if at least one invitation was processed
     return membersWithEmail.length > 0;
   } catch (error: any) {
     console.error("Error sending team invitations:", error);
@@ -71,10 +101,81 @@ export const acceptInvitation = async (
     // and link it to the team member when they accept an invitation
     console.log(`Accepting invitation ${invitationId} for user ${userData.email}`);
     
-    // This would involve:
-    // 1. Creating a real user account in auth.users
-    // 2. Finding all team_members records with this email
-    // 3. Updating those records to link to the new user account
+    // 1. First verify the invitation exists and is valid
+    const { data: invitation, error: invitationError } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('id', invitationId)
+      .eq('status', 'pending')
+      .single();
+      
+    if (invitationError || !invitation) {
+      console.error("Invalid or expired invitation:", invitationError);
+      throw new Error("Invalid or expired invitation");
+    }
+    
+    // 2. Check if the email matches
+    if (invitation.email !== userData.email) {
+      throw new Error("Email does not match invitation");
+    }
+    
+    // 3. Create user account via Supabase auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.name
+        }
+      }
+    });
+    
+    if (authError || !authData.user) {
+      console.error("Error creating user account:", authError);
+      throw new Error("Could not create user account");
+    }
+    
+    // 4. Create user profile in the users table
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: userData.email,
+        name: userData.name
+      })
+      .select()
+      .single();
+      
+    if (profileError) {
+      console.error("Error creating user profile:", profileError);
+      throw new Error("Could not create user profile");
+    }
+    
+    // 5. Update all team_members records with this email
+    const { error: updateError } = await supabase
+      .from('team_members')
+      .update({ user_id: authData.user.id })
+      .eq('email', userData.email);
+      
+    if (updateError) {
+      console.error("Error updating team members:", updateError);
+      // Continue anyway
+    }
+    
+    // 6. Mark the invitation as accepted
+    const { error: acceptError } = await supabase
+      .from('invitations')
+      .update({ 
+        status: 'accepted',
+        accepted_at: new Date(),
+        user_id: authData.user.id
+      })
+      .eq('id', invitationId);
+      
+    if (acceptError) {
+      console.error("Error marking invitation as accepted:", acceptError);
+      // Continue anyway
+    }
     
     return true;
   } catch (error) {

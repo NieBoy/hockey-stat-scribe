@@ -10,7 +10,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     // First verify player exists in team_members table AND has a valid user_id
     const { data: playerData, error: playerError } = await supabase
       .from('team_members')
-      .select('id, name, user_id')
+      .select('id, name, user_id, email')
       .eq('id', playerId)
       .maybeSingle();
       
@@ -24,12 +24,78 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
       throw new Error(`Player ID ${playerId} not found in team_members table`);
     }
     
-    if (!playerData.user_id) {
-      console.error(`Player ${playerId} (${playerData.name}) exists but has no user_id in team_members table`);
-      throw new Error(`Player ID ${playerId} does not have a valid user_id association`);
+    // If player doesn't have a user_id, try to find or create one based on email
+    let userId = playerData.user_id;
+    
+    if (!userId && playerData.email) {
+      console.log(`Player ${playerId} has no user_id but has email, trying to find or create user`);
+      
+      // First check if a user exists with this email
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', playerData.email)
+        .maybeSingle();
+        
+      if (existingUserError) {
+        console.error("Error checking for existing user:", existingUserError);
+      }
+      
+      if (existingUser?.id) {
+        // User exists, link the player to this user
+        userId = existingUser.id;
+        console.log(`Found existing user ${userId} with email ${playerData.email}`);
+        
+        // Update the player's user_id
+        const { error: updateError } = await supabase
+          .from('team_members')
+          .update({ user_id: userId })
+          .eq('id', playerId);
+          
+        if (updateError) {
+          console.error("Error updating player user_id:", updateError);
+        } else {
+          console.log(`Updated player ${playerId} with user_id ${userId}`);
+        }
+      } else {
+        // No existing user, create a new one
+        try {
+          const { data: newUser, error: createError } = await supabase
+            .rpc('create_player_user', { 
+              player_name: playerData.name || 'Player', 
+              player_email: playerData.email 
+            });
+            
+          if (createError) {
+            console.error("Error creating new user:", createError);
+          } else if (newUser) {
+            userId = newUser;
+            console.log(`Created new user ${userId} for player ${playerId}`);
+            
+            // Update the player's user_id
+            const { error: updateError } = await supabase
+              .from('team_members')
+              .update({ user_id: userId })
+              .eq('id', playerId);
+              
+            if (updateError) {
+              console.error("Error updating player user_id after creation:", updateError);
+            } else {
+              console.log(`Updated player ${playerId} with new user_id ${userId}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error in create_player_user rpc call:", error);
+        }
+      }
     }
     
-    console.log(`Found player name: ${playerData.name}, user_id: ${playerData.user_id}`);
+    if (!userId) {
+      console.error(`Player ${playerId} (${playerData.name}) exists but has no user_id and no email to create one`);
+      throw new Error(`Player ID ${playerId} does not have a valid user_id association and no email to create one`);
+    }
+    
+    console.log(`Processing stats for player name: ${playerData.name}, user_id: ${userId}`);
     
     // Get all game events that reference this player
     // Using the approach that successfully finds events in usePlayerStatsData.ts
@@ -93,7 +159,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
+              .eq('player_id', userId) // Use user_id for checking existing stats
               .eq('stat_type', 'goals')
               .eq('period', event.period)
               .maybeSingle();
@@ -101,14 +167,14 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             if (!existingStat) {
               await insertGameStat({
                 gameId: event.game_id,
-                playerId: playerId, // Keep using team_member ID for consistency 
+                playerId: userId, // Use user_id for creating stats
                 statType: 'goals',
                 period: event.period,
                 value: 1,
                 details: ''
               });
               statsCreated = true;
-              console.log(`Added goal stat for player ${playerId}`);
+              console.log(`Added goal stat for player ${playerId} (user ${userId})`);
             } else {
               console.log(`Goal stat already exists for this event`);
             }
@@ -126,7 +192,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
+              .eq('player_id', userId) // Use user_id for checking existing stats
               .eq('stat_type', 'assists')
               .eq('period', event.period)
               .eq('details', 'primary')
@@ -135,14 +201,14 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             if (!existingAssist) {
               await insertGameStat({
                 gameId: event.game_id,
-                playerId: playerId,
+                playerId: userId, // Use user_id for creating stats
                 statType: 'assists',
                 period: event.period,
                 value: 1,
                 details: 'primary'
               });
               statsCreated = true;
-              console.log(`Added primary assist stat for player ${playerId}`);
+              console.log(`Added primary assist stat for player ${playerId} (user ${userId})`);
             } else {
               console.log(`Primary assist stat already exists for this event`);
             }
@@ -159,7 +225,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
               .from('game_stats')
               .select('id')
               .eq('game_id', event.game_id)
-              .eq('player_id', playerData.user_id) // Use user_id for checking existing stats
+              .eq('player_id', userId) // Use user_id for checking existing stats
               .eq('stat_type', 'assists')
               .eq('period', event.period)
               .eq('details', 'secondary')
@@ -168,14 +234,14 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             if (!existingAssist) {
               await insertGameStat({
                 gameId: event.game_id,
-                playerId: playerId,
+                playerId: userId, // Use user_id for creating stats
                 statType: 'assists',
                 period: event.period,
                 value: 1,
                 details: 'secondary'
               });
               statsCreated = true;
-              console.log(`Added secondary assist stat for player ${playerId}`);
+              console.log(`Added secondary assist stat for player ${playerId} (user ${userId})`);
             } else {
               console.log(`Secondary assist stat already exists for this event`);
             }
@@ -190,7 +256,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     if (statsCreated) {
       try {
         // Update aggregate player stats
-        const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerData.user_id });
+        const { error } = await supabase.rpc('refresh_player_stats', { player_id: userId });
         if (error) {
           console.error("Error calling refresh_player_stats function:", error);
         } else {
