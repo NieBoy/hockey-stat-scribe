@@ -81,11 +81,11 @@ export function useTeamData(teamId: string) {
       }
     } catch (error: any) {
       console.error("Error sending invitations:", error);
+      toast.dismiss("send-invitations");
       toast.error("Error sending invitations", {
-        id: "send-invitations",
+        id: "send-invitations-error",
         description: error.message || "An unexpected error occurred.",
         duration: 10000, // 10 seconds
-        dismissible: true // Allow manual dismissal
       });
     }
   };
