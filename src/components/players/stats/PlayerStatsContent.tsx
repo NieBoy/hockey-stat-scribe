@@ -32,6 +32,10 @@ export default function PlayerStatsContent({
   // Check if player has a valid user ID
   const isPlayerValid = !!player;
   const hasValidUserId = !!player?.id;
+  
+  // Check if there are raw game stats that need to be aggregated
+  const hasRawGameStats = rawGameStats && rawGameStats.length > 0;
+  const hasGameEvents = playerGameEvents && playerGameEvents.length > 0;
 
   return (
     <Card>
@@ -49,6 +53,8 @@ export default function PlayerStatsContent({
             isPlayerValid={isPlayerValid}
             hasValidUserId={hasValidUserId}
             playerId={playerId}
+            hasRawGameStats={hasRawGameStats}
+            hasGameEvents={hasGameEvents}
           />
         )}
         
