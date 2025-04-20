@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { User } from "@/types";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Form, 
   FormControl, 
@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface UserSettingsProps {
   user: User;
@@ -29,16 +30,8 @@ const profileFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
-}).refine((data) => {
-  if (data.password || data.confirmPassword) {
-    return data.password === data.confirmPassword;
-  }
-  return true;
-}, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  number: z.string().optional(),
+  position: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -51,32 +44,49 @@ export default function UserSettings({ user }: UserSettingsProps) {
     defaultValues: {
       name: user.name,
       email: user.email,
-      password: "",
-      confirmPassword: "",
+      number: user.number,
+      position: user.position || '',
     },
     mode: "onChange",
   });
 
-  function onSubmit(data: ProfileFormValues) {
+  async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
     
-    // Simulating API request
-    setTimeout(() => {
-      console.log("Profile updated:", data);
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+    try {
+      // Update team_members table if this is a team member
+      if (user.id) {
+        const { error: updateError } = await supabase
+          .from('team_members')
+          .update({
+            name: data.name,
+            email: data.email,
+            line_number: data.number ? parseInt(data.number) : null,
+            position: data.position || null
+          })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+      }
+      
+      toast.success("Profile updated successfully");
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile", {
+        description: error.message,
+        duration: 5000
       });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Account Settings</CardTitle>
+        <CardTitle>Profile Settings</CardTitle>
         <CardDescription>
-          Manage your account information and password.
+          Update your profile information
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,7 +102,7 @@ export default function UserSettings({ user }: UserSettingsProps) {
                     <Input {...field} />
                   </FormControl>
                   <FormDescription>
-                    Your full name as displayed to other users.
+                    Your full name as displayed to other users
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -109,54 +119,53 @@ export default function UserSettings({ user }: UserSettingsProps) {
                     <Input {...field} />
                   </FormControl>
                   <FormDescription>
-                    Your email address used for notifications and login.
+                    Your email address for notifications
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Change Password</h3>
-              <div className="space-y-4">
+
+            {user.role?.includes('player') && (
+              <>
                 <FormField
                   control={form.control}
-                  name="password"
+                  name="number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Password</FormLabel>
+                      <FormLabel>Jersey Number</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input {...field} type="text" />
                       </FormControl>
                       <FormDescription>
-                        Leave blank to keep your current password.
+                        Your jersey number
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="confirmPassword"
+                  name="position"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormLabel>Position</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormDescription>
-                        Re-enter your new password to confirm.
+                        Your playing position (e.g., LW, C, RW, LD, RD, G)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-            </div>
+              </>
+            )}
             
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Updating..." : "Update Profile"}
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </Form>
