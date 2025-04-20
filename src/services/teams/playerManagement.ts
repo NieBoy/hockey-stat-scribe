@@ -1,12 +1,13 @@
+
 import { supabase } from "@/lib/supabase";
 import { User, Position } from "@/types";
 import { 
   addTeamMember, 
   removeTeamMember, 
   updateTeamMemberInfo, 
-  getTeamMembersList as fetchTeamMembers 
+  getTeamMembersList as fetchTeamMembers,
+  sendTeamInvitations as sendInvitations
 } from "@/services/teams";
-import { sendInvitationsToTeamMembers as sendInvitations } from "@/services/teams";
 
 /**
  * Adds a player to a team without requiring a user account

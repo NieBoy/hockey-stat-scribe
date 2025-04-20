@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useTeams } from "@/hooks/useTeams";
 import { toast } from "sonner";
 import { User } from "@/types";
-import { sendTeamInvitations } from "@/services/teams";
+import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
 
 export function useTeamData(teamId: string) {
   const [activeTab, setActiveTab] = useState("players");
