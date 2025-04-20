@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
@@ -81,15 +82,17 @@ export default function PlayerStatsContent({
               players={player ? [player] : []}
               games={games}
               onFilter={() => {
-                // All logic handled in local filter, don't need to handle externally
+                // All logic handled in local filter
               }}
-              // Override: Hide player dropdown, always use current player
-              // We'll do this by customizing the GameStatsFilter logic
-              // But as we only pass 1 player, the dropdown is trivial/disabled
+              // Use controlled props for the filter
+              gameId={gameId}
+              onGameIdChange={setGameId}
+              period={period}
+              onPeriodChange={setPeriod}
+              statType={statType}
+              onStatTypeChange={setStatType}
+              hidePlayerFilter={true} // Hide player filter as this is a single player view
             />
-            {/* Hook up the GameStatsFilter controls to our local state */}
-            {/* We'll need to jump into GameStatsFilter and make it controlled for our scenario */}
-            {/* But for now, we can use the existing interface in a basic way */}
           </div>
         )}
 
