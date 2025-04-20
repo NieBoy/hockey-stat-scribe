@@ -55,7 +55,9 @@ export function useTeamData(teamId: string) {
 
   const handleSendInvitations = async (memberIds: string[]) => {
     if (!teamId || memberIds.length === 0) {
-      toast.error("No members selected for invitation");
+      toast.error("No members selected for invitation", { 
+        duration: 5000 // 5 seconds
+      });
       return;
     }
     
@@ -67,26 +69,32 @@ export function useTeamData(teamId: string) {
       
       if (success) {
         toast.success(`Invitations sent successfully`, {
-          id: "send-invitations"
+          id: "send-invitations",
+          duration: 5000 // 5 seconds
         });
       } else {
         toast.error("No invitations were sent", {
           id: "send-invitations",
-          description: "Please check that members have email addresses."
+          description: "Please check that members have email addresses.",
+          duration: 8000 // 8 seconds
         });
       }
     } catch (error: any) {
       console.error("Error sending invitations:", error);
       toast.error("Error sending invitations", {
         id: "send-invitations",
-        description: error.message || "An unexpected error occurred."
+        description: error.message || "An unexpected error occurred.",
+        duration: 10000, // 10 seconds
+        dismissible: true // Allow manual dismissal
       });
     }
   };
 
   const handleRemoveMember = async (member: User) => {
     if (!member?.id) {
-      toast.error("Invalid member selected");
+      toast.error("Invalid member selected", { 
+        duration: 5000 
+      });
       return;
     }
     
@@ -95,14 +103,20 @@ export function useTeamData(teamId: string) {
       const success = await deleteTeamMember(member.id);
       
       if (success) {
-        toast.success(`${member.name} has been removed from the team`);
+        toast.success(`${member.name} has been removed from the team`, {
+          duration: 5000
+        });
         refetchTeam();
       } else {
-        toast.error("Failed to remove team member");
+        toast.error("Failed to remove team member", {
+          duration: 5000
+        });
       }
     } catch (error) {
       console.error("Error removing team member:", error);
-      toast.error("Error removing team member");
+      toast.error("Error removing team member", {
+        duration: 5000
+      });
     }
   };
 

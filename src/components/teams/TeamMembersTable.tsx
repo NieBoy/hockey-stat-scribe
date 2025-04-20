@@ -44,7 +44,9 @@ const TeamMembersTable = ({
   
   const handleSendInvitations = useCallback(() => {
     if (selectedMembers.length === 0) {
-      toast.warning("Please select members to invite");
+      toast.warning("Please select members to invite", {
+        duration: 5000
+      });
       return;
     }
     
@@ -54,7 +56,9 @@ const TeamMembersTable = ({
       if (membersWithoutEmail.length > 0) {
         const names = membersWithoutEmail.map(m => m.name).join(", ");
         toast.warning(`Some members don't have email addresses: ${names}`, {
-          description: "Please add email addresses before sending invitations."
+          description: "Please add email addresses before sending invitations.",
+          duration: 8000,
+          dismissible: true
         });
       }
       
