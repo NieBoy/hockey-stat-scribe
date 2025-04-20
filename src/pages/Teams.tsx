@@ -1,7 +1,7 @@
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, UserCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTeams } from "@/hooks/useTeams";
@@ -56,13 +56,20 @@ export default function Teams() {
             View and manage hockey teams.
           </p>
         </div>
-        {user?.role.includes('coach') && (
-          <Button asChild className="gap-2">
-            <Link to="/teams/new">
-              <Plus className="h-4 w-4" /> New Team
+        <div className="flex gap-2">
+          <Button variant="outline" asChild className="gap-2">
+            <Link to="/profile">
+              <UserCircle2 className="h-4 w-4" /> Edit Profile
             </Link>
           </Button>
-        )}
+          {user?.role.includes('coach') && (
+            <Button asChild className="gap-2">
+              <Link to="/teams/new">
+                <Plus className="h-4 w-4" /> New Team
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {teams && (teams as Team[]).length > 0 ? (
@@ -71,7 +78,6 @@ export default function Teams() {
         <EmptyTeamsState user={user} />
       )}
 
-      {/* Add Player Dialog */}
       <AddPlayerDialog
         isOpen={addPlayerDialogOpen}
         onOpenChange={setAddPlayerDialogOpen}
