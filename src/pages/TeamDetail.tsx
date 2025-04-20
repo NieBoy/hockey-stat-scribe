@@ -35,7 +35,8 @@ export default function TeamDetail() {
     handleSendInvitations,
     handleRemoveMember,
     handleTeamUpdate,
-    handleRefreshLineup
+    handleRefreshLineup,
+    isSendingInvitations
   } = useTeamData(id);
 
   const handleEditLineupClick = () => {
@@ -81,6 +82,7 @@ export default function TeamDetail() {
             handleTeamUpdate={handleTeamUpdate}
             handleSendInvitations={handleSendInvitations}
             handleRemoveMember={handleRemoveMember}
+            isSendingInvitations={isSendingInvitations}
           />
         </div>
 

@@ -1,18 +1,20 @@
 
 import { Button } from "@/components/ui/button";
-import { Mail, AlertCircle } from "lucide-react";
+import { Mail, AlertCircle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TableHeaderProps {
   selectedCount: number;
   onSendInvitations: () => void;
   hasMembersWithoutEmail?: boolean;
+  isLoading?: boolean;
 }
 
 export const TableHeader = ({ 
   selectedCount, 
   onSendInvitations, 
-  hasMembersWithoutEmail = false 
+  hasMembersWithoutEmail = false,
+  isLoading = false
 }: TableHeaderProps) => {
   return (
     <div className="flex items-center justify-between">
@@ -26,9 +28,19 @@ export const TableHeader = ({
                 onClick={onSendInvitations}
                 variant="default"
                 className="flex items-center gap-2"
+                disabled={isLoading}
               >
-                <Mail className="h-4 w-4" />
-                <span>Send Invitations ({selectedCount})</span>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4" />
+                )}
+                <span>
+                  {isLoading 
+                    ? "Sending..." 
+                    : `Send Invitations (${selectedCount})`
+                  }
+                </span>
                 <AlertCircle className="h-4 w-4 text-yellow-200" />
               </Button>
             </TooltipTrigger>
@@ -40,14 +52,20 @@ export const TableHeader = ({
       ) : (
         <Button 
           onClick={onSendInvitations}
-          disabled={selectedCount === 0}
+          disabled={selectedCount === 0 || isLoading}
           variant={selectedCount > 0 ? "default" : "outline"}
           className="flex items-center gap-2"
         >
-          <Mail className="h-4 w-4" />
-          {selectedCount > 0 
-            ? `Send Invitations (${selectedCount})`
-            : "Select Members to Invite"
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Mail className="h-4 w-4" />
+          )}
+          {isLoading 
+            ? "Sending..." 
+            : selectedCount > 0 
+              ? `Send Invitations (${selectedCount})`
+              : "Select Members to Invite"
           }
         </Button>
       )}

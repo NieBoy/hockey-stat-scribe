@@ -5,20 +5,22 @@ import { TableHeader } from "./members/TableHeader";
 import { MembersTableContent } from "./members/MembersTableContent";
 import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
 import { toast } from "sonner";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 interface TeamMembersTableProps {
   team: Team;
   onSendInvitations?: (memberIds: string[]) => void;
   onEditMember?: (member: User) => void;
   onRemoveMember?: (member: User) => void;
+  isSendingInvitations?: boolean;
 }
 
 const TeamMembersTable = ({ 
   team,
   onSendInvitations,
   onEditMember,
-  onRemoveMember
+  onRemoveMember,
+  isSendingInvitations = false
 }: TeamMembersTableProps) => {
   const {
     selectedMembers,
@@ -41,6 +43,8 @@ const TeamMembersTable = ({
     selectedMemberObjects.some(m => !m.email),
     [selectedMemberObjects]
   );
+  
+  const [lastInvitationSent, setLastInvitationSent] = useState<Date | null>(null);
   
   const handleSendInvitations = useCallback(() => {
     if (selectedMembers.length === 0) {
@@ -66,6 +70,7 @@ const TeamMembersTable = ({
         }
       }
       
+      setLastInvitationSent(new Date());
       onSendInvitations(selectedMembers);
     }
   }, [selectedMembers, selectedMemberObjects, onSendInvitations]);
@@ -76,6 +81,7 @@ const TeamMembersTable = ({
         selectedCount={selectedMembers.length}
         onSendInvitations={handleSendInvitations}
         hasMembersWithoutEmail={hasMembersWithoutEmail}
+        isLoading={isSendingInvitations}
       />
       
       <MembersTableContent 
@@ -92,6 +98,12 @@ const TeamMembersTable = ({
         onClose={() => setMemberToDelete(null)}
         onConfirm={handleDelete}
       />
+      
+      {lastInvitationSent && (
+        <div className="text-sm text-muted-foreground">
+          Last invitation attempt: {lastInvitationSent.toLocaleTimeString()}
+        </div>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
 export function useTeamData(teamId: string) {
   const [activeTab, setActiveTab] = useState("players");
   const [lineupRefreshKey, setLineupRefreshKey] = useState<number>(0);
+  const [isSendingInvitations, setIsSendingInvitations] = useState(false);
   
   const { 
     addPlayerDialogOpen, 
@@ -63,6 +64,7 @@ export function useTeamData(teamId: string) {
     
     try {
       console.log(`TeamDetail - Sending invitations to ${memberIds.length} members`);
+      setIsSendingInvitations(true);
       toast.loading("Sending invitations...", { id: "send-invitations" });
       
       const success = await sendTeamInvitations(teamId, memberIds);
@@ -87,6 +89,8 @@ export function useTeamData(teamId: string) {
         description: error.message || "An unexpected error occurred.",
         duration: 10000, // 10 seconds
       });
+    } finally {
+      setIsSendingInvitations(false);
     }
   };
 
@@ -152,6 +156,7 @@ export function useTeamData(teamId: string) {
     handleSendInvitations,
     handleRemoveMember,
     handleTeamUpdate,
-    handleRefreshLineup
+    handleRefreshLineup,
+    isSendingInvitations
   };
 }

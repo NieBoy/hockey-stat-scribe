@@ -1,24 +1,24 @@
 
-import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Team, User } from "@/types";
 import PlayersTabContent from "./PlayersTabContent";
 import CoachesTabContent from "./CoachesTabContent";
 import StatsTabContent from "./StatsTabContent";
 import TeamMembersTable from "./TeamMembersTable";
-import { Team } from "@/types";
 
 interface TeamTabsProps {
   team: Team;
   activeTab: string;
-  setActiveTab: (value: string) => void;
-  handleAddPlayer: (teamId: string) => void;
-  handleRemovePlayer: (teamId: string, playerId: string, playerName: string) => void;
+  setActiveTab: (tab: string) => void;
+  handleAddPlayer: () => void;
+  handleRemovePlayer: (playerId: string) => void;
   handleTeamUpdate: () => void;
   handleSendInvitations: (memberIds: string[]) => void;
-  handleRemoveMember: (member: any) => void;
+  handleRemoveMember: (member: User) => void;
+  isSendingInvitations?: boolean;
 }
 
-export default function TeamTabs({
+const TeamTabs = ({
   team,
   activeTab,
   setActiveTab,
@@ -26,43 +26,47 @@ export default function TeamTabs({
   handleRemovePlayer,
   handleTeamUpdate,
   handleSendInvitations,
-  handleRemoveMember
-}: TeamTabsProps) {
+  handleRemoveMember,
+  isSendingInvitations
+}: TeamTabsProps) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-4 w-full max-w-md mb-6">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="players">Players</TabsTrigger>
         <TabsTrigger value="coaches">Coaches</TabsTrigger>
+        <TabsTrigger value="members">Members</TabsTrigger>
         <TabsTrigger value="stats">Stats</TabsTrigger>
-        <TabsTrigger value="all-members">All Members</TabsTrigger>
       </TabsList>
-      
-      <TabsContent value="players" className="space-y-4">
-        <PlayersTabContent 
-          team={team} 
-          handleAddPlayer={handleAddPlayer} 
-          handleRemovePlayer={handleRemovePlayer} 
+
+      <TabsContent value="players" className="mt-6">
+        <PlayersTabContent
+          team={team}
+          onAddPlayer={handleAddPlayer}
+          onRemovePlayer={handleRemovePlayer}
         />
       </TabsContent>
       
-      <TabsContent value="coaches" className="space-y-4">
+      <TabsContent value="coaches" className="mt-6">
         <CoachesTabContent 
-          team={team} 
+          team={team}
           onCoachAdded={handleTeamUpdate} 
         />
       </TabsContent>
       
-      <TabsContent value="stats" className="space-y-4">
-        <StatsTabContent team={team} />
-      </TabsContent>
-      
-      <TabsContent value="all-members" className="space-y-4">
-        <TeamMembersTable 
+      <TabsContent value="members" className="mt-6">
+        <TeamMembersTable
           team={team}
           onSendInvitations={handleSendInvitations}
           onRemoveMember={handleRemoveMember}
+          isSendingInvitations={isSendingInvitations}
         />
+      </TabsContent>
+      
+      <TabsContent value="stats" className="mt-6">
+        <StatsTabContent team={team} />
       </TabsContent>
     </Tabs>
   );
-}
+};
+
+export default TeamTabs;
