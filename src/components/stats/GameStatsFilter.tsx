@@ -40,7 +40,7 @@ export default function GameStatsFilter({
   onSearchChange,
   hidePlayerFilter = false
 }: GameStatsFilterProps) {
-  // Use local state only if controlled props aren't provided
+  // Use controlled props handlers
   const handlePlayerChange = (value: string) => {
     if (onPlayerIdChange) {
       onPlayerIdChange(value);
@@ -70,6 +70,9 @@ export default function GameStatsFilter({
       onSearchChange(e.target.value);
     }
   };
+
+  // Make sure we have unique stat types for the filter
+  const statTypes = [...new Set(stats.map(stat => stat.statType))];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-4">
@@ -131,6 +134,9 @@ export default function GameStatsFilter({
           <SelectItem value="goals">Goals</SelectItem>
           <SelectItem value="assists">Assists</SelectItem>
           <SelectItem value="plusMinus">Plus/Minus</SelectItem>
+          {statTypes.filter(type => !['goals', 'assists', 'plusMinus'].includes(type)).map(type => (
+            <SelectItem key={type} value={type}>{type}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
