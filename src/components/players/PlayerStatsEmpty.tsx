@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Info, UserPlus } from "lucide-react";
@@ -26,6 +25,7 @@ export default function PlayerStatsEmpty({
   const [playerName, setPlayerName] = useState<string>("");
   const [playerEmail, setPlayerEmail] = useState<string | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   // Check if player exists in the team_members table and has a valid user_id
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function PlayerStatsEmpty({
     };
 
     checkPlayerExists();
-  }, [playerId]);
+  }, [playerId, retries]);
 
   const handleRefresh = () => {
     if (!isPlayerValid) {
@@ -151,13 +151,24 @@ export default function PlayerStatsEmpty({
         description: "Successfully created and linked a user account for this player"
       });
 
-      // Update local state
-      setHasValidUserId(true);
-      setErrorDetails(null);
+      // Update local state by triggering a re-fetch
+      setRetries(prev => prev + 1);
+      
     } catch (error) {
       console.error("Error creating user for player:", error);
+      
+      // Provide a more specific error message
+      let errorMessage = "An unexpected error occurred";
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+        
+        if (errorMessage.includes("foreign key constraint")) {
+          errorMessage = "There is a database constraint issue. The system administrator needs to check the database configuration.";
+        }
+      }
+      
       toast.error("Failed to create user", {
-        description: error instanceof Error ? error.message : String(error)
+        description: errorMessage
       });
     } finally {
       setCreatingUser(false);

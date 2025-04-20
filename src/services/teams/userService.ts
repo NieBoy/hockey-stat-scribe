@@ -22,7 +22,7 @@ export const userExists = async (userId: string): Promise<boolean> => {
 
 /**
  * Gets or creates a user for a player
- * Uses security definer function to bypass RLS
+ * Uses direct SQL insert instead of RLS bypass function
  */
 export const getOrCreatePlayerUser = async (playerData: {
   name: string;
@@ -44,22 +44,25 @@ export const getOrCreatePlayerUser = async (playerData: {
       }
     }
 
-    // Generate a random user ID
+    // Generate a new user ID
     const newUserId = crypto.randomUUID();
     console.log("Generated new user ID:", newUserId);
     
-    // Use the RLS bypass function to create the user
-    const { data, error } = await supabase.rpc(
-      'create_user_bypass_rls',
-      { 
-        user_id: newUserId,
-        user_name: playerData.name,
-        user_email: playerData.email || `player_${newUserId.substring(0, 8)}@example.com`
-      }
-    );
+    // Directly insert into the users table
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        id: newUserId,
+        name: playerData.name,
+        email: playerData.email || `player_${newUserId.substring(0, 8)}@example.com`,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .select('id')
+      .single();
     
     if (error) {
-      console.error("Error creating user with bypass function:", error);
+      console.error("Error creating user:", error);
       throw error;
     }
     

@@ -15,6 +15,8 @@ export function usePlayerDetails(playerId: string | undefined) {
     }
 
     setLoading(true);
+    setError(null);
+    
     try {
       console.log("Fetching player details for ID:", playerId);
       

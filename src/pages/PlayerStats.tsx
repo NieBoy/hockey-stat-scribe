@@ -19,7 +19,7 @@ export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
-  const { player, loading: playerLoading, refetchPlayer } = usePlayerDetails(id);
+  const { player, loading: playerLoading, error: playerError, refetchPlayer } = usePlayerDetails(id);
   
   const {
     stats,
@@ -85,7 +85,7 @@ export default function PlayerStats() {
       } catch (error) {
         if (error instanceof Error && error.message.includes("user_id")) {
           toast.error("Player User ID Issue", {
-            description: "This player doesn't have a valid user ID association in the database. Please check the debug information."
+            description: "This player doesn't have a valid user ID association in the database. Please check the debug information and use the 'Fix User Association' button."
           });
           // Automatically show debug info when we encounter this error
           setShowDebugInfo(true);
@@ -115,11 +115,21 @@ export default function PlayerStats() {
     );
   }
 
+  if (playerError) {
+    return (
+      <MainLayout>
+        <div className="text-center text-red-500">
+          Error loading player: {String(playerError)}
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (statsError) {
     return (
       <MainLayout>
         <div className="text-center text-red-500">
-          Error loading stats: {(statsError as Error).message}
+          Error loading stats: {String(statsError)}
         </div>
       </MainLayout>
     );
