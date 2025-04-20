@@ -1,9 +1,10 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Info } from "lucide-react";
+import { RefreshCw, AlertCircle, Info, UserPlus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { getOrCreatePlayerUser } from "@/services/teams/userService";
 
 interface PlayerStatsEmptyProps {
   gameStatsDebug: any[];
@@ -22,6 +23,9 @@ export default function PlayerStatsEmpty({
   const [checking, setChecking] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [hasValidUserId, setHasValidUserId] = useState<boolean | null>(null);
+  const [playerName, setPlayerName] = useState<string>("");
+  const [playerEmail, setPlayerEmail] = useState<string | null>(null);
+  const [creatingUser, setCreatingUser] = useState(false);
 
   // Check if player exists in the team_members table and has a valid user_id
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function PlayerStatsEmpty({
         // Check if player exists in team_members and has a valid user_id
         const { data: memberData, error: memberError } = await supabase
           .from('team_members')
-          .select('id, name, user_id')
+          .select('id, name, email, user_id')
           .eq('id', playerId)
           .maybeSingle();
           
@@ -49,6 +53,8 @@ export default function PlayerStatsEmpty({
         if (memberData) {
           // Player exists in team_members
           setIsPlayerValid(true);
+          setPlayerName(memberData.name || 'Unknown Player');
+          setPlayerEmail(memberData.email || null);
           
           // Check if the player has a valid user_id
           if (memberData.user_id) {
@@ -111,6 +117,53 @@ export default function PlayerStatsEmpty({
     onRefresh();
   };
 
+  // Create user for this player and associate them
+  const handleCreateUserForPlayer = async () => {
+    if (!playerName) {
+      toast.error("Missing player name", {
+        description: "Cannot create user account without a player name"
+      });
+      return;
+    }
+
+    setCreatingUser(true);
+    try {
+      // Get or create a user for this player
+      const userId = await getOrCreatePlayerUser({
+        name: playerName,
+        email: playerEmail || undefined
+      });
+
+      console.log(`Created/found user with ID ${userId} for player ${playerId}`);
+
+      // Associate the user_id with this player in team_members table
+      const { error: updateError } = await supabase
+        .from('team_members')
+        .update({ user_id: userId })
+        .eq('id', playerId);
+
+      if (updateError) {
+        console.error("Error updating player with user_id:", updateError);
+        throw updateError;
+      }
+
+      toast.success("User association fixed", {
+        description: "Successfully created and linked a user account for this player"
+      });
+
+      // Update local state
+      setHasValidUserId(true);
+      setErrorDetails(null);
+    } catch (error) {
+      console.error("Error creating user for player:", error);
+      toast.error("Failed to create user", {
+        description: error instanceof Error ? error.message : String(error)
+      });
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   // Show warning if player ID is invalid
   if (isPlayerValid === false) {
     return (
@@ -157,12 +210,19 @@ export default function PlayerStatsEmpty({
           </ul>
         </div>
 
-        <div className="mt-4">
-          <p className="font-medium">Possible solutions:</p>
-          <ul className="list-disc list-inside text-left mt-2 text-sm">
-            <li>Manually update the team_members table to add a user_id for this player</li>
-            <li>Create a new user for this player and link them together</li>
-          </ul>
+        <div className="mt-6 flex justify-center">
+          <Button 
+            onClick={handleCreateUserForPlayer} 
+            className="gap-2" 
+            disabled={creatingUser}
+          >
+            <UserPlus className="h-4 w-4" />
+            {creatingUser ? "Creating User..." : "Fix User Association"}
+          </Button>
+        </div>
+        
+        <div className="mt-4 text-sm text-amber-700">
+          <p>This will create a new user account for "{playerName}" and link it to this player record.</p>
         </div>
       </div>
     );

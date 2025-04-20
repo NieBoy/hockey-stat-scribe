@@ -1,6 +1,6 @@
 
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -19,7 +19,7 @@ export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
-  const { player, loading: playerLoading } = usePlayerDetails(id);
+  const { player, loading: playerLoading, refetchPlayer } = usePlayerDetails(id);
   
   const {
     stats,
@@ -34,6 +34,13 @@ export default function PlayerStats() {
     refetchEvents
   } = usePlayerStatsData(id || '');
 
+  // Automatically show debug info if there's an issue with the player's user_id
+  useEffect(() => {
+    if (player && !player.id) {
+      setShowDebugInfo(true);
+    }
+  }, [player]);
+
   const handleRefreshStats = async () => {
     if (!id) return;
     
@@ -42,6 +49,9 @@ export default function PlayerStats() {
     
     try {
       console.log("Starting stats refresh process");
+      
+      // Make sure we have the latest player data
+      await refetchPlayer();
       
       // First refresh events to make sure we have the latest data
       console.log("Refreshing game events");
