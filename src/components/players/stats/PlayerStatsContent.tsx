@@ -1,10 +1,10 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import PlayerStatsEmpty from "@/components/players/PlayerStatsEmpty";
-import PlayerStatsDebug from "@/components/players/PlayerStatsDebug";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { PlayerStat } from "@/types";
 import { User } from "@/types";
+import EmptyStatsContent from "@/components/players/stats/empty-state/EmptyStatsContent";
+import PlayerStatsDebug from "@/components/players/PlayerStatsDebug";
 
 interface PlayerStatsContentProps {
   stats: PlayerStat[];
@@ -29,19 +29,25 @@ export default function PlayerStatsContent({
   onRefresh,
   playerId
 }: PlayerStatsContentProps) {
+  // Check if player has a valid user ID
+  const isPlayerValid = !!player;
+  const hasValidUserId = !!player?.id;
+
   return (
     <Card>
-      <CardContent>
+      <CardContent className="py-6">
         {stats && stats.length > 0 ? (
           <SortableStatsTable 
             stats={stats} 
             getPlayerName={(playerId) => player?.name || "Player"}
           />
         ) : (
-          <PlayerStatsEmpty 
+          <EmptyStatsContent 
             gameStatsDebug={rawGameStats || []}
             playerGameEvents={playerGameEvents}
             onRefresh={onRefresh}
+            isPlayerValid={isPlayerValid}
+            hasValidUserId={hasValidUserId}
             playerId={playerId}
           />
         )}

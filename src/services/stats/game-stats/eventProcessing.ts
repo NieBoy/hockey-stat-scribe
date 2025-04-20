@@ -7,7 +7,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
   try {
     console.log(`Creating game stats from events for player: ${playerId}`);
     
-    // First verify player exists in team_members table AND has a valid user_id
+    // First verify player exists in team_members table
     const { data: playerData, error: playerError } = await supabase
       .from('team_members')
       .select('id, name, user_id, email')
@@ -28,7 +28,7 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     let userId = playerData.user_id;
     
     if (!userId && playerData.email) {
-      console.log(`Player ${playerId} has no user_id but has email, trying to find or create user`);
+      console.log(`Player ${playerId} has no user_id but has email ${playerData.email}, trying to find or create user`);
       
       // First check if a user exists with this email
       const { data: existingUser, error: existingUserError } = await supabase
@@ -98,9 +98,6 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     console.log(`Processing stats for player name: ${playerData.name}, user_id: ${userId}`);
     
     // Get all game events that reference this player
-    // Using the approach that successfully finds events in usePlayerStatsData.ts
-    
-    // First get events where player is directly referenced in specific fields
     const { data: directEvents, error: eventsError } = await supabase
       .from('game_events')
       .select('id, event_type, game_id, period, details, team_type, timestamp')
@@ -249,6 +246,64 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
             console.error("Error creating secondary assist stat:", error);
           }
         }
+        
+        // Process plus/minus for players on ice during a goal
+        if (Array.isArray(details.playersOnIce) && details.playersOnIce.includes(playerId)) {
+          try {
+            // We need to determine if this is a plus or minus for the player
+            // Get the player's team ID
+            const { data: playerTeam } = await supabase
+              .from('team_members')
+              .select('team_id')
+              .eq('id', playerId)
+              .single();
+              
+            if (playerTeam) {
+              // Get the game to determine home/away team
+              const { data: game } = await supabase
+                .from('games')
+                .select('home_team_id, away_team_id')
+                .eq('id', event.game_id)
+                .single();
+                
+              if (game) {
+                const isHomeTeam = playerTeam.team_id === game.home_team_id;
+                const isHomeTeamGoal = event.team_type === 'home';
+                
+                // Player gets a plus if their team scored, minus if the opponent scored
+                const isPlus = isHomeTeam === isHomeTeamGoal;
+                
+                // Check if plus/minus stat already exists
+                const { data: existingPlusMinus } = await supabase
+                  .from('game_stats')
+                  .select('id')
+                  .eq('game_id', event.game_id)
+                  .eq('player_id', userId)
+                  .eq('stat_type', 'plusMinus')
+                  .eq('period', event.period)
+                  .eq('details', isPlus ? 'plus' : 'minus')
+                  .maybeSingle();
+                  
+                if (!existingPlusMinus) {
+                  await insertGameStat({
+                    gameId: event.game_id,
+                    playerId: userId,
+                    statType: 'plusMinus',
+                    period: event.period,
+                    value: 1,
+                    details: isPlus ? 'plus' : 'minus'
+                  });
+                  statsCreated = true;
+                  console.log(`Added ${isPlus ? 'plus' : 'minus'} stat for player ${playerId} (user ${userId})`);
+                } else {
+                  console.log(`Plus/minus stat already exists for this event`);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error creating plus/minus stat:", error);
+          }
+        }
       }
     }
     
@@ -256,14 +311,21 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     if (statsCreated) {
       try {
         // Update aggregate player stats
-        const { error } = await supabase.rpc('refresh_player_stats', { player_id: userId });
+        const { data, error } = await supabase.rpc('refresh_player_stats', { player_id: userId });
         if (error) {
           console.error("Error calling refresh_player_stats function:", error);
+          
+          // Fallback: Let's manually refresh player stats by summing game_stats
+          console.log("Falling back to manual stats aggregation...");
+          await manuallyRefreshPlayerStats(userId);
         } else {
-          console.log("Successfully refreshed aggregated player stats");
+          console.log("Successfully refreshed aggregated player stats via RPC");
         }
       } catch (error) {
         console.error("Error updating aggregated player stats:", error);
+        
+        // Try manual fallback
+        await manuallyRefreshPlayerStats(userId);
       }
     }
     
@@ -271,6 +333,101 @@ export const createStatsFromEvents = async (playerId: string): Promise<boolean> 
     return statsCreated;
   } catch (error) {
     console.error("Error creating stats from events:", error);
+    return false;
+  }
+};
+
+// Manual fallback for refreshing player stats by aggregating game_stats
+const manuallyRefreshPlayerStats = async (userId: string): Promise<boolean> => {
+  try {
+    console.log(`Manually refreshing player stats for user ${userId}`);
+    
+    // Get all game stats for this player
+    const { data: gameStats, error } = await supabase
+      .from('game_stats')
+      .select('*')
+      .eq('player_id', userId);
+      
+    if (error) {
+      console.error("Error fetching game stats for aggregation:", error);
+      return false;
+    }
+    
+    if (!gameStats || gameStats.length === 0) {
+      console.log("No game stats found to aggregate");
+      return false;
+    }
+    
+    console.log(`Found ${gameStats.length} game stats to aggregate`);
+    
+    // Group stats by type for aggregation
+    const statsByType: Record<string, {
+      value: number;
+      gameIds: Set<string>;
+    }> = {};
+    
+    for (const stat of gameStats) {
+      if (!statsByType[stat.stat_type]) {
+        statsByType[stat.stat_type] = {
+          value: 0,
+          gameIds: new Set()
+        };
+      }
+      
+      statsByType[stat.stat_type].value += stat.value;
+      statsByType[stat.stat_type].gameIds.add(stat.game_id);
+    }
+    
+    console.log("Aggregated stats by type:", statsByType);
+    
+    // Update player_stats table with aggregated values
+    for (const [statType, stats] of Object.entries(statsByType)) {
+      // Check if stat already exists
+      const { data: existingStat } = await supabase
+        .from('player_stats')
+        .select('id')
+        .eq('player_id', userId)
+        .eq('stat_type', statType)
+        .maybeSingle();
+        
+      if (existingStat) {
+        // Update existing stat
+        const { error: updateError } = await supabase
+          .from('player_stats')
+          .update({
+            value: stats.value,
+            games_played: stats.gameIds.size
+          })
+          .eq('id', existingStat.id);
+          
+        if (updateError) {
+          console.error(`Error updating ${statType} stat:`, updateError);
+        } else {
+          console.log(`Updated ${statType} stat: ${stats.value} across ${stats.gameIds.size} games`);
+        }
+      } else {
+        // Create new stat
+        const { error: insertError } = await supabase
+          .from('player_stats')
+          .insert({
+            player_id: userId,
+            stat_type: statType,
+            value: stats.value,
+            games_played: stats.gameIds.size
+          });
+          
+        if (insertError) {
+          console.error(`Error inserting ${statType} stat:`, insertError);
+        } else {
+          console.log(`Inserted new ${statType} stat: ${stats.value} across ${stats.gameIds.size} games`);
+        }
+      }
+    }
+    
+    console.log("Manual player stats refresh completed successfully");
+    return true;
+  } catch (error) {
+    console.error("Error in manual player stats refresh:", error);
     return false;
   }
 };
