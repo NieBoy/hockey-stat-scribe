@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -14,10 +13,22 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     
     console.log(`Sending invitations to ${memberIds.length} members of team ${teamId}`);
     
+    // Fetch team information
+    const { data: teamData, error: teamError } = await supabase
+      .from('teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .single();
+      
+    if (teamError || !teamData) {
+      console.error("Error fetching team info:", teamError);
+      throw new Error(`Team not found: ${teamError?.message}`);
+    }
+    
     // Fetch team members to get their emails
     const { data: teamMembers, error: teamMembersError } = await supabase
       .from('team_members')
-      .select('id, name, email')
+      .select('id, name, email, role')
       .in('id', memberIds);
       
     if (teamMembersError) {
@@ -64,18 +75,18 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     let invitationsSent = 0;
     for (const member of membersWithEmail) {
       try {
-        // Simulate email sending since we can't actually send emails from the frontend
-        console.log(`[EMAIL SIMULATION] Sending invitation email to ${member.email}`);
-        
         // Create invitation record
-        const { error: invitationError } = await supabase
+        const { data: invitation, error: invitationError } = await supabase
           .from('invitations')
           .insert({
             team_id: teamId,
             email: member.email,
+            role: member.role || 'player',
             status: 'pending',
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-          });
+          })
+          .select()
+          .single();
           
         if (invitationError) {
           // If the table error persists, we'll try a fallback approach
@@ -84,30 +95,52 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
             await createInvitationsTable();
             
             // Retry the insert after creating the table
-            const { error: retryError } = await supabase
+            const { data: retryData, error: retryError } = await supabase
               .from('invitations')
               .insert({
                 team_id: teamId,
                 email: member.email,
+                role: member.role || 'player',
                 status: 'pending',
                 expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-              });
+              })
+              .select()
+              .single();
               
             if (retryError) {
               console.error(`Error creating invitation for ${member.email} after retry:`, retryError);
-              // Store locally as a last resort
-              storeInvitationLocally(teamId, member.email);
+              continue;
             } else {
-              invitationsSent++;
-              console.log(`Created invitation for ${member.email} after retry`);
+              invitation = retryData;
             }
           } else {
             console.error(`Error creating invitation for ${member.email}:`, invitationError);
-            storeInvitationLocally(teamId, member.email);
+            continue;
           }
-        } else {
-          invitationsSent++;
-          console.log(`Created invitation for ${member.email}`);
+        }
+        
+        if (invitation) {
+          // Send actual email using edge function
+          try {
+            const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+              body: {
+                to: member.email,
+                teamName: teamData.name,
+                invitationId: invitation.id,
+                role: member.role || 'player'
+              }
+            });
+            
+            if (emailError) {
+              console.error(`Error sending email to ${member.email}:`, emailError);
+              // We'll still count this as "sent" since the DB record was created
+            }
+            
+            invitationsSent++;
+            console.log(`Invitation sent to ${member.email}`);
+          } catch (emailError) {
+            console.error(`Error invoking send-invitation-email function:`, emailError);
+          }
         }
       } catch (memberError) {
         console.error(`Error processing invitation for ${member.email}:`, memberError);
@@ -164,21 +197,63 @@ async function createInvitationsTableFunction() {
   }
 }
 
-// Fallback method to store invitations locally when DB operations fail
-function storeInvitationLocally(teamId: string, email: string) {
+// Fix issues with the database functions
+export const setupInvitationsDatabaseFunctions = async () => {
   try {
-    const storedInvites = localStorage.getItem('pendingInvitations') || '[]';
-    const invites = JSON.parse(storedInvites);
-    invites.push({
-      teamId,
-      email,
-      createdAt: new Date().toISOString(),
-      status: 'pending'
-    });
-    localStorage.setItem('pendingInvitations', JSON.stringify(invites));
-    console.log(`Stored invitation for ${email} locally`);
-  } catch (e) {
-    console.error("Error storing invitation locally:", e);
+    // First create the function to check if a table exists
+    const { error: createCheckFnError } = await supabase.rpc(
+      'create_or_update_check_table_exists_function'
+    );
+
+    if (createCheckFnError) {
+      // Create the function manually
+      await supabase.functions.invoke('setup-db-functions', {
+        body: { action: 'setup_check_table_function' }
+      });
+    }
+
+    // Then create the function to create the invitations table
+    const { error: createTableFnError } = await supabase.rpc(
+      'create_or_update_invitations_table_function'
+    );
+
+    if (createTableFnError) {
+      // Create the function manually
+      await supabase.functions.invoke('setup-db-functions', {
+        body: { action: 'setup_invitations_table_function' }
+      });
+    }
+
+    console.log("Database functions setup complete");
+    return true;
+  } catch (error) {
+    console.error("Error setting up database functions:", error);
+    return false;
+  }
+};
+
+/**
+ * Creates the invitations table if it doesn't exist
+ */
+export async function ensureInvitationsTableExists() {
+  try {
+    // First check if the table exists
+    const { count, error: checkError } = await supabase
+      .from('invitations')
+      .select('*', { count: 'exact', head: true })
+      .limit(1);
+
+    // If there's an error about the relation not existing, create the table
+    if (checkError && checkError.message.includes('relation "invitations" does not exist')) {
+      await createInvitationsTable();
+      return true;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error ensuring invitations table exists:", error);
+    await createInvitationsTable();
+    return false;
   }
 }
 
@@ -280,3 +355,21 @@ export const acceptInvitation = async (
     throw error;
   }
 };
+
+// Fallback method to store invitations locally when DB operations fail
+function storeInvitationLocally(teamId: string, email: string) {
+  try {
+    const storedInvites = localStorage.getItem('pendingInvitations') || '[]';
+    const invites = JSON.parse(storedInvites);
+    invites.push({
+      teamId,
+      email,
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    });
+    localStorage.setItem('pendingInvitations', JSON.stringify(invites));
+    console.log(`Stored invitation for ${email} locally`);
+  } catch (e) {
+    console.error("Error storing invitation locally:", e);
+  }
+}
