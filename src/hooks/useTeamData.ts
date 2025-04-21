@@ -43,12 +43,16 @@ export function useTeamData(teamId: string) {
 
   useEffect(() => {
     console.log("TeamDetail - Initial refresh of team data");
-    refetchTeam();
+    if (refetchTeam) {
+      refetchTeam();
+    }
 
     const intervalId = setInterval(() => {
       console.log("TeamDetail - Periodic team data refresh");
-      refetchTeam();
-      setLineupRefreshKey(prev => prev + 1);
+      if (refetchTeam) {
+        refetchTeam();
+        setLineupRefreshKey(prev => prev + 1);
+      }
     }, 30000);
 
     return () => clearInterval(intervalId);
@@ -57,8 +61,10 @@ export function useTeamData(teamId: string) {
   useEffect(() => {
     const handleFocus = () => {
       console.log("TeamDetail - Window focused - refreshing team data");
-      refetchTeam();
-      setLineupRefreshKey(prev => prev + 1);
+      if (refetchTeam) {
+        refetchTeam();
+        setLineupRefreshKey(prev => prev + 1);
+      }
     };
 
     window.addEventListener('focus', handleFocus);
@@ -72,15 +78,15 @@ export function useTeamData(teamId: string) {
 
   // Wrapper for addPlayer to make it match expected signature
   const handleAddPlayer = () => {
-    if (teamId) {
+    if (teamId && addPlayer) {
       addPlayer(teamId);
     }
   };
   
   // Wrapper for removePlayer to match expected signature
   const handleRemovePlayer = (teamId: string, playerId: string) => {
-    if (playerId) {
-      const playerName = team?.players.find(p => p.id === playerId)?.name || "Player";
+    if (playerId && removePlayer && team) {
+      const playerName = team.players.find(p => p.id === playerId)?.name || "Player";
       removePlayer(teamId, playerId, playerName);
     }
   };
@@ -161,15 +167,19 @@ export function useTeamData(teamId: string) {
 
   const handleTeamUpdate = () => {
     console.log("Team update detected, refreshing data");
-    refetchTeam();
-    setLineupRefreshKey(prev => prev + 1);
+    if (refetchTeam) {
+      refetchTeam();
+      setLineupRefreshKey(prev => prev + 1);
+    }
   };
 
   const handleRefreshLineup = () => {
     console.log("TeamDetail - Manual lineup refresh requested");
-    refetchTeam();
-    setLineupRefreshKey(Date.now());
-    toast.success("Refreshing lineup data...");
+    if (refetchTeam) {
+      refetchTeam();
+      setLineupRefreshKey(Date.now());
+      toast.success("Refreshing lineup data...");
+    }
   };
 
   return {

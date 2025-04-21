@@ -11,12 +11,22 @@ import TeamDetailError from "@/components/teams/TeamDetailError";
 import TeamDetailNotFound from "@/components/teams/TeamDetailNotFound";
 import { useTeamData } from "@/hooks/useTeamData";
 
+// Create query client outside component to avoid recreation on each render
 const queryClient = new QueryClient();
 
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TeamDetailContent id={id} navigate={navigate} />
+    </QueryClientProvider>
+  );
+}
+
+// Separate content component that can use React Query hooks
+function TeamDetailContent({ id, navigate }: { id: string, navigate: ReturnType<typeof useNavigate> }) {
   const {
     activeTab,
     setActiveTab,
@@ -73,43 +83,41 @@ export default function TeamDetail() {
 
   return (
     <MainLayout>
-      <QueryClientProvider client={queryClient}>
-        <div className="space-y-6">
-          <TeamHeader 
-            team={team}
-            onBackClick={() => navigate("/teams")}
-            onAddPlayerClick={() => handleAddPlayer()}
-          />
-
-          <QuickLineupSection 
-            team={team}
-            lineupRefreshKey={lineupRefreshKey}
-            onEditLineup={handleEditLineupClick}
-            onRefreshLineup={handleRefreshLineup}
-          />
-
-          <TeamTabs 
-            team={team}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            handleAddPlayer={handleAddPlayer}
-            handleRemovePlayer={handlePlayerRemoval}
-            handleTeamUpdate={handleTeamUpdate}
-            handleSendInvitations={handleTeamInvitations}
-            handleRemoveMember={handleRemoveMember}
-            isSendingInvitations={isSendingInvitations}
-          />
-        </div>
-
-        <AddPlayerDialog
-          isOpen={addPlayerDialogOpen}
-          onOpenChange={setAddPlayerDialogOpen}
-          selectedTeam={selectedTeam}
-          onSubmit={submitNewPlayer}
-          newPlayer={newPlayer}
-          setNewPlayer={setNewPlayer}
+      <div className="space-y-6">
+        <TeamHeader 
+          team={team}
+          onBackClick={() => navigate("/teams")}
+          onAddPlayerClick={() => handleAddPlayer()}
         />
-      </QueryClientProvider>
+
+        <QuickLineupSection 
+          team={team}
+          lineupRefreshKey={lineupRefreshKey}
+          onEditLineup={handleEditLineupClick}
+          onRefreshLineup={handleRefreshLineup}
+        />
+
+        <TeamTabs 
+          team={team}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          handleAddPlayer={handleAddPlayer}
+          handleRemovePlayer={handlePlayerRemoval}
+          handleTeamUpdate={handleTeamUpdate}
+          handleSendInvitations={handleTeamInvitations}
+          handleRemoveMember={handleRemoveMember}
+          isSendingInvitations={isSendingInvitations}
+        />
+      </div>
+
+      <AddPlayerDialog
+        isOpen={addPlayerDialogOpen}
+        onOpenChange={setAddPlayerDialogOpen}
+        selectedTeam={selectedTeam}
+        onSubmit={submitNewPlayer}
+        newPlayer={newPlayer}
+        setNewPlayer={setNewPlayer}
+      />
     </MainLayout>
   );
 }
