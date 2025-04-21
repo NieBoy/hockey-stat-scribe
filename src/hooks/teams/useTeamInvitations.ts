@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
@@ -24,19 +25,10 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
       if (sent && signupLinks.length > 0) {
         setLastInvitationSent(new Date());
 
-        // Show signup links in a nice toast and also copy to clipboard
-        const linksHtml = signupLinks.map(
-          (link, i) => `<div class="py-1 flex gap-2 items-center">
-            <a href="${link}" target="_blank" class="underline text-indigo-600 dark:text-indigo-300 break-all">${link}</a>
-            <button onclick="navigator.clipboard.writeText('${link}')" class="px-2 py-0.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Copy</button>
-          </div>`
-        ).join("");
-
+        // Show signup links in a nice toast
         toast.success("Invitation(s) ready!", {
           id: "send-invitations",
           description: "Share the link(s) below with your invitees:",
-          // Use a custom render if your toast library supports it,
-          // Else display plain links (fall back behavior)
           action: (
             <div className="p-2 space-y-2">
               {signupLinks.map((link, i) => (
