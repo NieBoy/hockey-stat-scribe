@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -76,7 +77,7 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     for (const member of membersWithEmail) {
       try {
         // Create invitation record
-        const { data: invitation, error: invitationError } = await supabase
+        const { data: invitationData, error: invitationError } = await supabase
           .from('invitations')
           .insert({
             team_id: teamId,
@@ -110,23 +111,41 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
             if (retryError) {
               console.error(`Error creating invitation for ${member.email} after retry:`, retryError);
               continue;
-            } else {
-              invitation = retryData;
+            } else if (retryData) {
+              // Send email using edge function with the retryData
+              try {
+                const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+                  body: {
+                    to: member.email,
+                    teamName: teamData.name,
+                    invitationId: retryData.id,
+                    role: member.role || 'player'
+                  }
+                });
+                
+                if (emailError) {
+                  console.error(`Error sending email to ${member.email}:`, emailError);
+                  // We'll still count this as "sent" since the DB record was created
+                }
+                
+                invitationsSent++;
+                console.log(`Invitation sent to ${member.email}`);
+              } catch (emailError) {
+                console.error(`Error invoking send-invitation-email function:`, emailError);
+              }
             }
           } else {
             console.error(`Error creating invitation for ${member.email}:`, invitationError);
             continue;
           }
-        }
-        
-        if (invitation) {
+        } else if (invitationData) {
           // Send actual email using edge function
           try {
             const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
               body: {
                 to: member.email,
                 teamName: teamData.name,
-                invitationId: invitation.id,
+                invitationId: invitationData.id,
                 role: member.role || 'player'
               }
             });
