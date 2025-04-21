@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import TeamHeader from "@/components/teams/TeamHeader";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import TeamTabs from "@/components/teams/TeamTabs";
 import QuickLineupSection from "@/components/teams/QuickLineupSection";
 import TeamDetailLoading from "@/components/teams/TeamDetailLoading";
@@ -12,19 +11,14 @@ import TeamDetailNotFound from "@/components/teams/TeamDetailNotFound";
 import { useTeamData } from "@/hooks/useTeamData";
 import RequireAuth from "@/components/auth/RequireAuth";
 
-// Create query client outside component to avoid recreation on each render
-const queryClient = new QueryClient();
-
 export default function TeamDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RequireAuth>
-        <TeamDetailContent id={id} navigate={navigate} />
-      </RequireAuth>
-    </QueryClientProvider>
+    <RequireAuth>
+      <TeamDetailContent id={id} navigate={navigate} />
+    </RequireAuth>
   );
 }
 

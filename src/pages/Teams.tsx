@@ -1,3 +1,4 @@
+
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,24 @@ import TeamsGrid from "@/components/teams/TeamsGrid";
 import EmptyTeamsState from "@/components/teams/EmptyTeamsState";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { Team } from "@/types";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import RequireAuth from "@/components/auth/RequireAuth";
+
+// Create query client outside component to avoid recreation on each render
+const queryClient = new QueryClient();
 
 export default function Teams() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RequireAuth>
+        <TeamsContent />
+      </RequireAuth>
+    </QueryClientProvider>
+  );
+}
+
+// Separate content component that uses React Query hooks
+function TeamsContent() {
   const { user } = useAuth();
   const {
     teams,

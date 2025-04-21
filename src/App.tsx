@@ -24,38 +24,44 @@ import Invitations from "./pages/Invitations";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import { Toaster } from "./components/ui/toaster";
 import { AuthProvider } from "./hooks/useAuth";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Create a client
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/teams/create" element={<TeamCreate />} />
-          <Route path="/teams/:id" element={<TeamDetail />} />
-          <Route path="/teams/:id/lineup" element={<TeamLineup />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/games" element={<Games />} />
-          <Route path="/games/create" element={<NewGame />} />
-          <Route path="/games/:id" element={<GameDetail />} />
-          <Route path="/games/:id/track" element={<GameTracking />} />
-          <Route path="/games/:id/track/:statType" element={<TrackStats />} />
-          <Route path="/games/:id/trackers" element={<StatTrackerAssignment />} />
-          <Route path="/players/:id" element={<PlayerDetail />} />
-          <Route path="/players/:id/stats" element={<PlayerStats />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/stars" element={<Stars />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/invitations" element={<Invitations />} />
-          <Route path="/accept-invitation" element={<AcceptInvitation />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/teams/create" element={<TeamCreate />} />
+            <Route path="/teams/:id" element={<TeamDetail />} />
+            <Route path="/teams/:id/lineup" element={<TeamLineup />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/games" element={<Games />} />
+            <Route path="/games/create" element={<NewGame />} />
+            <Route path="/games/:id" element={<GameDetail />} />
+            <Route path="/games/:id/track" element={<GameTracking />} />
+            <Route path="/games/:id/track/:statType" element={<TrackStats />} />
+            <Route path="/games/:id/trackers" element={<StatTrackerAssignment />} />
+            <Route path="/players/:id" element={<PlayerDetail />} />
+            <Route path="/players/:id/stats" element={<PlayerStats />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/stars" element={<Stars />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/invitations" element={<Invitations />} />
+            <Route path="/accept-invitation" element={<AcceptInvitation />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
