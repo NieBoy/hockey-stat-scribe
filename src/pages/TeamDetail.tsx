@@ -10,6 +10,7 @@ import TeamDetailLoading from "@/components/teams/TeamDetailLoading";
 import TeamDetailError from "@/components/teams/TeamDetailError";
 import TeamDetailNotFound from "@/components/teams/TeamDetailNotFound";
 import { useTeamData } from "@/hooks/useTeamData";
+import RequireAuth from "@/components/auth/RequireAuth";
 
 // Create query client outside component to avoid recreation on each render
 const queryClient = new QueryClient();
@@ -20,7 +21,9 @@ export default function TeamDetail() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TeamDetailContent id={id} navigate={navigate} />
+      <RequireAuth>
+        <TeamDetailContent id={id} navigate={navigate} />
+      </RequireAuth>
     </QueryClientProvider>
   );
 }

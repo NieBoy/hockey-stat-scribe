@@ -7,6 +7,7 @@ import UserMenu from "./navbar/UserMenu";
 export default function Navbar() {
   const { user, signOut } = useAuth();
 
+  // If there's no user (not authenticated), don't render the navbar
   if (!user) return null;
 
   return (
