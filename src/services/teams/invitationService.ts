@@ -2,13 +2,14 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 /**
- * Sends invitations to team members
+ * Sends invitations to team members.
+ * Instead of sending an actual email, generates and returns sign-up links for each member.
  */
-export const sendTeamInvitations = async (teamId: string, memberIds: string[]): Promise<boolean> => {
+export const sendTeamInvitations = async (teamId: string, memberIds: string[]): Promise<{ sent: boolean, signupLinks: string[] }> => {
   try {
     if (!memberIds.length) {
       console.log("No member IDs provided for invitations");
-      return false;
+      return { sent: false, signupLinks: [] };
     }
     
     console.log(`Sending invitations to ${memberIds.length} members of team ${teamId}`);
@@ -50,7 +51,7 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
         const names = membersWithoutEmail.map(m => m.name).join(", ");
         throw new Error(`Selected members don't have email addresses: ${names}`);
       }
-      return false;
+      return { sent: false, signupLinks: [] };
     }
     
     console.log(`Preparing to send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
@@ -61,7 +62,6 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
         .from('invitations')
         .select('*', { count: 'exact', head: true });
         
-      // If we got an error about the relation not existing, we need to create the table
       if (checkTableError && checkTableError.message.includes('relation "invitations" does not exist')) {
         await createInvitationsTable();
       }
@@ -70,8 +70,9 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
       await createInvitationsTable();
     }
     
-    // Create invitation records for members with emails
+    // Create invitation records and collect signup links
     let invitationsSent = 0;
+    const signupLinks: string[] = [];
     for (const member of membersWithEmail) {
       let invitationData = null;
       let invitationError = null;
@@ -119,32 +120,20 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
           }
         }
         if (invitationData) {
-          try {
-            const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-              body: {
-                to: member.email,
-                teamName: teamData.name,
-                invitationId: invitationData.id,
-                role: member.role || 'player'
-              }
-            });
-            if (emailError) {
-              console.error(`Error sending email to ${member.email}:`, emailError);
-              // Still count as sent, since DB record exists
-            }
-            invitationsSent++;
-            console.log(`Invitation sent to ${member.email}`);
-          } catch (emailError) {
-            console.error(`Error invoking send-invitation-email function:`, emailError);
-          }
+          // Instead of sending an email, generate a signup URL
+          const baseUrl = window.location.origin.replace('/functions', '/app');
+          const signupUrl = `${baseUrl}/accept-invitation?id=${invitationData.id}`;
+          signupLinks.push(signupUrl);
+
+          invitationsSent++;
+          console.log(`Invitation created for ${member.email}, signup link: ${signupUrl}`);
         }
       } catch (memberError) {
         console.error(`Error processing invitation for ${member.email}:`, memberError);
       }
     }
     
-    // Return true if at least one invitation was sent
-    return invitationsSent > 0;
+    return { sent: invitationsSent > 0, signupLinks };
   } catch (error: any) {
     console.error("Error sending team invitations:", error);
     throw error;

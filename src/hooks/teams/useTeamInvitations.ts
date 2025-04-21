@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
@@ -16,18 +15,47 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
     }
 
     try {
-      console.log(`TeamDetail - Sending invitations to ${memberIds.length} members`);
       setIsSendingInvitations(true);
       toast.loading("Sending invitations...", { id: "send-invitations" });
 
       await ensureInvitationsTableExists();
-      const success = await sendTeamInvitations(teamId, memberIds);
+      const { sent, signupLinks } = await sendTeamInvitations(teamId, memberIds);
 
-      if (success) {
+      if (sent && signupLinks.length > 0) {
         setLastInvitationSent(new Date());
-        toast.success(`Invitations sent successfully`, { id: "send-invitations", duration: 5000 });
+
+        // Show signup links in a nice toast and also copy to clipboard
+        const linksHtml = signupLinks.map(
+          (link, i) => `<div class="py-1 flex gap-2 items-center">
+            <a href="${link}" target="_blank" class="underline text-indigo-600 dark:text-indigo-300 break-all">${link}</a>
+            <button onclick="navigator.clipboard.writeText('${link}')" class="px-2 py-0.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300">Copy</button>
+          </div>`
+        ).join("");
+
+        toast.success("Invitation(s) ready!", {
+          id: "send-invitations",
+          description: "Share the link(s) below with your invitees:",
+          // Use a custom render if your toast library supports it,
+          // Else display plain links (fall back behavior)
+          action: (
+            <div className="p-2 space-y-2">
+              {signupLinks.map((link, i) => (
+                <div key={i} className="flex gap-2 items-center mt-1 mb-1">
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-indigo-700 dark:text-indigo-300 break-all">{link}</a>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(link)}
+                    className="ml-2 px-2 py-0.5 rounded text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+              ))}
+            </div>
+          ),
+          duration: 24000,
+        });
       } else {
-        toast.error("No invitations were sent", {
+        toast.error("No invitations were created", {
           id: "send-invitations",
           description: "Please check that members have email addresses.",
           duration: 8000,
