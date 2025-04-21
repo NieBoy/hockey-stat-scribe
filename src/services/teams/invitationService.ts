@@ -265,25 +265,24 @@ export const acceptInvitation = async (
   }
 ): Promise<boolean> => {
   try {
-    // Here we would implement the logic to create a real user account
-    // and link it to the team member when they accept an invitation
+    // Log accepting of invitation
     console.log(`Accepting invitation ${invitationId} for user ${userData.email}`);
     
     // 1. First verify the invitation exists and is valid
-    const { data: invitation, error: invitationError } = await supabase
+    const { data: invitationRecord, error: invitationError } = await supabase
       .from('invitations')
       .select('*')
       .eq('id', invitationId)
       .eq('status', 'pending')
       .single();
       
-    if (invitationError || !invitation) {
+    if (invitationError || !invitationRecord) {
       console.error("Invalid or expired invitation:", invitationError);
       throw new Error("Invalid or expired invitation");
     }
     
     // 2. Check if the email matches
-    if (invitation.email !== userData.email) {
+    if (invitationRecord.email !== userData.email) {
       throw new Error("Email does not match invitation");
     }
     
