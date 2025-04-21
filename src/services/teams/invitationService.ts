@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -58,7 +57,6 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     
     // Check if invitations table exists
     try {
-      // First check if the table exists using a simple query rather than direct SQL
       const { count, error: checkTableError } = await supabase
         .from('invitations')
         .select('*', { count: 'exact', head: true });
@@ -75,9 +73,10 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     // Create invitation records for members with emails
     let invitationsSent = 0;
     for (const member of membersWithEmail) {
+      let invitationData = null;
+      let invitationError = null;
       try {
-        // Create invitation record
-        const { data: invitationData, error: invitationError } = await supabase
+        const insertResult = await supabase
           .from('invitations')
           .insert({
             team_id: teamId,
@@ -88,58 +87,55 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
           })
           .select()
           .single();
-          
+        invitationData = insertResult.data;
+        invitationError = insertResult.error;
+
         if (invitationError) {
-          // If the table error persists, we'll try a fallback approach
           if (invitationError.message.includes('does not exist')) {
             // Try to create the table again and then retry the insert
             await createInvitationsTable();
-            
-            // Retry the insert after creating the table
-            const { data: retryData, error: retryError } = await supabase
+
+            const retryInsertResult = await supabase
               .from('invitations')
               .insert({
                 team_id: teamId,
                 email: member.email,
                 role: member.role || 'player',
                 status: 'pending',
-                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
               })
               .select()
               .single();
-              
-            if (retryError) {
-              console.error(`Error creating invitation for ${member.email} after retry:`, retryError);
+            if (retryInsertResult.error) {
+              console.error(`Error creating invitation for ${member.email} after retry:`, retryInsertResult.error);
               continue;
-            } else if (retryData) {
-              // Send email using edge function with the retryData
+            } else if (retryInsertResult.data) {
               try {
                 const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
                   body: {
                     to: member.email,
                     teamName: teamData.name,
-                    invitationId: retryData.id,
+                    invitationId: retryInsertResult.data.id,
                     role: member.role || 'player'
                   }
                 });
-                
                 if (emailError) {
                   console.error(`Error sending email to ${member.email}:`, emailError);
                   // We'll still count this as "sent" since the DB record was created
                 }
-                
                 invitationsSent++;
                 console.log(`Invitation sent to ${member.email}`);
               } catch (emailError) {
                 console.error(`Error invoking send-invitation-email function:`, emailError);
               }
             }
+            continue;
           } else {
             console.error(`Error creating invitation for ${member.email}:`, invitationError);
             continue;
           }
-        } else if (invitationData) {
-          // Send actual email using edge function
+        }
+        if (invitationData) {
           try {
             const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
               body: {
@@ -149,12 +145,10 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
                 role: member.role || 'player'
               }
             });
-            
             if (emailError) {
               console.error(`Error sending email to ${member.email}:`, emailError);
               // We'll still count this as "sent" since the DB record was created
             }
-            
             invitationsSent++;
             console.log(`Invitation sent to ${member.email}`);
           } catch (emailError) {
