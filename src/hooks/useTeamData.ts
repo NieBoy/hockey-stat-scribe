@@ -4,11 +4,13 @@ import { useTeams } from "@/hooks/useTeams";
 import { toast } from "sonner";
 import { User } from "@/types";
 import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
+import { setupInvitationsDatabaseFunctions, ensureInvitationsTableExists } from "@/services/teams/dbFunctions";
 
 export function useTeamData(teamId: string) {
   const [activeTab, setActiveTab] = useState("players");
   const [lineupRefreshKey, setLineupRefreshKey] = useState<number>(0);
   const [isSendingInvitations, setIsSendingInvitations] = useState(false);
+  const [lastInvitationSent, setLastInvitationSent] = useState<Date | null>(null);
   
   const { 
     addPlayerDialogOpen, 
@@ -24,6 +26,20 @@ export function useTeamData(teamId: string) {
     teamError,
     refetchTeam
   } = useTeams(teamId);
+
+  // Ensure invitation table and functions exist when component mounts
+  useEffect(() => {
+    const setupDatabase = async () => {
+      try {
+        await setupInvitationsDatabaseFunctions();
+        await ensureInvitationsTableExists();
+      } catch (error) {
+        console.error("Error setting up invitation database:", error);
+      }
+    };
+    
+    setupDatabase();
+  }, []);
 
   useEffect(() => {
     console.log("TeamDetail - Initial refresh of team data");
@@ -67,9 +83,13 @@ export function useTeamData(teamId: string) {
       setIsSendingInvitations(true);
       toast.loading("Sending invitations...", { id: "send-invitations" });
       
+      // First ensure the invitations table exists
+      await ensureInvitationsTableExists();
+      
       const success = await sendTeamInvitations(teamId, memberIds);
       
       if (success) {
+        setLastInvitationSent(new Date());
         toast.success(`Invitations sent successfully`, {
           id: "send-invitations",
           duration: 5000 // 5 seconds
@@ -157,6 +177,7 @@ export function useTeamData(teamId: string) {
     handleRemoveMember,
     handleTeamUpdate,
     handleRefreshLineup,
-    isSendingInvitations
+    isSendingInvitations,
+    lastInvitationSent
   };
 }

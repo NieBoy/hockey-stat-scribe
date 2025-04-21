@@ -13,6 +13,7 @@ interface TeamMembersTableProps {
   onEditMember?: (member: User) => void;
   onRemoveMember?: (member: User) => void;
   isSendingInvitations?: boolean;
+  lastInvitationSent?: Date | null;
 }
 
 const TeamMembersTable = ({ 
@@ -20,7 +21,8 @@ const TeamMembersTable = ({
   onSendInvitations,
   onEditMember,
   onRemoveMember,
-  isSendingInvitations = false
+  isSendingInvitations = false,
+  lastInvitationSent = null
 }: TeamMembersTableProps) => {
   const {
     selectedMembers,
@@ -44,7 +46,8 @@ const TeamMembersTable = ({
     [selectedMemberObjects]
   );
   
-  const [lastInvitationSent, setLastInvitationSent] = useState<Date | null>(null);
+  // Track last invitation time locally too as a backup
+  const [localLastSent, setLocalLastSent] = useState<Date | null>(lastInvitationSent);
   
   const handleSendInvitations = useCallback(() => {
     if (selectedMembers.length === 0) {
@@ -70,10 +73,13 @@ const TeamMembersTable = ({
         }
       }
       
-      setLastInvitationSent(new Date());
+      setLocalLastSent(new Date());
       onSendInvitations(selectedMembers);
     }
   }, [selectedMembers, selectedMemberObjects, onSendInvitations]);
+  
+  // Use the prop value if provided, otherwise use local state
+  const effectiveLastSent = lastInvitationSent || localLastSent;
   
   return (
     <div className="space-y-4">
@@ -82,6 +88,7 @@ const TeamMembersTable = ({
         onSendInvitations={handleSendInvitations}
         hasMembersWithoutEmail={hasMembersWithoutEmail}
         isLoading={isSendingInvitations}
+        lastSent={effectiveLastSent}
       />
       
       <MembersTableContent 
@@ -99,9 +106,9 @@ const TeamMembersTable = ({
         onConfirm={handleDelete}
       />
       
-      {lastInvitationSent && (
+      {effectiveLastSent && (
         <div className="text-sm text-muted-foreground">
-          Last invitation attempt: {lastInvitationSent.toLocaleTimeString()}
+          Last invitation attempt: {effectiveLastSent.toLocaleTimeString()}
         </div>
       )}
     </div>

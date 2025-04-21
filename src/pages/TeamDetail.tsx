@@ -56,6 +56,20 @@ export default function TeamDetail() {
     return <TeamDetailNotFound />;
   }
 
+  // Fixed function to properly handle team invitations
+  const handleTeamInvitations = (memberIds: string[]) => {
+    if (id) {
+      handleSendInvitations(memberIds);
+    }
+  };
+
+  // Fixed function to properly handle player removals with correct parameters
+  const handlePlayerRemoval = (playerId: string) => {
+    if (id && playerId) {
+      handleRemovePlayer(playerId);
+    }
+  };
+
   return (
     <MainLayout>
       <QueryClientProvider client={queryClient}>
@@ -78,9 +92,9 @@ export default function TeamDetail() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             handleAddPlayer={handleAddPlayer}
-            handleRemovePlayer={handleRemovePlayer}
+            handleRemovePlayer={handlePlayerRemoval}
             handleTeamUpdate={handleTeamUpdate}
-            handleSendInvitations={handleSendInvitations}
+            handleSendInvitations={handleTeamInvitations}
             handleRemoveMember={handleRemoveMember}
             isSendingInvitations={isSendingInvitations}
           />

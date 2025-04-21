@@ -44,63 +44,24 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
     
     console.log(`Preparing to send emails to: ${membersWithEmail.map(m => m.email).join(', ')}`);
     
-    // Check if invitations table exists and create it if not
+    // Check if invitations table exists
     try {
-      // First check if the table exists
-      const { error: checkTableError } = await supabase.rpc('check_table_exists', { 
-        table_name: 'invitations' 
-      });
-      
-      // If we got an error about the function not existing, we need to create the function first
-      if (checkTableError && checkTableError.message.includes('function') && checkTableError.message.includes('does not exist')) {
-        // Create the function to check if a table exists
-        await supabase.sql(`
-          CREATE OR REPLACE FUNCTION check_table_exists(table_name text)
-          RETURNS boolean
-          LANGUAGE plpgsql
-          AS $$
-          DECLARE
-            table_exists boolean;
-          BEGIN
-            SELECT EXISTS (
-              SELECT FROM information_schema.tables 
-              WHERE table_schema = 'public'
-              AND table_name = $1
-            ) INTO table_exists;
-            RETURN table_exists;
-          END;
-          $$;
-        `);
+      // First check if the table exists using a simple query rather than direct SQL
+      const { count, error: checkTableError } = await supabase
+        .from('invitations')
+        .select('*', { count: 'exact', head: true });
         
-        // Try again after creating the function
-        const { data: tableExists } = await supabase.rpc('check_table_exists', { 
-          table_name: 'invitations' 
-        });
-        
-        // If table doesn't exist, create it
-        if (!tableExists) {
-          await createInvitationsTable();
-        }
-      } else if (!checkTableError) {
-        // Function exists, check if we need to create the table
-        const { data: tableExists } = await supabase.rpc('check_table_exists', { 
-          table_name: 'invitations' 
-        });
-        
-        if (!tableExists) {
-          await createInvitationsTable();
-        }
-      } else {
-        // If we still have an error, try creating the table directly
+      // If we got an error about the relation not existing, we need to create the table
+      if (checkTableError && checkTableError.message.includes('relation "invitations" does not exist')) {
         await createInvitationsTable();
       }
     } catch (dbError) {
-      // If there's an error with the RPC call, attempt to create the table directly
       console.warn("Error checking if invitations table exists:", dbError);
       await createInvitationsTable();
     }
     
     // Create invitation records for members with emails
+    let invitationsSent = 0;
     for (const member of membersWithEmail) {
       try {
         // Simulate email sending since we can't actually send emails from the frontend
@@ -113,18 +74,39 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
             team_id: teamId,
             email: member.email,
             status: 'pending',
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
           });
           
         if (invitationError) {
           // If the table error persists, we'll try a fallback approach
           if (invitationError.message.includes('does not exist')) {
-            // Store invitations in local storage as a fallback
-            storeInvitationLocally(teamId, member.email);
+            // Try to create the table again and then retry the insert
+            await createInvitationsTable();
+            
+            // Retry the insert after creating the table
+            const { error: retryError } = await supabase
+              .from('invitations')
+              .insert({
+                team_id: teamId,
+                email: member.email,
+                status: 'pending',
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+              });
+              
+            if (retryError) {
+              console.error(`Error creating invitation for ${member.email} after retry:`, retryError);
+              // Store locally as a last resort
+              storeInvitationLocally(teamId, member.email);
+            } else {
+              invitationsSent++;
+              console.log(`Created invitation for ${member.email} after retry`);
+            }
           } else {
             console.error(`Error creating invitation for ${member.email}:`, invitationError);
+            storeInvitationLocally(teamId, member.email);
           }
         } else {
+          invitationsSent++;
           console.log(`Created invitation for ${member.email}`);
         }
       } catch (memberError) {
@@ -132,35 +114,53 @@ export const sendTeamInvitations = async (teamId: string, memberIds: string[]): 
       }
     }
     
-    // Return true if at least one invitation was processed
-    return membersWithEmail.length > 0;
+    // Return true if at least one invitation was sent
+    return invitationsSent > 0;
   } catch (error: any) {
     console.error("Error sending team invitations:", error);
     throw error;
   }
 };
 
-// Helper function to create the invitations table
+// Helper function to create the invitations table using Supabase RPC instead of direct SQL
 async function createInvitationsTable() {
   console.log("Creating invitations table...");
   
   try {
-    await supabase.sql(`
-      CREATE TABLE IF NOT EXISTS public.invitations (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        team_id UUID NOT NULL,
-        email TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-        user_id UUID,
-        accepted_at TIMESTAMP WITH TIME ZONE
-      );
-    `);
+    // Create a table using Supabase's RPC function
+    const { error } = await supabase.rpc('create_invitations_table');
+    
+    // If the function doesn't exist yet, we need to create it first
+    if (error && error.message.includes('function "create_invitations_table" does not exist')) {
+      // Create the function using multiple statements
+      await createInvitationsTableFunction();
+      
+      // Try calling the function again
+      const { error: secondError } = await supabase.rpc('create_invitations_table');
+      if (secondError) {
+        console.error("Error creating invitations table:", secondError);
+        throw secondError;
+      }
+    } else if (error) {
+      console.error("Error creating invitations table:", error);
+      throw error;
+    }
+    
     console.log("Invitations table created successfully");
   } catch (error) {
     console.error("Error creating invitations table:", error);
     // We'll continue execution even if table creation fails
+  }
+}
+
+// Create a function that will create the invitations table
+async function createInvitationsTableFunction() {
+  try {
+    // Use multiple separate queries instead of a single SQL statement
+    await supabase.rpc('create_check_table_exists_function');
+    await supabase.rpc('create_invitations_table_function');
+  } catch (error) {
+    console.error("Error creating functions:", error);
   }
 }
 
@@ -264,7 +264,7 @@ export const acceptInvitation = async (
       .from('invitations')
       .update({ 
         status: 'accepted',
-        accepted_at: new Date(),
+        accepted_at: new Date().toISOString(),
         user_id: authData.user.id
       })
       .eq('id', invitationId);
