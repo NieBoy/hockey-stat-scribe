@@ -17,10 +17,10 @@ export function useTeamData(teamId: string) {
     setAddPlayerDialogOpen, 
     newPlayer,
     setNewPlayer,
-    handleAddPlayer,
+    handleAddPlayer: addPlayer,
     submitNewPlayer,
     selectedTeam,
-    handleRemovePlayer,
+    handleRemovePlayer: removePlayer,
     team,
     isLoadingTeam,
     teamError,
@@ -69,6 +69,21 @@ export function useTeamData(teamId: string) {
     console.log("TeamDetail - Component mounted, forcing immediate lineup refresh");
     setLineupRefreshKey(Date.now());
   }, []);
+
+  // Wrapper for addPlayer to make it match expected signature
+  const handleAddPlayer = () => {
+    if (teamId) {
+      addPlayer(teamId);
+    }
+  };
+  
+  // Wrapper for removePlayer to match expected signature
+  const handleRemovePlayer = (teamId: string, playerId: string) => {
+    if (playerId) {
+      const playerName = team?.players.find(p => p.id === playerId)?.name || "Player";
+      removePlayer(teamId, playerId, playerName);
+    }
+  };
 
   const handleSendInvitations = async (memberIds: string[]) => {
     if (!teamId || memberIds.length === 0) {

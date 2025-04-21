@@ -10,9 +10,7 @@ export async function setupInvitationsDatabaseFunctions() {
     // First create the function to check if a table exists
     const { error: createCheckFnError } = await supabase.rpc(
       'create_or_update_check_table_exists_function'
-    ).catch(() => {
-      return { error: { message: 'Function does not exist' } };
-    });
+    );
 
     if (createCheckFnError) {
       // Create the function manually
@@ -24,9 +22,7 @@ export async function setupInvitationsDatabaseFunctions() {
     // Then create the function to create the invitations table
     const { error: createTableFnError } = await supabase.rpc(
       'create_or_update_invitations_table_function'
-    ).catch(() => {
-      return { error: { message: 'Function does not exist' } };
-    });
+    );
 
     if (createTableFnError) {
       // Create the function manually

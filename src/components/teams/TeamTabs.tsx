@@ -42,7 +42,7 @@ const TeamTabs = ({
         <PlayersTabContent
           team={team}
           onAddPlayer={handleAddPlayer}
-          onRemovePlayer={handleRemovePlayer}
+          onRemovePlayer={(teamId, playerId, playerName) => handleRemovePlayer(playerId)}
         />
       </TabsContent>
       

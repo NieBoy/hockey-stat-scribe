@@ -8,11 +8,11 @@ import PlayerCard from "./PlayerCard";
 
 interface PlayersTabContentProps {
   team: Team;
-  handleAddPlayer: (teamId: string) => void;
-  handleRemovePlayer: (teamId: string, playerId: string, playerName: string) => void;
+  onAddPlayer: () => void;
+  onRemovePlayer: (teamId: string, playerId: string, playerName: string) => void;
 }
 
-const PlayersTabContent = ({ team, handleAddPlayer, handleRemovePlayer }: PlayersTabContentProps) => {
+const PlayersTabContent = ({ team, onAddPlayer, onRemovePlayer }: PlayersTabContentProps) => {
   return (
     <>
       {team.players.length > 0 ? (
@@ -22,7 +22,7 @@ const PlayersTabContent = ({ team, handleAddPlayer, handleRemovePlayer }: Player
               key={player.id} 
               player={player} 
               teamId={team.id}
-              onRemovePlayer={handleRemovePlayer} 
+              onRemovePlayer={onRemovePlayer} 
             />
           ))}
         </div>
@@ -34,7 +34,7 @@ const PlayersTabContent = ({ team, handleAddPlayer, handleRemovePlayer }: Player
             <p className="mt-2 text-sm text-muted-foreground">
               This team doesn't have any players yet.
             </p>
-            <Button className="mt-4" onClick={() => handleAddPlayer(team.id)}>
+            <Button className="mt-4" onClick={onAddPlayer}>
               <Plus className="mr-2 h-4 w-4" /> Add Player
             </Button>
           </CardContent>

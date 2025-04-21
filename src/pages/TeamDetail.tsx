@@ -36,7 +36,8 @@ export default function TeamDetail() {
     handleRemoveMember,
     handleTeamUpdate,
     handleRefreshLineup,
-    isSendingInvitations
+    isSendingInvitations,
+    lastInvitationSent
   } = useTeamData(id);
 
   const handleEditLineupClick = () => {
@@ -66,7 +67,7 @@ export default function TeamDetail() {
   // Fixed function to properly handle player removals with correct parameters
   const handlePlayerRemoval = (playerId: string) => {
     if (id && playerId) {
-      handleRemovePlayer(playerId);
+      handleRemovePlayer(id, playerId);
     }
   };
 
@@ -77,7 +78,7 @@ export default function TeamDetail() {
           <TeamHeader 
             team={team}
             onBackClick={() => navigate("/teams")}
-            onAddPlayerClick={handleAddPlayer}
+            onAddPlayerClick={() => handleAddPlayer()}
           />
 
           <QuickLineupSection 

@@ -64,7 +64,7 @@ export const TableHeader = ({
           disabled={selectedCount === 0 || isLoading || justSent}
           variant={
             justSent 
-              ? "success" 
+              ? "secondary" 
               : selectedCount > 0 
                 ? "default" 
                 : "outline"
