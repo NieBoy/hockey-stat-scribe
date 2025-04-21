@@ -8,7 +8,7 @@ import QuickLineupSection from "@/components/teams/QuickLineupSection";
 import TeamDetailLoading from "@/components/teams/TeamDetailLoading";
 import TeamDetailError from "@/components/teams/TeamDetailError";
 import TeamDetailNotFound from "@/components/teams/TeamDetailNotFound";
-import { useTeamData } from "@/hooks/useTeamData";
+import { useTeamData } from "../hooks/useTeamData";
 import RequireAuth from "@/components/auth/RequireAuth";
 
 export default function TeamDetail() {
