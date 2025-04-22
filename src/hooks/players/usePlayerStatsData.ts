@@ -5,7 +5,7 @@ import { getPlayerStats } from "@/services/stats";
 import { fetchGameStats } from "@/services/stats/gameStatsService";
 
 export function usePlayerStatsData(playerId: string) {
-  // Stats query
+  // Stats query - directly get stats for the player using team_member.id
   const { 
     data: stats, 
     isLoading: statsLoading, 
@@ -17,7 +17,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Raw game stats query
+  // Raw game stats query - directly get game stats using team_member.id
   const { 
     data: rawGameStats, 
     refetch: refetchRawStats,
@@ -39,7 +39,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Game events query
+  // Game events query - get events where the player is directly involved using team_member.id
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -109,7 +109,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Player's team query
+  // Player's team query - get the team info for this player using team_member.id
   const { data: playerTeam } = useQuery({
     queryKey: ['playerTeam', playerId],
     queryFn: async () => {
@@ -141,7 +141,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Team games query
+  // Team games query - get all games for the player's team
   const { data: teamGames } = useQuery({
     queryKey: ['teamGames', playerTeam?.id],
     queryFn: async () => {
