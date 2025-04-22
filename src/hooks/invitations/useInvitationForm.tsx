@@ -102,8 +102,8 @@ export function useInvitationForm() {
       if (invitationId?.startsWith('mock-')) {
         console.log("Creating demo account with email:", values.email);
         
-        // For mock invitations, create a user account directly via auth
-        // Important: Set email_confirm=true in admin functions to bypass email confirmation
+        // For mock invitations, create a user account directly via our edge function
+        // This bypasses email confirmation
         const { data: authData, error: authError } = await supabase.functions.invoke('create-demo-user', {
           body: {
             email: values.email,
@@ -160,31 +160,20 @@ export function useInvitationForm() {
         return;
       }
       
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            name: values.name
-          }
+      // Normal flow for actual invitations
+      // Use our edge function here too to ensure email confirmation is bypassed
+      const { data: authData, error: authError } = await supabase.functions.invoke('create-demo-user', {
+        body: {
+          email: values.email,
+          password: values.password,
+          name: values.name
         }
       });
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error("Failed to create user account");
 
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert({
-          id: authData.user.id,
-          name: values.name,
-          email: values.email
-        });
-
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-      }
-
+      // Update team member with the new user ID
       const { error: updateError } = await supabase
         .from("team_members")
         .update({ user_id: authData.user.id })
@@ -194,6 +183,7 @@ export function useInvitationForm() {
         console.error("Error updating team members:", updateError);
       }
 
+      // Mark the invitation as accepted
       const { error: acceptError } = await supabase
         .from("invitations")
         .update({
@@ -208,9 +198,21 @@ export function useInvitationForm() {
       }
 
       toast.success("You've successfully joined the team!");
+      
+      // Sign in with the newly created account
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password
+      });
+      
+      if (signInError) {
+        console.error("Error signing in:", signInError);
+        throw new Error("Account created but couldn't sign in automatically: " + signInError.message);
+      }
+      
       setTimeout(() => {
         navigate("/");
-      }, 2000);
+      }, 1500);
     } catch (err) {
       console.error("Error accepting invitation:", err);
       toast.error(err instanceof Error ? err.message : "Failed to accept invitation");
