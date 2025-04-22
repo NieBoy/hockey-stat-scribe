@@ -60,7 +60,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
       return false;
     }
 
-    const gameIds = games.map(game => game.id);
+    const gameIds = games?.map(game => game.id) || [];
     console.log(`Found ${gameIds.length} games to remove`);
 
     // Step 4: Delete game events for all identified games
@@ -77,7 +77,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
         return false;
       }
 
-      const eventIds = events.map(event => event.id);
+      const eventIds = events?.map(event => event.id) || [];
       
       if (eventIds.length > 0) {
         const { error: eventPlayersError } = await supabase
@@ -173,7 +173,8 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
     const { error: deleteTeamError } = await supabase
       .from('teams')
       .delete()
-      .eq('id', teamId);
+      .eq('id', teamId)
+      .single();
 
     if (deleteTeamError) {
       console.error("Error deleting team:", deleteTeamError);
@@ -182,7 +183,6 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
     }
 
     console.log(`Team ${teamId} and all associated data successfully deleted`);
-    toast.success("Team and all associated data successfully deleted.");
     return true;
 
   } catch (error) {
