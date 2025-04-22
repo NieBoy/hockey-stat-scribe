@@ -4,12 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PlayerStatsDebug from "./PlayerStatsDebug";
 import PlayerStatsEmpty from "./PlayerStatsEmpty";
-import { Game, Player } from "@/types";
+import { Game, User } from "@/types";
 
 interface PlayerStatsContentProps {
   stats: any[];
   showDebugInfo?: boolean;
-  player: Player | null;
+  player: User | null;
   playerTeam: any;
   teamGames: Game[];
   rawGameStats: any[];
@@ -17,6 +17,8 @@ interface PlayerStatsContentProps {
   onRefresh: () => void;
   isRefreshing?: boolean;
   playerId: string;
+  hasRawGameStats?: boolean;
+  hasGameEvents?: boolean;
 }
 
 const PlayerStatsContent = ({ 
@@ -29,12 +31,12 @@ const PlayerStatsContent = ({
   playerGameEvents,
   onRefresh,
   isRefreshing = false,
-  playerId
+  playerId,
+  hasRawGameStats = false,
+  hasGameEvents = false
 }: PlayerStatsContentProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const hasStats = stats && stats.length > 0;
-  const hasGameEvents = playerGameEvents && playerGameEvents.length > 0;
-  const hasRawGameStats = rawGameStats && rawGameStats.length > 0;
 
   // Show overview tab by default if stats exist, otherwise show debug tab
   useEffect(() => {
@@ -103,8 +105,7 @@ const PlayerStatsContent = ({
           playerTeam={playerTeam}
           rawGameStats={rawGameStats}
           playerGameEvents={playerGameEvents}
-          playerId={playerId}
-          onRefresh={onRefresh}
+          stats={[]}
         />
       </TabsContent>
     </Tabs>

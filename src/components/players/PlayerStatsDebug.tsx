@@ -1,6 +1,5 @@
 
-import { Game, PlayerStat } from "@/types";
-import { User } from "@/types";
+import { Game, PlayerStat, User } from "@/types";
 
 interface PlayerStatsDebugProps {
   player: User | null;

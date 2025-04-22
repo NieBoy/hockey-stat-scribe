@@ -8,7 +8,7 @@ import { usePlayerDetails } from "@/hooks/usePlayerDetails";
 import { usePlayerStatsData } from "@/hooks/players/usePlayerStatsData";
 import { createStatsFromEvents } from "@/services/stats/gameStatsService";
 import PlayerStatsHeader from "@/components/players/stats/PlayerStatsHeader";
-import PlayerStatsContent from "@/components/players/stats/PlayerStatsContent";
+import PlayerStatsContent from "@/components/players/PlayerStatsContent";
 
 export default function PlayerStats() {
   const { id } = useParams<{ id: string }>();
