@@ -1,4 +1,3 @@
-
 // Re-export all team membership related functions with specific naming to avoid conflicts
 export { addTeamMember } from './membershipService';
 export { removeTeamMember, deleteTeamMember } from './memberDeletionService';
@@ -15,9 +14,9 @@ export {
   getTeamMembers as getTeamMembersList
 } from './memberQueryService';
 
-// Export invitationService functions
+// Export invitationService functions from new location
 export {
   sendTeamInvitations,
   acceptInvitation,
   ensureInvitationsTableExists
-} from './invitationService';
+} from './invitations';
