@@ -50,7 +50,85 @@ serve(async (req) => {
 
     console.log(`Creating demo user: ${email}`);
 
-    // Create user with admin privileges (bypasses email confirmation)
+    // First check if the user already exists
+    const { data: existingUser, error: lookupError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+
+    if (lookupError && lookupError.message !== "User not found") {
+      console.error("Error checking existing user:", lookupError);
+      return new Response(
+        JSON.stringify({
+          error: lookupError.message,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    let userId;
+
+    if (existingUser) {
+      // User already exists, just return the user
+      console.log(`User ${email} already exists, skipping creation`);
+      userId = existingUser.id;
+      
+      // If the user exists but doesn't have a profile, create it
+      const { data: existingProfile } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabaseAdmin
+          .from("users")
+          .insert({
+            id: userId,
+            name: name,
+            email: email,
+          });
+
+        if (profileError) {
+          console.error("Error creating user profile for existing user:", profileError);
+        }
+      }
+
+      // Check if the user has a role assigned
+      const { data: existingRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!existingRole) {
+        const { error: roleError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({
+            user_id: userId,
+            role: "player",
+          });
+
+        if (roleError) {
+          console.error("Error adding user role for existing user:", roleError);
+        }
+      }
+
+      // Return success with the existing user
+      return new Response(
+        JSON.stringify({
+          user: existingUser,
+          message: "User already exists and can be used to sign in",
+          alreadyExists: true,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create a new user if they don't exist
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -73,6 +151,8 @@ serve(async (req) => {
 
     // If user created successfully, also create a user profile
     if (data.user) {
+      userId = data.user.id;
+      
       const { error: profileError } = await supabaseAdmin
         .from("users")
         .insert({

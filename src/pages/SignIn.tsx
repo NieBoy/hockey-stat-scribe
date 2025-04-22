@@ -68,22 +68,32 @@ export default function SignIn() {
         }
       });
       
-      if (error || (data && data.error)) {
-        const errorMessage = (data && data.error) || error?.message || "Failed to create demo account";
-        setError(errorMessage);
-        console.error("Demo account creation error:", errorMessage);
+      if (error) {
+        setError(`Error: ${error.message}`);
+        console.error("Demo account creation error:", error);
+        return;
+      }
+      
+      if (data && data.error) {
+        setError(data.error);
+        console.error("Demo account creation error:", data.error);
+        return;
+      }
+      
+      if (data && data.alreadyExists) {
+        toast.info("Account already exists. Signing you in...");
       } else {
         toast.success("Demo account created successfully! Signing you in...");
-        
-        // Sign in with the newly created account
-        const result = await signIn(email, password);
-        if (result.error) {
-          setError("Account created but couldn't sign in automatically: " + result.error);
-        }
+      }
+      
+      // Sign in with the account credentials
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError("Account exists but couldn't sign in automatically: " + result.error);
       }
     } catch (err) {
+      console.error("Unexpected error:", err);
       setError("An unexpected error occurred creating the demo account.");
-      console.error(err);
     } finally {
       setDemoLoading(false);
     }

@@ -112,14 +112,24 @@ export function useInvitationForm() {
           }
         });
 
-        if (authError || !authData?.user) {
-          console.error("Error creating demo account:", authError || "No user data returned");
-          throw new Error(authError?.message || "Failed to create user account");
+        if (authError) {
+          console.error("Error creating demo account:", authError);
+          throw new Error(authError.message);
+        }
+        
+        if (authData?.error) {
+          console.error("Error returned from create-demo-user:", authData.error);
+          throw new Error(authData.error);
+        }
+        
+        if (!authData?.user && !authData?.alreadyExists) {
+          console.error("No user data returned from create-demo-user");
+          throw new Error("Failed to create user account");
         }
         
         // User has been created and auto-confirmed by the edge function
-        const userId = authData.user.id;
-        console.log("Demo user created with ID:", userId);
+        const userId = authData.user?.id;
+        console.log("Demo user created or found with ID:", userId);
         
         // Parse team ID from mock invitation ID
         const teamId = invitationId.split('-')[1];
@@ -141,7 +151,7 @@ export function useInvitationForm() {
           }
         }
         
-        toast.success("Demo account created successfully!");
+        toast.success(authData.alreadyExists ? "Account found! Signing you in..." : "Demo account created successfully!");
         
         // Now sign in with the newly created account
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -170,13 +180,25 @@ export function useInvitationForm() {
         }
       });
 
-      if (authError) throw new Error(authError.message);
-      if (!authData.user) throw new Error("Failed to create user account");
+      if (authError) {
+        console.error("Error from create-demo-user function:", authError);
+        throw new Error(authError.message);
+      }
+      
+      if (authData?.error) {
+        console.error("Error returned from create-demo-user:", authData.error);
+        throw new Error(authData.error);
+      }
+
+      const userId = authData?.user?.id;
+      if (!userId && !authData?.alreadyExists) {
+        throw new Error("Failed to create user account");
+      }
 
       // Update team member with the new user ID
       const { error: updateError } = await supabase
         .from("team_members")
-        .update({ user_id: authData.user.id })
+        .update({ user_id: userId })
         .eq("email", values.email);
 
       if (updateError) {
@@ -189,7 +211,7 @@ export function useInvitationForm() {
         .update({
           status: "accepted",
           accepted_at: new Date().toISOString(),
-          user_id: authData.user.id
+          user_id: userId
         })
         .eq("id", invitationId);
 
