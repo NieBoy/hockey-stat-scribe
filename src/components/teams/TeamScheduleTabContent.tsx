@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Table, TableHead, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import NewOpponentGameDialog from "./NewOpponentGameDialog";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Team } from "@/types";
 import { format } from "date-fns";
 
@@ -23,83 +22,71 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
   const [games, setGames] = useState<GameScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Add a refresh key to force re-fetch
 
-  // Fetch games for this team whenever dialogOpen changes or refreshKey changes
-  useEffect(() => {
-    let cancelled = false;
+  // Fetch games for this team
+  async function fetchGames() {
+    setLoading(true);
 
-    async function fetchGames() {
-      setLoading(true);
+    try {
+      // Query games where team is home or away and include opponent_name
+      let { data, error } = await supabase
+        .from('games')
+        .select(`
+          id,
+          date,
+          location,
+          home_team_id,
+          away_team_id,
+          opponent_name
+        `)
+        .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`);
 
-      try {
-        // Query games where team is home or away and include opponent_name
-        let { data, error } = await supabase
-          .from('games')
-          .select(`
-            id,
-            date,
-            location,
-            home_team_id,
-            away_team_id,
-            opponent_name
-          `)
-          .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`);
-
-        if (cancelled) return;
-
-        if (error) {
-          console.error("Error fetching games:", error);
-          setGames([]);
-          setLoading(false);
-          return;
-        }
-
-        // Compose a readable 'opponent' label per game
-        const asSchedule = (data || []).map((g: any) => {
-          let opponent: string = '';
-
-          if (g.opponent_name) {
-            opponent = g.opponent_name;
-          } else if (g.home_team_id === team.id && g.away_team_id !== team.id) {
-            opponent = "[Away Team]";
-          } else if (g.away_team_id === team.id && g.home_team_id !== team.id) {
-            opponent = "[Home Team]";
-          } else {
-            opponent = "(Unknown)";
-          }
-
-          return {
-            id: g.id,
-            date: g.date,
-            location: g.location,
-            opponent,
-          };
-        });
-
-        setGames(asSchedule);
-      } catch (error) {
-        console.error("Unexpected error fetching games:", error);
+      if (error) {
+        console.error("Error fetching games:", error);
         setGames([]);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
+        return;
       }
-    }
 
+      // Compose a readable 'opponent' label per game
+      const asSchedule = (data || []).map((g: any) => {
+        let opponent: string = '';
+
+        if (g.opponent_name) {
+          opponent = g.opponent_name;
+        } else if (g.home_team_id === team.id && g.away_team_id !== team.id) {
+          opponent = "[Away Team]";
+        } else if (g.away_team_id === team.id && g.home_team_id !== team.id) {
+          opponent = "[Home Team]";
+        } else {
+          opponent = "(Unknown)";
+        }
+
+        return {
+          id: g.id,
+          date: g.date,
+          location: g.location,
+          opponent,
+        };
+      });
+
+      setGames(asSchedule);
+    } catch (error) {
+      console.error("Unexpected error fetching games:", error);
+      setGames([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchGames();
+    // eslint-disable-next-line
+  }, [team.id]);
 
-    return () => { cancelled = true; };
-  }, [team.id, dialogOpen, refreshKey]);
-
-  // Function to handle dialog close and refresh data
-  const handleDialogChange = (isOpen: boolean) => {
-    setDialogOpen(isOpen);
-    if (!isOpen) {
-      // Force a refresh when dialog closes (even after adding)
-      setRefreshKey(prev => prev + 1);
-    }
+  // Callback after a new game is added!
+  const handleGameAdded = () => {
+    fetchGames();
   };
 
   return (
@@ -112,9 +99,10 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
       </div>
       <NewOpponentGameDialog
         open={dialogOpen}
-        setOpen={handleDialogChange}
+        setOpen={setDialogOpen}
         teamId={team.id}
         teamName={team.name}
+        onGameAdded={handleGameAdded}
       />
       {loading ? (
         <div className="text-center py-8">Loading schedule…</div>

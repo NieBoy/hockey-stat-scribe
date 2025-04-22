@@ -19,13 +19,15 @@ interface NewOpponentGameDialogProps {
   setOpen: (b: boolean) => void;
   teamId: string;
   teamName: string;
+  onGameAdded?: () => void; // new callback
 }
 
 export default function NewOpponentGameDialog({
   open,
   setOpen,
   teamId,
-  teamName
+  teamName,
+  onGameAdded
 }: NewOpponentGameDialogProps) {
   const [date, setDate] = useState("");
   const [opponentName, setOpponentName] = useState("");
@@ -80,6 +82,10 @@ export default function NewOpponentGameDialog({
       setOpponentName("");
       setLocation("");
       setDate("");
+
+      // Inform parent to refresh the schedule!
+      if (onGameAdded) onGameAdded();
+
       console.log("Successfully added opponent game", data);
     } catch (err) {
       console.error("Error scheduling game:", err);
