@@ -1,12 +1,29 @@
-
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { mockGames, mockTeams, currentUser } from "@/lib/mock-data";
-import { CalendarDays, ClipboardList, Users, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Users, CalendarDays } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Index() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-4xl font-bold tracking-tight mb-4">Hockey Stat Scribe</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
+            Track, analyze, and improve your hockey team's performance with collaborative stat tracking.
+          </p>
+          <Button size="lg" asChild>
+            <Link to="/signin">Sign In to Get Started</Link>
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <section className="mb-8 text-center">
