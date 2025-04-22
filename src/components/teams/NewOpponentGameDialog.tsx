@@ -50,12 +50,13 @@ export default function NewOpponentGameDialog({
         current_period: 0
       });
       if (error) throw error;
-      toast.success("Game scheduled!");
+      toast.success("Game scheduled successfully!");
       setOpen(false);
       setOpponentName("");
       setLocation("");
       setDate("");
     } catch (err) {
+      console.error("Error scheduling game:", err);
       toast.error("Error scheduling game");
     } finally {
       setLoading(false);
@@ -92,6 +93,7 @@ export default function NewOpponentGameDialog({
             <Input
               value={location}
               onChange={e => setLocation(e.target.value)}
+              placeholder="e.g. Main Arena"
               required
             />
           </div>
