@@ -30,7 +30,7 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
     setIsDeleting(true);
     
     try {
-      console.log(`Starting deletion process for team ${teamId} (${teamName})`);
+      console.log(`DeleteTeamDialog: Starting deletion process for team ${teamId} (${teamName})`);
       const success = await deleteTeamAndAllData(teamId);
       
       if (success) {

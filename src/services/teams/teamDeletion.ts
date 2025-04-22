@@ -14,41 +14,39 @@ import { toast } from "sonner";
  */
 export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => {
   try {
-    // Start transaction by disabling auto-commit
-    // This needs to be done step by step due to RLS and dependency constraints
     console.log(`Starting comprehensive deletion for team: ${teamId}`);
 
     // Step 1: Get all team members to identify players for later deletion
     const { data: teamMembers, error: memberError } = await supabase
       .from('team_members')
-      .select('id')
+      .select('id, user_id')
       .eq('team_id', teamId);
 
     if (memberError) {
       console.error("Error retrieving team members:", memberError);
-      toast.error("Failed to retrieve team members.");
       return false;
     }
 
-    const memberIds = teamMembers.map(member => member.id);
+    const memberIds = teamMembers?.map(member => member.id) || [];
+    const userIds = teamMembers?.map(member => member.user_id).filter(Boolean) || [];
     console.log(`Found ${memberIds.length} team members to remove`);
 
     // Step 2: Delete player-parent relationships for all team members
     if (memberIds.length > 0) {
+      console.log("Deleting player-parent relationships");
       const { error: parentsError } = await supabase
         .from('player_parents')
         .delete()
-        .in('player_id', memberIds)
-        .or(`parent_id.in.(${memberIds.join(',')})`);
+        .in('player_id', memberIds);
 
       if (parentsError) {
         console.error("Error deleting player-parent relationships:", parentsError);
-        toast.error("Failed to delete player-parent relationships.");
         return false;
       }
     }
 
     // Step 3: Get all games where this team is either home or away
+    console.log("Finding games associated with team");
     const { data: games, error: gamesError } = await supabase
       .from('games')
       .select('id')
@@ -56,7 +54,6 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     if (gamesError) {
       console.error("Error retrieving games:", gamesError);
-      toast.error("Failed to retrieve games.");
       return false;
     }
 
@@ -65,7 +62,8 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     // Step 4: Delete game events for all identified games
     if (gameIds.length > 0) {
-      // Step 4a: Delete event_players (required due to foreign key constraints)
+      // Step 4a: Get all game events for these games
+      console.log("Retrieving game events");
       const { data: events, error: eventsQueryError } = await supabase
         .from('game_events')
         .select('id')
@@ -73,13 +71,15 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (eventsQueryError) {
         console.error("Error retrieving game events:", eventsQueryError);
-        toast.error("Failed to retrieve game events.");
         return false;
       }
 
       const eventIds = events?.map(event => event.id) || [];
+      console.log(`Found ${eventIds.length} game events to remove`);
       
+      // Step 4b: Delete event_players records first (foreign key constraint)
       if (eventIds.length > 0) {
+        console.log("Deleting event players");
         const { error: eventPlayersError } = await supabase
           .from('event_players')
           .delete()
@@ -87,12 +87,12 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
         if (eventPlayersError) {
           console.error("Error deleting event players:", eventPlayersError);
-          toast.error("Failed to delete event players.");
           return false;
         }
       }
 
-      // Step 4b: Delete game events
+      // Step 4c: Delete game events
+      console.log("Deleting game events");
       const { error: eventsError } = await supabase
         .from('game_events')
         .delete()
@@ -100,11 +100,11 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (eventsError) {
         console.error("Error deleting game events:", eventsError);
-        toast.error("Failed to delete game events.");
         return false;
       }
 
-      // Step 4c: Delete game stats
+      // Step 4d: Delete game stats
+      console.log("Deleting game stats");
       const { error: gameStatsError } = await supabase
         .from('game_stats')
         .delete()
@@ -112,11 +112,11 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (gameStatsError) {
         console.error("Error deleting game stats:", gameStatsError);
-        toast.error("Failed to delete game stats.");
         return false;
       }
 
-      // Step 4d: Delete stat trackers
+      // Step 4e: Delete stat trackers
+      console.log("Deleting stat trackers");
       const { error: trackersError } = await supabase
         .from('stat_trackers')
         .delete()
@@ -124,27 +124,27 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (trackersError) {
         console.error("Error deleting stat trackers:", trackersError);
-        toast.error("Failed to delete stat trackers.");
         return false;
       }
     }
 
-    // Step 5: Delete player stats for all team members
-    if (memberIds.length > 0) {
+    // Step 5: Delete player stats for all team members with user_ids
+    if (userIds.length > 0) {
+      console.log("Deleting player stats");
       const { error: playerStatsError } = await supabase
         .from('player_stats')
         .delete()
-        .in('player_id', memberIds);
+        .in('player_id', userIds);
 
       if (playerStatsError) {
         console.error("Error deleting player stats:", playerStatsError);
-        toast.error("Failed to delete player stats.");
         return false;
       }
     }
 
     // Step 6: Delete games
     if (gameIds.length > 0) {
+      console.log("Deleting games");
       const { error: deleteGamesError } = await supabase
         .from('games')
         .delete()
@@ -152,12 +152,12 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (deleteGamesError) {
         console.error("Error deleting games:", deleteGamesError);
-        toast.error("Failed to delete games.");
         return false;
       }
     }
 
     // Step 7: Delete team members
+    console.log("Deleting team members");
     const { error: deleteMembersError } = await supabase
       .from('team_members')
       .delete()
@@ -165,20 +165,18 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     if (deleteMembersError) {
       console.error("Error deleting team members:", deleteMembersError);
-      toast.error("Failed to delete team members.");
       return false;
     }
 
     // Step 8: Finally, delete the team itself
+    console.log("Deleting team");
     const { error: deleteTeamError } = await supabase
       .from('teams')
       .delete()
-      .eq('id', teamId)
-      .single();
+      .eq('id', teamId);
 
     if (deleteTeamError) {
       console.error("Error deleting team:", deleteTeamError);
-      toast.error("Failed to delete team.");
       return false;
     }
 
@@ -187,7 +185,6 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
   } catch (error) {
     console.error("Unexpected error during team deletion:", error);
-    toast.error("An unexpected error occurred during team deletion.");
     return false;
   }
 };
