@@ -30,7 +30,7 @@ serve(async (req) => {
           email TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'pending',
           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+          expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (now() + interval '30 days'),
           user_id UUID,
           accepted_at TIMESTAMP WITH TIME ZONE
         );

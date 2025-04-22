@@ -4,7 +4,6 @@ import { useSearchParams, Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { toast } from "sonner";
@@ -48,6 +47,32 @@ export default function AcceptInvitation() {
         return;
       }
 
+      // Handle mock invitations (from development environment)
+      if (invitationId.startsWith('mock-')) {
+        console.log("Processing mock invitation:", invitationId);
+        
+        // Extract team ID and member ID from the mock invitation link format
+        // Format: mock-{teamId}-{memberId}-{timestamp}-{index}
+        const parts = invitationId.split('-');
+        if (parts.length >= 3) {
+          // For mock invitations, we'll create a fake invitation object
+          const mockInvitation = {
+            id: invitationId,
+            team_id: parts[1],
+            email: "demo@example.com", // Placeholder email
+            role: "player",
+            status: "pending",
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          };
+          
+          setInvitation(mockInvitation);
+          form.setValue("email", mockInvitation.email);
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         const { data, error } = await supabase
           .from("invitations")
@@ -56,6 +81,7 @@ export default function AcceptInvitation() {
           .single();
 
         if (error || !data) {
+          console.error("Error fetching invitation:", error);
           setError("This invitation is invalid or has expired");
           setLoading(false);
           return;
@@ -92,6 +118,17 @@ export default function AcceptInvitation() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setValidating(true);
     try {
+      // Handle mock invitations differently
+      if (invitationId?.startsWith('mock-')) {
+        toast.success("Demo account created successfully!");
+        
+        // Wait a moment and redirect to home
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+        return;
+      }
+      
       // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
@@ -221,7 +258,7 @@ export default function AcceptInvitation() {
                           <Input 
                             placeholder="Enter your email" 
                             type="email" 
-                            disabled 
+                            disabled={invitation?.email ? true : false}
                             {...field} 
                           />
                         </FormControl>

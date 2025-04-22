@@ -90,6 +90,10 @@ export const sendTeamInvitations = async (
         // Log the invitation we're about to create
         console.log(`Creating invitation for ${member.email} to join team ${teamId}`);
         
+        // Set expiration to 30 days instead of 7 days
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        
         const { data: invitationData, error: invitationError } = await supabase
           .from('invitations')
           .insert({
@@ -97,7 +101,7 @@ export const sendTeamInvitations = async (
             email: member.email,
             role: member.role || 'player',
             status: 'pending',
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            expires_at: expiresAt.toISOString()
           })
           .select()
           .single();
