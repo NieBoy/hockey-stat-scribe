@@ -13,8 +13,17 @@ import { Team } from "@/types";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import RequireAuth from "@/components/auth/RequireAuth";
 
-// Create query client outside component to avoid recreation on each render
-const queryClient = new QueryClient();
+// Create query client with aggressive invalidation settings
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0, // Consider all data stale immediately
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 export default function Teams() {
   return (
@@ -43,8 +52,9 @@ function TeamsContent() {
     submitNewPlayer
   } = useTeams();
   
-  // Force refresh teams data when component mounts
+  // Force refresh teams data when component mounts and when the component is re-rendered
   useEffect(() => {
+    console.log("Teams component mounted or updated - fetching fresh teams data");
     refetch();
   }, [refetch]);
 

@@ -15,6 +15,7 @@ import { Trash2, Loader2 } from "lucide-react";
 import { deleteTeamAndAllData } from "@/services/teams/teamDeletion";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DeleteTeamDialogProps {
   teamId: string;
@@ -25,6 +26,7 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -45,9 +47,14 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         });
         setOpen(false);
         
+        // Invalidate React Query cache for teams
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        
         // Force navigation to teams page with a refresh to ensure state is updated
         setTimeout(() => {
+          // Navigate to teams page and replace current history entry
           navigate("/teams", { replace: true });
+          
           // Force a page reload to ensure all states are refreshed
           window.location.reload();
         }, 400);

@@ -7,8 +7,10 @@ export function useTeamData(teamId?: string) {
   const teamsQuery = useQuery({
     queryKey: ['teams'],
     queryFn: getTeams,
-    refetchOnWindowFocus: true, // Refresh data when window gets focus
-    staleTime: 10000, // Consider data stale after 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    staleTime: 0, // Always consider teams data stale to force refresh
   });
 
   const teamQuery = teamId 
@@ -16,8 +18,9 @@ export function useTeamData(teamId?: string) {
         queryKey: ['team', teamId],
         queryFn: () => getTeamById(teamId),
         enabled: !!teamId,
-        staleTime: 10000,
-        refetchOnWindowFocus: true, // Refresh data when window gets focus
+        staleTime: 0, // Always consider team data stale
+        refetchOnWindowFocus: true,
+        refetchOnMount: true,
       })
     : {
         data: null,
