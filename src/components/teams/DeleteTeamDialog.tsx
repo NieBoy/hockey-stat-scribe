@@ -54,8 +54,11 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         
         // Close dialog and navigate away
         setOpen(false);
+        
+        // Use setTimeout to ensure dialog animation completes before navigation
         setTimeout(() => {
-          navigate("/teams", { replace: true });
+          // Force a full page reload to ensure all state is cleared
+          window.location.href = "/teams";
         }, 300);
       } else {
         // Show error toast
@@ -63,6 +66,7 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         toast.error("Failed to delete team. Please try again.", {
           duration: 5000
         });
+        setIsDeleting(false);
       }
     } catch (error) {
       console.error("Error in team deletion:", error);
@@ -72,7 +76,6 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
       toast.error("An unexpected error occurred", {
         duration: 5000
       });
-    } finally {
       setIsDeleting(false);
     }
   };
