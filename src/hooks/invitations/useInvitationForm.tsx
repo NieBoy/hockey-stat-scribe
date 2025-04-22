@@ -100,37 +100,26 @@ export function useInvitationForm() {
     setValidating(true);
     try {
       if (invitationId?.startsWith('mock-')) {
+        console.log("Creating demo account with email:", values.email);
+        
         // For mock invitations, create a user account directly via auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-          options: {
-            data: {
-              name: values.name
-            }
+        // Important: Set email_confirm=true in admin functions to bypass email confirmation
+        const { data: authData, error: authError } = await supabase.functions.invoke('create-demo-user', {
+          body: {
+            email: values.email,
+            password: values.password,
+            name: values.name
           }
         });
 
-        if (authError) {
-          throw new Error(authError.message);
+        if (authError || !authData?.user) {
+          console.error("Error creating demo account:", authError || "No user data returned");
+          throw new Error(authError?.message || "Failed to create user account");
         }
         
-        if (!authData.user) {
-          throw new Error("Failed to create user account");
-        }
-        
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from("users")
-          .insert({
-            id: authData.user.id,
-            name: values.name,
-            email: values.email
-          });
-          
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-        }
+        // User has been created and auto-confirmed by the edge function
+        const userId = authData.user.id;
+        console.log("Demo user created with ID:", userId);
         
         // Parse team ID from mock invitation ID
         const teamId = invitationId.split('-')[1];
@@ -141,7 +130,7 @@ export function useInvitationForm() {
             .from("team_members")
             .insert({
               team_id: teamId,
-              user_id: authData.user.id,
+              user_id: userId,
               name: values.name,
               email: values.email,
               role: "player"
@@ -153,9 +142,21 @@ export function useInvitationForm() {
         }
         
         toast.success("Demo account created successfully!");
+        
+        // Now sign in with the newly created account
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password
+        });
+        
+        if (signInError) {
+          console.error("Error signing in:", signInError);
+          throw new Error("Account created but couldn't sign in automatically: " + signInError.message);
+        }
+        
         setTimeout(() => {
           navigate("/");
-        }, 2000);
+        }, 1500);
         return;
       }
       
