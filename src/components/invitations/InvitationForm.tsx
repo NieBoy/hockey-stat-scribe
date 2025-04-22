@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle } from "lucide-react";
 
 export function InvitationForm({ form, onSubmit, validating, invitation }: any) {
+  // Determine if the email should be editable
+  const isMockInvitation = invitation?.id?.startsWith('mock-');
+  const isEmailEditable = isMockInvitation || !invitation?.email;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -32,7 +36,7 @@ export function InvitationForm({ form, onSubmit, validating, invitation }: any) 
                 <Input 
                   placeholder="Enter your email" 
                   type="email" 
-                  disabled={invitation?.email ? true : false}
+                  disabled={!isEmailEditable && invitation?.email ? true : false}
                   {...field} 
                 />
               </FormControl>

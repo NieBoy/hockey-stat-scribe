@@ -54,7 +54,7 @@ export function useInvitationForm() {
         };
         
         setInvitation(mockInvitation);
-        form.setValue("email", mockInvitation.email);
+        form.setValue("email", ""); // Set to empty string for mock invitations so user can enter their own
         setLoading(false);
         return;
       }
@@ -87,7 +87,7 @@ export function useInvitationForm() {
       }
 
       setInvitation(data);
-      form.setValue("email", data.email);
+      form.setValue("email", data.email || "");
       setLoading(false);
     } catch (err) {
       console.error("Error fetching invitation:", err);
@@ -100,6 +100,58 @@ export function useInvitationForm() {
     setValidating(true);
     try {
       if (invitationId?.startsWith('mock-')) {
+        // For mock invitations, create a user account directly via auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            data: {
+              name: values.name
+            }
+          }
+        });
+
+        if (authError) {
+          throw new Error(authError.message);
+        }
+        
+        if (!authData.user) {
+          throw new Error("Failed to create user account");
+        }
+        
+        // Create user profile
+        const { error: profileError } = await supabase
+          .from("users")
+          .insert({
+            id: authData.user.id,
+            name: values.name,
+            email: values.email
+          });
+          
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+        }
+        
+        // Parse team ID from mock invitation ID
+        const teamId = invitationId.split('-')[1];
+        
+        // Associate user with team
+        if (teamId) {
+          const { error: teamMemberError } = await supabase
+            .from("team_members")
+            .insert({
+              team_id: teamId,
+              user_id: authData.user.id,
+              name: values.name,
+              email: values.email,
+              role: "player"
+            });
+            
+          if (teamMemberError) {
+            console.error("Error adding team member:", teamMemberError);
+          }
+        }
+        
         toast.success("Demo account created successfully!");
         setTimeout(() => {
           navigate("/");
