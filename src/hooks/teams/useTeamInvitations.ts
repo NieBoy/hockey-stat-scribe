@@ -29,22 +29,26 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
         toast.success("Invitation(s) ready!", {
           id: "send-invitations",
           description: "Share the link(s) below with your invitees:",
-          action: (
-            <div className="p-2 space-y-2">
-              {signupLinks.map((link, i) => (
-                <div key={i} className="flex gap-2 items-center mt-1 mb-1">
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-indigo-700 dark:text-indigo-300 break-all">{link}</a>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(link)}
-                    className="ml-2 px-2 py-0.5 rounded text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300"
-                  >
-                    Copy
-                  </button>
-                </div>
-              ))}
-            </div>
-          ),
-          duration: 24000,
+          action: {
+            label: "View Links",
+            onClick: () => {
+              // For each link, show a dedicated toast with copy button
+              signupLinks.forEach((link, index) => {
+                toast.info(`Invitation link #${index + 1}`, {
+                  description: link,
+                  action: {
+                    label: "Copy",
+                    onClick: () => {
+                      navigator.clipboard.writeText(link);
+                      toast.success("Link copied to clipboard");
+                    }
+                  },
+                  duration: 15000,
+                });
+              });
+            }
+          },
+          duration: 8000,
         });
       } else {
         toast.error("No invitations were created", {
