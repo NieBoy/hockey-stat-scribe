@@ -1,10 +1,19 @@
 
-import { Game, PlayerStat, User } from "@/types";
+import { PlayerStat, User } from "@/types";
+
+// Add the SimpleGame interface to match what we're getting from the API
+interface SimpleGame {
+  id: string;
+  date: string;
+  home_team_id?: string;
+  away_team_id?: string;
+  location: string;
+}
 
 interface PlayerStatsDebugProps {
   player: User | null;
   playerTeam: any;
-  teamGames: any[];
+  teamGames: SimpleGame[]; // Update to match what we actually receive
   rawGameStats: any[];
   playerGameEvents: any[];
   stats: PlayerStat[];

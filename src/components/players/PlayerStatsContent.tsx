@@ -6,12 +6,21 @@ import PlayerStatsDebug from "./PlayerStatsDebug";
 import PlayerStatsEmpty from "./PlayerStatsEmpty";
 import { Game, User } from "@/types";
 
+// Create a simplified game type that matches what we get from the API
+interface SimpleGame {
+  id: string;
+  date: string;
+  home_team_id?: string;
+  away_team_id?: string;
+  location: string;
+}
+
 interface PlayerStatsContentProps {
   stats: any[];
   showDebugInfo?: boolean;
   player: User | null;
   playerTeam: any;
-  teamGames: Game[];
+  teamGames: SimpleGame[]; // Update the type to match what we actually receive
   rawGameStats: any[];
   playerGameEvents: any[];
   onRefresh: () => void;
