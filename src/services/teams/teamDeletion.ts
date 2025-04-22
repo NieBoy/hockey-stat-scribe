@@ -42,7 +42,11 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     console.log("Deleting the team row itself…");
     // Try to delete the team with a more explicit approach
-    const { error: deleteError } = await supabase.rpc('delete_team_completely', { team_id_param: teamId });
+    // Use a type assertion to bypass the TypeScript limitation with dynamic RPC function names
+    const { error: deleteError } = await supabase.rpc(
+      'delete_team_completely' as any, 
+      { team_id_param: teamId }
+    );
     
     // If the RPC call fails, fall back to direct deletion
     if (deleteError) {

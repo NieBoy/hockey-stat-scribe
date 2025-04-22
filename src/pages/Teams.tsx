@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
       refetchOnMount: "always", // Force refetch on component mount
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      cacheTime: 1000, // Very short cache time (1 second)
+      gcTime: 1000, // Very short cache time (1 second) - using gcTime instead of cacheTime
     },
   },
 });
