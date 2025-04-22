@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 
 interface NewOpponentGameDialogProps {
@@ -34,27 +34,53 @@ export default function NewOpponentGameDialog({
 
   const canSubmit = date && opponentName && location;
 
+  function toISOStringLocal(datetime: string) {
+    // Converts a "YYYY-MM-DDTHH:mm" string (from <input type="datetime-local"/>) to UTC ISO
+    try {
+      const dt = new Date(datetime);
+      return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString();
+    } catch {
+      return datetime;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from("games").insert({
+      // Convert to UTC ISO string for Supabase
+      const isoDate = toISOStringLocal(date);
+      console.log("Scheduling opponent game: ", {
         date,
-        location,
-        home_team_id: teamId,
-        away_team_id: null,
-        opponent_name: opponentName,
-        periods: 3,
-        is_active: false,
-        current_period: 0
+        isoDate,
+        teamId,
+        opponentName,
+        location
       });
-      if (error) throw error;
+
+      const { error, data } = await supabase
+        .from("games")
+        .insert({
+          date: isoDate,
+          location,
+          home_team_id: teamId,
+          away_team_id: null,
+          opponent_name: opponentName,
+          periods: 3,
+          is_active: false,
+          current_period: 0
+        });
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
       toast.success("Game scheduled successfully!");
       setOpen(false);
       setOpponentName("");
       setLocation("");
       setDate("");
+      console.log("Successfully added opponent game", data);
     } catch (err) {
       console.error("Error scheduling game:", err);
       toast.error("Error scheduling game");
