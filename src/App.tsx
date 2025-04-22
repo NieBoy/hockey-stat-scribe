@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Teams from "./pages/Teams";
@@ -37,7 +36,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/teams" element={<Teams />} />
-            <Route path="/teams/create" element={<TeamCreate />} />
+            <Route path="/teams/new" element={<TeamCreate />} />
             <Route path="/teams/:id" element={<TeamDetail />} />
             <Route path="/teams/:id/lineup" element={<TeamLineup />} />
             <Route path="/stats" element={<Stats />} />
