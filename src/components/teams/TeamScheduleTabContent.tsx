@@ -28,10 +28,10 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
   // Fetch games for this team whenever dialogOpen changes or refreshKey changes
   useEffect(() => {
     let cancelled = false;
-    
+
     async function fetchGames() {
       setLoading(true);
-      
+
       try {
         // Query games where team is home or away and include opponent_name
         let { data, error } = await supabase
@@ -45,20 +45,20 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
             opponent_name
           `)
           .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`);
-        
+
         if (cancelled) return;
-        
+
         if (error) {
           console.error("Error fetching games:", error);
           setGames([]);
           setLoading(false);
           return;
         }
-        
+
         // Compose a readable 'opponent' label per game
         const asSchedule = (data || []).map((g: any) => {
           let opponent: string = '';
-          
+
           if (g.opponent_name) {
             opponent = g.opponent_name;
           } else if (g.home_team_id === team.id && g.away_team_id !== team.id) {
@@ -68,7 +68,7 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
           } else {
             opponent = "(Unknown)";
           }
-          
+
           return {
             id: g.id,
             date: g.date,
@@ -76,7 +76,7 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
             opponent,
           };
         });
-        
+
         setGames(asSchedule);
       } catch (error) {
         console.error("Unexpected error fetching games:", error);
@@ -87,9 +87,9 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
         }
       }
     }
-    
+
     fetchGames();
-    
+
     return () => { cancelled = true; };
   }, [team.id, dialogOpen, refreshKey]);
 
@@ -97,7 +97,7 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
   const handleDialogChange = (isOpen: boolean) => {
     setDialogOpen(isOpen);
     if (!isOpen) {
-      // Force a refresh when dialog closes
+      // Force a refresh when dialog closes (even after adding)
       setRefreshKey(prev => prev + 1);
     }
   };

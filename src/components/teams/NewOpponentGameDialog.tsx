@@ -49,7 +49,6 @@ export default function NewOpponentGameDialog({
     if (!canSubmit) return;
     setLoading(true);
     try {
-      // Convert to UTC ISO string for Supabase
       const isoDate = toISOStringLocal(date);
       console.log("Scheduling opponent game: ", {
         date,
@@ -65,7 +64,7 @@ export default function NewOpponentGameDialog({
           date: isoDate,
           location,
           home_team_id: teamId,
-          away_team_id: null,
+          away_team_id: null, // important to explicitly provide null
           opponent_name: opponentName,
           periods: 3,
           is_active: false,
@@ -73,10 +72,11 @@ export default function NewOpponentGameDialog({
         });
       if (error) {
         console.error("Supabase insert error:", error);
-        throw error;
+        toast.error("Error scheduling game: " + (error.message || "Unknown error"));
+        return;
       }
       toast.success("Game scheduled successfully!");
-      setOpen(false);
+      setOpen(false); // close the dialog
       setOpponentName("");
       setLocation("");
       setDate("");
