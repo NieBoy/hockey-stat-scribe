@@ -43,7 +43,10 @@ const PlayerStatsContent = ({
   const [isFixingUser, setIsFixingUser] = useState(false);
   const hasStats = stats && stats.length > 0;
   const isPlayerValid = !!player;
-  const hasValidUserId = !!player?.user_id;
+  
+  // Update this line to check for user_id differently since it's not in the User type
+  // Instead, check if the player object has a user_id property using optional chaining
+  const hasValidUserId = player && 'user_id' in player ? !!player.user_id : false;
 
   const handleFixUserAssociation = async () => {
     if (!playerId) {
