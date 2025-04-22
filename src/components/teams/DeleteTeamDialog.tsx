@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import { deleteTeamAndAllData } from "@/services/teams/teamDeletion";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface DeleteTeamDialogProps {
   teamId: string;
@@ -23,6 +24,7 @@ interface DeleteTeamDialogProps {
 export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -42,8 +44,12 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
           duration: 5000
         });
         setOpen(false);
+        
+        // Force navigation to teams page with a refresh to ensure state is updated
         setTimeout(() => {
-          window.location.href = "/teams";
+          navigate("/teams", { replace: true });
+          // Force a page reload to ensure all states are refreshed
+          window.location.reload();
         }, 400);
       } else {
         toast.error("Failed to delete team. Please try again.", {

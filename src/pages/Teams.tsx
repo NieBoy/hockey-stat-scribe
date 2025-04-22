@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, UserCircle2 } from "lucide-react";
@@ -42,6 +42,11 @@ function TeamsContent() {
     handleAddPlayer,
     submitNewPlayer
   } = useTeams();
+  
+  // Force refresh teams data when component mounts
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (
