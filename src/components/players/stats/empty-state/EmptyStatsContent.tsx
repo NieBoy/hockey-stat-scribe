@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Mail, Info, FileSearch, Database } from "lucide-react";
 import { useState } from "react";
@@ -58,29 +57,29 @@ export default function EmptyStatsContent({
 
   // Directly call the database function to refresh stats
   const handleDirectDatabaseRefresh = async () => {
-    if (!hasValidUserId || !playerId) {
-      toast.error("Cannot refresh stats without a valid user ID");
+    if (!playerId) {
+      toast.error("Cannot refresh stats without a valid player ID");
       return;
     }
     
     setIsDatabaseProcessing(true);
     try {
-      // First check for player's user_id
+      // First check for player's team_member record
       const { data: playerData } = await supabase
         .from('team_members')
-        .select('user_id')
+        .select('id')
         .eq('id', playerId)
         .single();
         
-      if (!playerData?.user_id) {
-        toast.error("Player doesn't have a user ID associated");
+      if (!playerData) {
+        toast.error("Player doesn't exist in the team_members table");
         return;
       }
       
       // Call the database function directly
       const { data, error } = await supabase.rpc(
         'refresh_player_stats', 
-        { player_id: playerData.user_id }
+        { player_id: playerId }
       );
       
       if (error) {
@@ -125,12 +124,7 @@ export default function EmptyStatsContent({
             <AlertCircle className="h-4 w-4" />
             <p className="font-medium">User ID missing</p>
           </div>
-          <p className="text-sm">This player exists but doesn't have a user ID assigned. This is required for stats processing and can be fixed by:</p>
-          <ul className="list-disc list-inside mt-1 text-xs text-yellow-700">
-            <li>Adding an email address to the player's profile</li>
-            <li>Sending an invitation to the player</li>
-            <li>Using the "Fix User Association" button on the errors page</li>
-          </ul>
+          <p className="text-sm">This player exists but doesn't have a user ID assigned. Stats can still be processed directly without a user ID.</p>
         </div>
       )}
       
@@ -165,7 +159,7 @@ export default function EmptyStatsContent({
         <Button 
           onClick={handleProcessStats} 
           className="gap-2"
-          disabled={(!hasGameEvents) || !isPlayerValid || !hasValidUserId || isProcessing}
+          disabled={!hasGameEvents || !isPlayerValid || isProcessing}
         >
           <RefreshCw className={`h-4 w-4 ${isProcessing ? "animate-spin" : ""}`} />
           {isProcessing ? "Processing..." : "Calculate Stats from Game Events"}
@@ -177,7 +171,7 @@ export default function EmptyStatsContent({
             onClick={handleDirectDatabaseRefresh} 
             className="gap-2"
             variant="secondary"
-            disabled={!isPlayerValid || !hasValidUserId || isDatabaseProcessing}
+            disabled={!isPlayerValid || isDatabaseProcessing}
           >
             <Database className={`h-4 w-4 ${isDatabaseProcessing ? "animate-spin" : ""}`} />
             {isDatabaseProcessing ? "Refreshing..." : "Refresh Stats Directly from Database"}

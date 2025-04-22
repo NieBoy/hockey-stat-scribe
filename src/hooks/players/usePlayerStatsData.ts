@@ -28,6 +28,7 @@ export function usePlayerStatsData(playerId: string) {
       if (!playerId) return [];
       try {
         console.log("Fetching raw game stats for player:", playerId);
+        // Using team_member.id directly
         const stats = await fetchGameStats('', playerId);
         console.log(`Found ${stats.length} raw game stats for player`);
         return stats;

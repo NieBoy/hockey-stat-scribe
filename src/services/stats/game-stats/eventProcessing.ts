@@ -22,6 +22,7 @@ export const createStatsFromEvents = async (playerId: string, events?: any[]) =>
     
     // If events aren't provided, fetch them
     if (!events) {
+      console.log("No events provided, fetching events for player:", playerId);
       const { data: fetchedEvents, error: eventsError } = await supabase
         .from('game_events')
         .select(`
@@ -269,6 +270,7 @@ async function recordStat({
       throw error;
     }
     
+    console.log(`Successfully recorded ${statType} stat for player ${playerId}`);
     return data;
   } catch (error) {
     console.error("Error in recordStat:", error);
