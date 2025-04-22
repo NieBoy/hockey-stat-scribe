@@ -30,12 +30,14 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
     if (isDeleting) return; // Prevent multiple clicks
     
     setIsDeleting(true);
+    toast.loading(`Deleting team "${teamName}"...`);
     
     try {
       console.log(`DeleteTeamDialog: Starting deletion process for team ${teamId} (${teamName})`);
       const success = await deleteTeamAndAllData(teamId);
       
       if (success) {
+        toast.dismiss();
         toast.success(`Team "${teamName}" and all associated data has been deleted`);
         
         setOpen(false);
@@ -44,10 +46,12 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
           navigate("/teams");
         }, 300);
       } else {
+        toast.dismiss();
         toast.error("Failed to delete team. Please try again.");
       }
     } catch (error) {
       console.error("Error in delete team dialog:", error);
+      toast.dismiss();
       toast.error("An unexpected error occurred while deleting the team");
     } finally {
       setIsDeleting(false);
