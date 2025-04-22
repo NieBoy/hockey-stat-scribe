@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { deleteTeamAndAllData } from "@/services/teams/teamDeletion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,30 +29,49 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
   const handleDelete = async () => {
     if (isDeleting) return; // Prevent multiple clicks
     
-    setIsDeleting(true);
-    toast.loading(`Deleting team "${teamName}"...`);
-    
     try {
-      console.log(`DeleteTeamDialog: Starting deletion process for team ${teamId} (${teamName})`);
+      // Update state to show loading
+      setIsDeleting(true);
+      
+      // Show loading toast
+      toast.loading(`Deleting team "${teamName}"...`, {
+        id: "team-delete-toast",
+        duration: Infinity // Keep showing until we dismiss it
+      });
+      
+      console.log(`Starting deletion of team ${teamId} (${teamName})`);
+      
+      // Call the deletion service
       const success = await deleteTeamAndAllData(teamId);
       
+      // Handle the result
       if (success) {
-        toast.dismiss();
-        toast.success(`Team "${teamName}" and all associated data has been deleted`);
+        // Dismiss loading toast and show success
+        toast.dismiss("team-delete-toast");
+        toast.success(`Team "${teamName}" has been deleted`, {
+          duration: 5000
+        });
         
+        // Close dialog and navigate away
         setOpen(false);
-        // Short timeout to allow the dialog to close before navigation
         setTimeout(() => {
-          navigate("/teams");
+          navigate("/teams", { replace: true });
         }, 300);
       } else {
-        toast.dismiss();
-        toast.error("Failed to delete team. Please try again.");
+        // Show error toast
+        toast.dismiss("team-delete-toast");
+        toast.error("Failed to delete team. Please try again.", {
+          duration: 5000
+        });
       }
     } catch (error) {
-      console.error("Error in delete team dialog:", error);
-      toast.dismiss();
-      toast.error("An unexpected error occurred while deleting the team");
+      console.error("Error in team deletion:", error);
+      
+      // Show error toast
+      toast.dismiss("team-delete-toast");
+      toast.error("An unexpected error occurred", {
+        duration: 5000
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -67,10 +86,13 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         onClick={() => setOpen(true)}
         disabled={isDeleting}
       >
-        <Trash2 className="h-4 w-4" /> {isDeleting ? "Deleting..." : "Delete Team"}
+        <Trash2 className="h-4 w-4" /> Delete Team
       </Button>
 
-      <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialog open={open} onOpenChange={(isOpen) => {
+        // Only allow closing if we're not in the middle of deletion
+        if (!isDeleting) setOpen(isOpen);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Team: {teamName}</AlertDialogTitle>
@@ -94,9 +116,18 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
                 handleDelete();
               }}
               disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 gap-2"
             >
-              {isDeleting ? "Deleting..." : "Yes, Delete Everything"}
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  Yes, Delete Everything
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
