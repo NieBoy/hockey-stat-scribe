@@ -20,9 +20,10 @@ import { useQueryClient } from "@tanstack/react-query";
 interface DeleteTeamDialogProps {
   teamId: string;
   teamName: string;
+  onTeamDeleted?: (teamId: string) => void; // NEW: Optional callback prop
 }
 
-export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
+export default function DeleteTeamDialog({ teamId, teamName, onTeamDeleted }: DeleteTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
@@ -32,7 +33,6 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
     if (isDeleting) return;
     setIsDeleting(true);
 
-    // Prevent double-close or repeated activation
     toast.loading(`Deleting team "${teamName}"...`, {
       id: "team-delete-toast",
       duration: Infinity
@@ -46,18 +46,21 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
           duration: 5000
         });
         setOpen(false);
-        
-        // Completely remove the teams data from the cache
+
+        // Remove team data from react-query cache
         queryClient.removeQueries({ queryKey: ['teams'] });
         queryClient.removeQueries({ queryKey: ['team', teamId] });
-        
+
+        // NEW: Optimistically update the parent (Teams page) if callback is provided
+        if (onTeamDeleted) {
+          onTeamDeleted(teamId);
+        }
+
         // Wait a moment to ensure any database replication is complete
         setTimeout(() => {
-          // First navigate away
+          // First navigate away (if on a detail page this works)
           navigate("/teams", { replace: true });
-          
-          // Then force a complete reload
-          window.location.href = "/teams";
+          // Optionally: window.location.href = "/teams";
         }, 500);
       } else {
         toast.error("Failed to delete team. Please try again.", {

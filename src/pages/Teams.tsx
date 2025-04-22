@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, UserCircle2 } from "lucide-react";
@@ -12,16 +12,16 @@ import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import { Team } from "@/types";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import RequireAuth from "@/components/auth/RequireAuth";
+import DeleteTeamDialog from "@/components/teams/DeleteTeamDialog"; // We'll need this for demo purposes (not used directly here though)
 
-// Create query client with aggressive invalidation settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0, // Consider all data stale immediately
-      refetchOnMount: "always", // Force refetch on component mount
+      staleTime: 0,
+      refetchOnMount: "always",
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      gcTime: 1000, // Very short cache time (1 second) - using gcTime instead of cacheTime
+      gcTime: 1000,
     },
   },
 });
@@ -36,7 +36,6 @@ export default function Teams() {
   );
 }
 
-// Separate content component that uses React Query hooks
 function TeamsContent() {
   const { user } = useAuth();
   const {
@@ -52,19 +51,31 @@ function TeamsContent() {
     handleAddPlayer,
     submitNewPlayer
   } = useTeams();
-  
-  // Force refresh teams data when component mounts and when the component is re-rendered
+
+  // NEW: Local state for teams for fast UI updates after deletion
+  const [localTeams, setLocalTeams] = useState<Team[]>([]);
+
+  // Whenever teams comes from react-query, sync to localTeams
   useEffect(() => {
-    console.log("Teams component mounted or updated - fetching fresh teams data");
-    // Force clear the cache and refetch
+    if (Array.isArray(teams)) {
+      setLocalTeams(teams);
+    }
+  }, [teams]);
+
+  // NEW: Handler to optimistically remove the deleted team from UI
+  const handleTeamDeleted = useCallback((deletedTeamId: string) => {
+    setLocalTeams((prev) => prev.filter((team) => team.id !== deletedTeamId));
+    // Optionally refetch to ensure we reload the fresh list later
+    setTimeout(() => refetch(), 1500);
+  }, [refetch]);
+
+  useEffect(() => {
     queryClient.removeQueries({ queryKey: ['teams'] });
     refetch();
-    
-    // Set up an interval to periodically refresh the teams data
+
     const refreshInterval = setInterval(() => {
       refetch();
     }, 5000);
-    
     return () => clearInterval(refreshInterval);
   }, [refetch]);
 
@@ -114,8 +125,13 @@ function TeamsContent() {
         </div>
       </div>
 
-      {teams && (teams as Team[]).length > 0 ? (
-        <TeamsGrid teams={teams as Team[]} onAddPlayer={handleAddPlayer} />
+      {(localTeams && localTeams.length > 0) ? (
+        <TeamsGrid
+          teams={localTeams}
+          onAddPlayer={handleAddPlayer}
+          // You may optionally pass handleTeamDeleted to TeamCard/DeleteTeamDialog if you want
+          // onTeamDeleted={handleTeamDeleted} 
+        />
       ) : (
         <EmptyTeamsState user={user} />
       )}
