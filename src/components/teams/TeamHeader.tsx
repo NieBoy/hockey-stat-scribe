@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, PanelLeftClose, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Team } from "@/types";
+import DeleteTeamDialog from "./DeleteTeamDialog";
 
 interface TeamHeaderProps {
   team: Team;
@@ -34,6 +35,7 @@ const TeamHeader = ({ team, onBackClick, onAddPlayerClick }: TeamHeaderProps) =>
         </div>
 
         <div className="flex items-center gap-3">
+          <DeleteTeamDialog teamId={team.id} teamName={team.name} />
           <Button variant="outline" className="gap-2" asChild>
             <Link to={`/teams/${team.id}/lineup`}>
               <PanelLeftClose className="h-4 w-4" />

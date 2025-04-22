@@ -1,7 +1,9 @@
+
 // Re-export all team membership related functions with specific naming to avoid conflicts
 export { addTeamMember } from './membershipService';
 export { removeTeamMember, deleteTeamMember } from './memberDeletionService';
 export { updateTeamMemberInfo } from './memberUpdateService';
+export { deleteTeamAndAllData } from './teamDeletion';
 
 // Re-export from other team service files
 export * from './playerManagement';

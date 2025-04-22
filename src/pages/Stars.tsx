@@ -48,16 +48,20 @@ export default function Stars() {
     queryFn: getAllPlayerStats
   });
 
+  console.log("Stars page - stats data:", stats);
+
   // Filter stats by type if needed
   const filteredStats = statTypeFilter === "all" 
     ? stats as PlayerStat[] || []
     : (stats as PlayerStat[] || []).filter(stat => stat.statType === statTypeFilter);
 
+  console.log("Stars page - filtered stats:", filteredStats);
+
   const columns = [
     {
       accessorKey: "playerName",
       header: "Player",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const playerId = row.original.playerId;
         const playerName = row.original.playerName || 'Unknown Player';
         return <Link to={`/players/${playerId}/stats`} className="text-primary hover:underline">{playerName}</Link>;
@@ -66,7 +70,7 @@ export default function Stars() {
     {
       accessorKey: "statType",
       header: "Stat Type",
-      cell: ({ row }) => (
+      cell: ({ row }: any) => (
         <Badge className={getStatTypeColor(row.original.statType)}>
           {formatStatType(row.original.statType)}
         </Badge>
@@ -83,7 +87,7 @@ export default function Stars() {
     {
       id: "average",
       header: "Per Game Average",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const value = row.getValue("value") as number;
         const games = row.getValue("gamesPlayed") as number;
         return games > 0 ? (value / games).toFixed(2) : "0.00";
