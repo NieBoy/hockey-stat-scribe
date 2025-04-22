@@ -80,3 +80,19 @@ BEGIN
   DELETE FROM team_members WHERE team_id = team_id_param;
 END;
 $$;
+
+-- Function to delete a team completely - with explicit security definer
+CREATE OR REPLACE FUNCTION public.delete_team_completely(team_id_param UUID)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Delete the team with a more aggressive approach
+  DELETE FROM teams WHERE id = team_id_param;
+  
+  -- Return true if the delete was successful
+  RETURN FOUND;
+END;
+$$;

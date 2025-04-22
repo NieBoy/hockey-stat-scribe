@@ -41,13 +41,39 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
     }
 
     console.log("Deleting the team row itself…");
-    const { error: teamError } = await supabase
+    // Try to delete the team with a more explicit approach
+    const { error: deleteError } = await supabase.rpc('delete_team_completely', { team_id_param: teamId });
+    
+    // If the RPC call fails, fall back to direct deletion
+    if (deleteError) {
+      console.warn("RPC delete_team_completely failed, falling back to direct deletion:", deleteError);
+      const { error: teamError } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId);
+
+      if (teamError) {
+        console.error("Error deleting the team object:", teamError);
+        console.groupEnd();
+        return false;
+      }
+    }
+
+    // Verify the team was actually deleted
+    const { count, error: verifyError } = await supabase
       .from('teams')
-      .delete()
+      .select('*', { count: 'exact', head: true })
       .eq('id', teamId);
 
-    if (teamError) {
-      console.error("Error deleting the team object:", teamError);
+    if (verifyError) {
+      console.error("Error verifying team deletion:", verifyError);
+      console.groupEnd();
+      return false;
+    }
+
+    // If count > 0, the team still exists
+    if (count && count > 0) {
+      console.error("Team still exists after deletion attempt!");
       console.groupEnd();
       return false;
     }

@@ -18,9 +18,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 0, // Consider all data stale immediately
-      refetchOnMount: true,
+      refetchOnMount: "always", // Force refetch on component mount
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
+      cacheTime: 1000, // Very short cache time (1 second)
     },
   },
 });
@@ -55,7 +56,16 @@ function TeamsContent() {
   // Force refresh teams data when component mounts and when the component is re-rendered
   useEffect(() => {
     console.log("Teams component mounted or updated - fetching fresh teams data");
+    // Force clear the cache and refetch
+    queryClient.removeQueries({ queryKey: ['teams'] });
     refetch();
+    
+    // Set up an interval to periodically refresh the teams data
+    const refreshInterval = setInterval(() => {
+      refetch();
+    }, 5000);
+    
+    return () => clearInterval(refreshInterval);
   }, [refetch]);
 
   if (isLoading) {
