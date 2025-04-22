@@ -1,10 +1,10 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Team, User } from "@/types";
 import PlayersTabContent from "./PlayersTabContent";
 import CoachesTabContent from "./CoachesTabContent";
 import StatsTabContent from "./StatsTabContent";
 import TeamMembersTable from "./TeamMembersTable";
+import TeamScheduleTabContent from "./TeamScheduleTabContent";
 
 interface TeamTabsProps {
   team: Team;
@@ -35,11 +35,12 @@ const TeamTabs = ({
 }: TeamTabsProps) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="players">Players</TabsTrigger>
         <TabsTrigger value="coaches">Coaches</TabsTrigger>
         <TabsTrigger value="members">Members</TabsTrigger>
         <TabsTrigger value="stats">Stats</TabsTrigger>
+        <TabsTrigger value="schedule">Schedule</TabsTrigger>
       </TabsList>
 
       <TabsContent value="players" className="mt-6">
@@ -70,6 +71,10 @@ const TeamTabs = ({
       
       <TabsContent value="stats" className="mt-6">
         <StatsTabContent team={team} />
+      </TabsContent>
+
+      <TabsContent value="schedule" className="mt-6">
+        <TeamScheduleTabContent team={team} />
       </TabsContent>
     </Tabs>
   );

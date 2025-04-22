@@ -148,6 +148,7 @@ export type Database = {
           id: string
           is_active: boolean
           location: string
+          opponent_name: string | null
           periods: number
         }
         Insert: {
@@ -159,6 +160,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           location: string
+          opponent_name?: string | null
           periods?: number
         }
         Update: {
@@ -170,6 +172,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           location?: string
+          opponent_name?: string | null
           periods?: number
         }
         Relationships: [
