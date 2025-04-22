@@ -1,4 +1,3 @@
-
 import React from "react";
 import { PlayerStat, StatType } from "@/types";
 import {
@@ -16,57 +15,61 @@ interface StatsDetailViewProps {
 }
 
 const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
-  // Group stats by category
+  // Group stats by category using only valid StatTypes
   const offensiveStats = stats.filter(s => 
-    ['goals', 'assists', 'shots', 'points'].includes(s.statType)
+    ['goals', 'assists'].includes(s.statType)
   );
   
   const defensiveStats = stats.filter(s => 
-    ['plusMinus', 'blocks', 'hits'].includes(s.statType)
+    ['plusMinus', 'hits'].includes(s.statType)
   );
   
-  const specialTeamsStats = stats.filter(s => 
-    ['powerPlayGoals', 'powerPlayAssists', 'shorthandedGoals'].includes(s.statType)
-  );
+  // Filter for special teams - we'll keep this simpler for now
+  // Note: We're not using powerPlayGoals etc. since they're not in the StatType
+  const specialTeamsStats: PlayerStat[] = [];
   
+  // Filter for faceoffs
   const faceoffStats = stats.filter(s => 
-    ['faceoffs', 'faceoff_wins', 'faceoff_losses'].includes(s.statType)
+    ['faceoffs'].includes(s.statType)
+  );
+
+  // Add other stats that don't fit in the categories above
+  const otherStats = stats.filter(s =>
+    ['penalties', 'saves'].includes(s.statType)
   );
 
   const formatStatType = (type: StatType): string => {
     switch(type) {
       case 'goals': return 'Goals';
       case 'assists': return 'Assists';
-      case 'shots': return 'Shots';
       case 'plusMinus': return 'Plus/Minus';
       case 'hits': return 'Hits';
-      case 'blocks': return 'Blocked Shots';
       case 'penalties': return 'Penalties';
       case 'faceoffs': return 'Faceoffs';
-      case 'faceoff_wins': return 'Faceoff Wins';
-      case 'faceoff_losses': return 'Faceoff Losses';
-      case 'powerPlayGoals': return 'PP Goals';
-      case 'powerPlayAssists': return 'PP Assists';
-      case 'shorthandedGoals': return 'SH Goals';
+      case 'saves': return 'Saves';
       default: return type;
     }
   };
 
   return (
     <div className="space-y-8">
-      <StatCategoryCard 
-        title="Offensive Stats" 
-        description="Goals, assists, and shots" 
-        stats={offensiveStats} 
-        formatStatType={formatStatType} 
-      />
+      {offensiveStats.length > 0 && (
+        <StatCategoryCard 
+          title="Offensive Stats" 
+          description="Goals and assists" 
+          stats={offensiveStats} 
+          formatStatType={formatStatType} 
+        />
+      )}
       
-      <StatCategoryCard 
-        title="Defensive Stats" 
-        description="Plus/minus, blocks, and hits" 
-        stats={defensiveStats} 
-        formatStatType={formatStatType} 
-      />
+      {defensiveStats.length > 0 && (
+        <StatCategoryCard 
+          title="Defensive Stats" 
+          description="Plus/minus and hits" 
+          stats={defensiveStats} 
+          formatStatType={formatStatType} 
+        />
+      )}
       
       {specialTeamsStats.length > 0 && (
         <StatCategoryCard 
@@ -82,6 +85,15 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           title="Faceoffs" 
           description="Faceoff statistics" 
           stats={faceoffStats} 
+          formatStatType={formatStatType} 
+        />
+      )}
+
+      {otherStats.length > 0 && (
+        <StatCategoryCard 
+          title="Other Stats" 
+          description="Penalties, saves, and other statistics" 
+          stats={otherStats} 
           formatStatType={formatStatType} 
         />
       )}
