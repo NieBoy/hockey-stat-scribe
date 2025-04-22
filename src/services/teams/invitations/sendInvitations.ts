@@ -73,6 +73,9 @@ export const sendTeamInvitations = async (
     
     for (const member of membersWithEmail) {
       try {
+        // Log the invitation we're about to create
+        console.log(`Creating invitation for ${member.email} to join team ${teamId}`);
+        
         const { data: invitationData, error: invitationError } = await supabase
           .from('invitations')
           .insert({
@@ -93,6 +96,7 @@ export const sendTeamInvitations = async (
         if (invitationData) {
           const baseUrl = window.location.origin;
           const signupUrl = `${baseUrl}/accept-invitation?id=${invitationData.id}`;
+          console.log(`Generated signup URL: ${signupUrl} for invitation ID: ${invitationData.id}`);
           signupLinks.push(signupUrl);
           invitationsSent++;
         }
@@ -100,6 +104,10 @@ export const sendTeamInvitations = async (
         console.error(`Error processing invitation for ${member.email}:`, memberError);
       }
     }
+    
+    // Log the results
+    console.log(`Sent ${invitationsSent} invitations with ${signupLinks.length} signup links`);
+    console.log("Signup links:", signupLinks);
     
     return { sent: invitationsSent > 0, signupLinks };
   } catch (error: any) {

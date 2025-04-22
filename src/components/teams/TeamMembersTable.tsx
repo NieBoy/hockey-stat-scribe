@@ -6,6 +6,8 @@ import { MembersTableContent } from "./members/MembersTableContent";
 import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
 import { toast } from "sonner";
 import { useCallback, useMemo, useState } from "react";
+import { Button } from "../ui/button";
+import { Copy, Link2 } from "lucide-react";
 
 interface TeamMembersTableProps {
   team: Team;
@@ -80,6 +82,42 @@ const TeamMembersTable = ({
   
   // Use the prop value if provided, otherwise use local state
   const effectiveLastSent = lastInvitationSent || localLastSent;
+
+  // Store the last generated links locally to show in the UI
+  const [lastLinks, setLastLinks] = useState<string[]>([]);
+
+  // Function to display links in the UI for manual copying
+  const showLastInvitationLinks = () => {
+    if (lastLinks.length === 0) return null;
+    
+    return (
+      <div className="mt-4 p-4 border rounded-md bg-muted/20">
+        <h3 className="font-medium mb-2 flex items-center gap-2">
+          <Link2 className="h-4 w-4" /> 
+          Latest Invitation Links
+        </h3>
+        <div className="space-y-2">
+          {lastLinks.map((link, idx) => (
+            <div key={idx} className="flex items-center gap-2 text-sm">
+              <div className="truncate flex-1 bg-background p-2 rounded border text-xs">
+                {link}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(link);
+                  toast.success("Link copied to clipboard");
+                }}
+              >
+                <Copy className="h-3 w-3 mr-1" /> Copy
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="space-y-4">
@@ -111,8 +149,19 @@ const TeamMembersTable = ({
           Last invitation attempt: {effectiveLastSent.toLocaleTimeString()}
         </div>
       )}
+
+      {/* Show invitation links if available */}
+      {showLastInvitationLinks()}
+
+      {/* Instruction for users */}
+      <div className="mt-2 text-sm text-muted-foreground">
+        <p>
+          After sending invitations, click "View Links" in the notification that appears.
+          You can then copy the invitation links to share with your team members.
+        </p>
+      </div>
     </div>
   );
-};
+}
 
 export default TeamMembersTable;

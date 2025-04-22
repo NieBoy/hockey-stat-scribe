@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
-import { ensureInvitationsTableExists } from "@/services/teams/dbFunctions";
+import { ensureInvitationsTableExists } from "@/services/teams/invitations/dbSetup";
 import { User } from "@/types";
 
 export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
   const [isSendingInvitations, setIsSendingInvitations] = useState(false);
   const [lastInvitationSent, setLastInvitationSent] = useState<Date | null>(null);
+  // Track the last set of invitation links
+  const [invitationLinks, setInvitationLinks] = useState<string[]>([]);
 
   const handleSendInvitations = async (memberIds: string[]) => {
     if (!teamId || memberIds.length === 0) {
@@ -24,18 +26,21 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
 
       if (sent && signupLinks.length > 0) {
         setLastInvitationSent(new Date());
+        setInvitationLinks(signupLinks);
 
         // Show signup links in a nice toast
         toast.success("Invitation(s) ready!", {
           id: "send-invitations",
-          description: "Share the link(s) below with your invitees:",
+          description: `${signupLinks.length} invitation(s) created successfully`,
           action: {
             label: "View Links",
             onClick: () => {
-              // For each link, show a dedicated toast with copy button
+              // Show a dedicated toast for each link with a copy button
               signupLinks.forEach((link, index) => {
                 toast.info(`Invitation link #${index + 1}`, {
-                  description: link,
+                  description: (
+                    <div className="break-all text-xs">{link}</div>
+                  ),
                   action: {
                     label: "Copy",
                     onClick: () => {
@@ -43,12 +48,12 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
                       toast.success("Link copied to clipboard");
                     }
                   },
-                  duration: 15000,
+                  duration: 30000, // Keep it visible for longer
                 });
               });
             }
           },
-          duration: 8000,
+          duration: 15000, // Show for longer to give user time to click
         });
       } else {
         toast.error("No invitations were created", {
@@ -94,6 +99,7 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
   return {
     isSendingInvitations,
     lastInvitationSent,
+    invitationLinks,
     handleSendInvitations,
     handleRemoveMember,
   };
