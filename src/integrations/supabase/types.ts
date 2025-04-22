@@ -442,6 +442,22 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: boolean
       }
+      delete_team_game_data: {
+        Args: { team_id_param: string }
+        Returns: undefined
+      }
+      delete_team_members: {
+        Args: { team_id_param: string }
+        Returns: undefined
+      }
+      delete_team_player_stats: {
+        Args: { team_id_param: string }
+        Returns: undefined
+      }
+      delete_team_relationships: {
+        Args: { team_id_param: string }
+        Returns: undefined
+      }
       get_game_events: {
         Args: { p_game_id: string }
         Returns: {

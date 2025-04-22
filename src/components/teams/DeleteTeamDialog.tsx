@@ -13,7 +13,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import { deleteTeamAndAllData } from "@/services/teams/teamDeletion";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface DeleteTeamDialogProps {
@@ -24,54 +23,36 @@ interface DeleteTeamDialogProps {
 export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const navigate = useNavigate();
 
   const handleDelete = async () => {
-    if (isDeleting) return; // Prevent multiple clicks
-    
+    if (isDeleting) return;
+    setIsDeleting(true);
+
+    // Prevent double-close or repeated activation
+    toast.loading(`Deleting team "${teamName}"...`, {
+      id: "team-delete-toast",
+      duration: Infinity
+    });
+
     try {
-      // Update state to show loading
-      setIsDeleting(true);
-      
-      // Show loading toast
-      toast.loading(`Deleting team "${teamName}"...`, {
-        id: "team-delete-toast",
-        duration: Infinity // Keep showing until we dismiss it
-      });
-      
-      console.log(`Starting deletion of team ${teamId} (${teamName})`);
-      
-      // Call the deletion service
       const success = await deleteTeamAndAllData(teamId);
-      
-      // Handle the result
+      toast.dismiss("team-delete-toast");
       if (success) {
-        // Dismiss loading toast and show success
-        toast.dismiss("team-delete-toast");
         toast.success(`Team "${teamName}" has been deleted`, {
           duration: 5000
         });
-        
-        // Close dialog and navigate away
         setOpen(false);
-        
-        // Use setTimeout to ensure dialog animation completes before navigation
         setTimeout(() => {
-          // Force a full page reload to ensure all state is cleared
           window.location.href = "/teams";
-        }, 300);
+        }, 400);
       } else {
-        // Show error toast
-        toast.dismiss("team-delete-toast");
         toast.error("Failed to delete team. Please try again.", {
           duration: 5000
         });
         setIsDeleting(false);
       }
     } catch (error) {
-      console.error("Error in team deletion:", error);
-      
-      // Show error toast
+      console.error("Error deleting team:", error);
       toast.dismiss("team-delete-toast");
       toast.error("An unexpected error occurred", {
         duration: 5000
@@ -82,18 +63,19 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
 
   return (
     <>
-      <Button 
-        variant="destructive" 
-        size="sm" 
+      <Button
+        variant="destructive"
+        size="sm"
         className="gap-2"
         onClick={() => setOpen(true)}
         disabled={isDeleting}
+        aria-disabled={isDeleting}
       >
         <Trash2 className="h-4 w-4" /> Delete Team
       </Button>
 
       <AlertDialog open={open} onOpenChange={(isOpen) => {
-        // Only allow closing if we're not in the middle of deletion
+        // Prevent closing dialog mid-delete
         if (!isDeleting) setOpen(isOpen);
       }}>
         <AlertDialogContent>
@@ -112,13 +94,16 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} aria-disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDelete();
               }}
               disabled={isDeleting}
+              aria-disabled={isDeleting}
               className="bg-destructive hover:bg-destructive/90 gap-2"
             >
               {isDeleting ? (
@@ -127,9 +112,7 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
                   Deleting...
                 </>
               ) : (
-                <>
-                  Yes, Delete Everything
-                </>
+                <>Yes, Delete Everything</>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
