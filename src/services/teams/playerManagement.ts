@@ -143,7 +143,11 @@ export const updatePlayerInfo = async (
 
 /**
  * Function to send batch invitations to team members
+ * @returns An object with sent status and array of signup links
  */
-export const sendTeamInvitations = async (teamId: string, memberIds: string[]): Promise<boolean> => {
+export const sendTeamInvitations = async (teamId: string, memberIds: string[]): Promise<{
+  sent: boolean;
+  signupLinks: string[];
+}> => {
   return await sendInvitations(teamId, memberIds);
 };
