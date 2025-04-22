@@ -99,84 +99,40 @@ export function useInvitationForm() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setValidating(true);
     try {
+      let teamMemberId: string | null = null;
+      
+      // For mock invitations, get team ID from the invitation ID
+      let teamId = null;
       if (invitationId?.startsWith('mock-')) {
-        console.log("Creating demo account with email:", values.email);
-        
-        // For mock invitations, create a user account directly via our edge function
-        // This bypasses email confirmation
-        const { data: authData, error: authError } = await supabase.functions.invoke('create-demo-user', {
-          body: {
-            email: values.email,
-            password: values.password,
-            name: values.name
-          }
-        });
-
-        if (authError) {
-          console.error("Error creating demo account:", authError);
-          throw new Error(authError.message);
-        }
-        
-        if (authData?.error) {
-          console.error("Error returned from create-demo-user:", authData.error);
-          throw new Error(authData.error);
-        }
-        
-        if (!authData?.user && !authData?.alreadyExists) {
-          console.error("No user data returned from create-demo-user");
-          throw new Error("Failed to create user account");
-        }
-        
-        // User has been created and auto-confirmed by the edge function
-        const userId = authData.user?.id;
-        console.log("Demo user created or found with ID:", userId);
-        
-        // Parse team ID from mock invitation ID
-        const teamId = invitationId.split('-')[1];
-        
-        // Associate user with team
-        if (teamId) {
-          const { error: teamMemberError } = await supabase
-            .from("team_members")
-            .insert({
-              team_id: teamId,
-              user_id: userId,
-              name: values.name,
-              email: values.email,
-              role: "player"
-            });
-            
-          if (teamMemberError) {
-            console.error("Error adding team member:", teamMemberError);
-          }
-        }
-        
-        toast.success(authData.alreadyExists ? "Account found! Signing you in..." : "Demo account created successfully!");
-        
-        // Now sign in with the newly created account
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password
-        });
-        
-        if (signInError) {
-          console.error("Error signing in:", signInError);
-          throw new Error("Account created but couldn't sign in automatically: " + signInError.message);
-        }
-        
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
-        return;
+        teamId = invitationId.split('-')[1];
+      } else if (invitation?.team_id) {
+        teamId = invitation.team_id;
       }
       
-      // Normal flow for actual invitations
-      // Use our edge function here too to ensure email confirmation is bypassed
+      // If we have a teamId, check if a team member with this email already exists
+      if (teamId) {
+        console.log("Looking for existing team member with email:", values.email);
+        const { data: existingMember } = await supabase
+          .from("team_members")
+          .select("id")
+          .eq("team_id", teamId)
+          .eq("email", values.email)
+          .maybeSingle();
+          
+        if (existingMember?.id) {
+          console.log("Found existing team member:", existingMember.id);
+          teamMemberId = existingMember.id;
+        }
+      }
+      
+      // Create the user account with our edge function
+      console.log("Creating user account with edge function");
       const { data: authData, error: authError } = await supabase.functions.invoke('create-demo-user', {
         body: {
           email: values.email,
           password: values.password,
-          name: values.name
+          name: values.name,
+          teamMemberId: teamMemberId // Pass the team member ID if we found one
         }
       });
 
@@ -194,29 +150,40 @@ export function useInvitationForm() {
       if (!userId && !authData?.alreadyExists) {
         throw new Error("Failed to create user account");
       }
+      
+      // Handle normal invitations
+      if (!invitationId?.startsWith('mock-')) {
+        // Mark the invitation as accepted
+        const { error: acceptError } = await supabase
+          .from("invitations")
+          .update({
+            status: "accepted",
+            accepted_at: new Date().toISOString(),
+            user_id: userId
+          })
+          .eq("id", invitationId);
 
-      // Update team member with the new user ID
-      const { error: updateError } = await supabase
-        .from("team_members")
-        .update({ user_id: userId })
-        .eq("email", values.email);
-
-      if (updateError) {
-        console.error("Error updating team members:", updateError);
+        if (acceptError) {
+          console.error("Error accepting invitation:", acceptError);
+        }
       }
-
-      // Mark the invitation as accepted
-      const { error: acceptError } = await supabase
-        .from("invitations")
-        .update({
-          status: "accepted",
-          accepted_at: new Date().toISOString(),
-          user_id: userId
-        })
-        .eq("id", invitationId);
-
-      if (acceptError) {
-        console.error("Error accepting invitation:", acceptError);
+      
+      // If we have a team ID but no existing member, create a new team member
+      if (teamId && !teamMemberId && userId) {
+        console.log(`Creating new team member for user ${userId} in team ${teamId}`);
+        const { error: teamMemberError } = await supabase
+          .from("team_members")
+          .insert({
+            team_id: teamId,
+            user_id: userId,
+            name: values.name,
+            email: values.email,
+            role: invitation?.role || "player"
+          });
+          
+        if (teamMemberError) {
+          console.error("Error creating team member:", teamMemberError);
+        }
       }
 
       toast.success("You've successfully joined the team!");

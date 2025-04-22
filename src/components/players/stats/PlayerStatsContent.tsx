@@ -1,4 +1,3 @@
-
 import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,13 +25,11 @@ function filterGameStats(
   });
 }
 
-// Group stats by type for better display
 function aggregateGameStats(stats: GameStat[]): PlayerStat[] {
   if (!stats || stats.length === 0) return [];
   
   const statsByType = new Map<string, { value: number, gameIds: Set<string> }>();
   
-  // First pass: group by stat type
   stats.forEach(stat => {
     const key = stat.statType;
     if (!statsByType.has(key)) {
@@ -43,13 +40,12 @@ function aggregateGameStats(stats: GameStat[]): PlayerStat[] {
     existing.gameIds.add(stat.gameId);
   });
   
-  // Convert to array of PlayerStat objects
   return Array.from(statsByType.entries()).map(([statType, data]) => ({
-    playerId: stats[0].playerId, // All stats are for the same player
+    playerId: stats[0].playerId,
     statType: statType as any,
     value: data.value,
     gamesPlayed: data.gameIds.size,
-    playerName: 'Player' // Will be set by SortableStatsTable
+    playerName: 'Player'
   }));
 }
 
@@ -82,13 +78,11 @@ export default function PlayerStatsContent({
   const [isFixingUser, setIsFixingUser] = useState(false);
 
   useEffect(() => {
-    // Reset filters when player data changes
     setGameId("all");
     setPeriod("all");
     setStatType("all");
   }, [playerId, player?.id]);
 
-  // Process games data for the filter dropdown
   const games = useMemo(
     () => {
       const gamesMap = new Map();
@@ -105,12 +99,10 @@ export default function PlayerStatsContent({
     [rawGameStats, teamGames]
   );
 
-  // Filter raw game stats based on selected filters
   const filteredRawStats = useMemo(() => 
     filterGameStats(rawGameStats, { gameId, period, statType }),
   [rawGameStats, gameId, period, statType]);
   
-  // Aggregate filtered stats for display
   const aggregatedStats = useMemo(() => 
     aggregateGameStats(filteredRawStats),
   [filteredRawStats]);
@@ -141,7 +133,6 @@ export default function PlayerStatsContent({
     }
   };
 
-  // Function to manually fix user ID association if needed
   const handleFixUserAssociation = async () => {
     if (!playerId) {
       toast.error("Cannot fix user association without valid player data");
@@ -152,7 +143,6 @@ export default function PlayerStatsContent({
     try {
       toast.info("Checking user ID association...");
       
-      // First check the current state
       const checkResult = await checkPlayerUserAssociation();
       if (!checkResult.valid) {
         toast.error("Cannot retrieve player data");
@@ -160,25 +150,6 @@ export default function PlayerStatsContent({
         return;
       }
       
-      if (checkResult.userId) {
-        // Verify if user exists
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('id, name, email')
-          .eq('id', checkResult.userId)
-          .single();
-          
-        if (existingUser) {
-          toast.success("User association already valid", { 
-            description: `Player is already linked to user ${existingUser.name || existingUser.email}`
-          });
-          setIsFixingUser(false);
-          return;
-        }
-        // User ID exists in team_members but not in users table - need to fix
-      }
-      
-      // Try to find existing user with player's email
       if (checkResult.email) {
         const { data: emailUser } = await supabase
           .from('users')
@@ -187,7 +158,6 @@ export default function PlayerStatsContent({
           .single();
           
         if (emailUser) {
-          // Update team_member with this user_id
           const { error: updateError } = await supabase
             .from('team_members')
             .update({ user_id: emailUser.id })
@@ -209,18 +179,58 @@ export default function PlayerStatsContent({
           setIsFixingUser(false);
           return;
         }
+        
+        try {
+          toast.info("Creating new user account...");
+          const { data, error } = await supabase.functions.invoke('create-demo-user', {
+            body: {
+              email: checkResult.email,
+              password: "password123",
+              name: checkResult.name || "Player",
+              teamMemberId: playerId
+            }
+          });
+          
+          if (error) {
+            console.error("Error creating user:", error);
+            toast.error("Failed to create user account");
+            setIsFixingUser(false);
+            return;
+          }
+          
+          if (data.error) {
+            console.error("Error returned from function:", data.error);
+            toast.error(data.error);
+            setIsFixingUser(false);
+            return;
+          }
+          
+          toast.success("Created new user account and linked to player", {
+            description: "The player can now log in with the provided email"
+          });
+          
+          setTimeout(() => {
+            onRefresh();
+          }, 1000);
+          setIsFixingUser(false);
+          return;
+        } catch (err) {
+          console.error("Error invoking edge function:", err);
+          toast.error("Error creating user account");
+          setIsFixingUser(false);
+          return;
+        }
       }
       
-      // Need to create new user
       const newUserId = crypto.randomUUID();
+      const generatedEmail = `player_${newUserId.substring(0, 8)}@example.com`;
       
-      // Create user in users table
       const { error: createError } = await supabase
         .from('users')
         .insert({
           id: newUserId,
           name: checkResult.name || 'Player',
-          email: checkResult.email || `player_${newUserId.substring(0, 8)}@example.com`
+          email: generatedEmail
         });
         
       if (createError) {
@@ -230,10 +240,12 @@ export default function PlayerStatsContent({
         return;
       }
       
-      // Update team member
       const { error: updateError } = await supabase
         .from('team_members')
-        .update({ user_id: newUserId })
+        .update({ 
+          user_id: newUserId,
+          email: generatedEmail
+        })
         .eq('id', playerId);
         
       if (updateError) {
@@ -290,23 +302,20 @@ export default function PlayerStatsContent({
               players={player ? [player] : []}
               games={games}
               onFilter={() => {
-                // All logic handled by local state
               }}
-              // Use controlled props for the filter
               gameId={gameId}
               onGameIdChange={setGameId}
               period={period}
               onPeriodChange={setPeriod}
               statType={statType}
               onStatTypeChange={setStatType}
-              hidePlayerFilter={true} // Hide player filter as this is a single player view
+              hidePlayerFilter={true}
             />
           </div>
         ) : displayNoStats()}
 
         {filteredRawStats && filteredRawStats.length > 0 ? (
           <>
-            {/* Display aggregated stats (grouped by stat type) */}
             <div className="mb-4">
               <h3 className="text-lg font-medium mb-2">Aggregated Stats</h3>
               <SortableStatsTable
@@ -315,7 +324,6 @@ export default function PlayerStatsContent({
               />
             </div>
             
-            {/* Display individual game stats */}
             <div>
               <h3 className="text-lg font-medium mb-2">Individual Game Stats</h3>
               <SortableStatsTable

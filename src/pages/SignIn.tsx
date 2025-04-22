@@ -59,12 +59,22 @@ export default function SignIn() {
     setError(null);
     
     try {
+      // First check if there's a team member with this email that we can link to
+      const { data: teamMemberData } = await supabase
+        .from("team_members")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      
+      const teamMemberId = teamMemberData?.id || null;
+      
       // Call the edge function to create a demo user with pre-confirmed email
       const { data, error } = await supabase.functions.invoke('create-demo-user', {
         body: {
           email,
           password,
-          name: demoName
+          name: demoName,
+          teamMemberId
         }
       });
       
@@ -84,6 +94,20 @@ export default function SignIn() {
         toast.info("Account already exists. Signing you in...");
       } else {
         toast.success("Demo account created successfully! Signing you in...");
+        
+        // If we found a team member but there was no user_id set, link them now
+        if (teamMemberId && !data.alreadyExists && data.user?.id) {
+          const { error: linkError } = await supabase
+            .from("team_members")
+            .update({ user_id: data.user.id })
+            .eq("id", teamMemberId);
+            
+          if (linkError) {
+            console.error("Error linking user to team member:", linkError);
+          } else {
+            toast.success("Your account has been linked to your player profile!");
+          }
+        }
       }
       
       // Sign in with the account credentials

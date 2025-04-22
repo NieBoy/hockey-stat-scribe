@@ -11,6 +11,7 @@ interface CreateDemoUserRequest {
   email: string;
   password: string;
   name: string;
+  teamMemberId?: string; // Optional team member ID to link
 }
 
 serve(async (req) => {
@@ -21,7 +22,6 @@ serve(async (req) => {
 
   try {
     // Create a Supabase client with the service role key
-    // This allows us to bypass RLS and perform admin actions
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -33,7 +33,7 @@ serve(async (req) => {
       }
     );
 
-    const { email, password, name }: CreateDemoUserRequest = await req.json();
+    const { email, password, name, teamMemberId }: CreateDemoUserRequest = await req.json();
 
     // Validate required fields
     if (!email || !password || !name) {
@@ -48,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Creating demo user: ${email}`);
+    console.log(`Creating or finding user account: ${email}`);
 
     // First check if the user already exists
     const { data: existingUser, error: lookupError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
@@ -113,75 +113,82 @@ serve(async (req) => {
           console.error("Error adding user role for existing user:", roleError);
         }
       }
+    } else {
+      // Create a new user if they don't exist
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // This explicitly confirms the email
+        user_metadata: { name },
+      });
 
-      // Return success with the existing user
-      return new Response(
-        JSON.stringify({
-          user: existingUser,
-          message: "User already exists and can be used to sign in",
-          alreadyExists: true,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Create a new user if they don't exist
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // This explicitly confirms the email
-      user_metadata: { name },
-    });
-
-    if (error) {
-      console.error("Error creating user:", error);
-      return new Response(
-        JSON.stringify({
-          error: error.message,
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // If user created successfully, also create a user profile
-    if (data.user) {
-      userId = data.user.id;
-      
-      const { error: profileError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          id: data.user.id,
-          name: name,
-          email: email,
-        });
-
-      if (profileError) {
-        console.error("Error creating user profile:", profileError);
+      if (error) {
+        console.error("Error creating user:", error);
+        return new Response(
+          JSON.stringify({
+            error: error.message,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
-      // Add default user role
-      const { error: roleError } = await supabaseAdmin
-        .from("user_roles")
-        .insert({
-          user_id: data.user.id,
-          role: "player",
-        });
+      // If user created successfully, also create a user profile
+      if (data.user) {
+        userId = data.user.id;
+        
+        const { error: profileError } = await supabaseAdmin
+          .from("users")
+          .insert({
+            id: data.user.id,
+            name: name,
+            email: email,
+          });
 
-      if (roleError) {
-        console.error("Error adding user role:", roleError);
+        if (profileError) {
+          console.error("Error creating user profile:", profileError);
+        }
+
+        // Add default user role
+        const { error: roleError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({
+            user_id: data.user.id,
+            role: "player",
+          });
+
+        if (roleError) {
+          console.error("Error adding user role:", roleError);
+        }
+      }
+    }
+
+    // If a team member ID was provided, link this user to the team member
+    if (teamMemberId && userId) {
+      console.log(`Linking user ${userId} to team member ${teamMemberId}`);
+      
+      const { error: linkError } = await supabaseAdmin
+        .from("team_members")
+        .update({ user_id: userId })
+        .eq("id", teamMemberId);
+        
+      if (linkError) {
+        console.error("Error linking user to team member:", linkError);
+        // We don't fail the entire request if this fails - the user is still created
+      } else {
+        console.log(`Successfully linked user ${userId} to team member ${teamMemberId}`);
       }
     }
 
     return new Response(
       JSON.stringify({
-        user: data.user,
-        message: "Demo user created successfully with email pre-confirmed",
+        user: existingUser || (userId ? { id: userId } : null),
+        message: existingUser 
+          ? "User already exists and can be used to sign in" 
+          : "Demo user created successfully with email pre-confirmed",
+        alreadyExists: !!existingUser,
       }),
       {
         status: 200,

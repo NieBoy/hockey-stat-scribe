@@ -1,9 +1,9 @@
 
 -- Create function to record a game stat (bypasses RLS)
--- This will be used by the recordPlusMinusStats function
+-- This handles recording stats directly for team members
 CREATE OR REPLACE FUNCTION public.record_game_stat(
   p_game_id UUID,
-  p_player_id UUID,
+  p_player_id UUID,  -- This is now the team_member.id
   p_stat_type TEXT,
   p_period INTEGER,
   p_value INTEGER,
@@ -20,7 +20,7 @@ DECLARE
 BEGIN
   INSERT INTO public.game_stats (
     game_id,
-    player_id,
+    player_id,   -- This directly stores the team_member.id
     stat_type,
     period,
     value,
