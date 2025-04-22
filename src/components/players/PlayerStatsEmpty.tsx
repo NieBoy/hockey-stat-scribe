@@ -13,13 +13,17 @@ interface PlayerStatsEmptyProps {
   playerGameEvents: any[] | undefined;
   onRefresh: () => void;
   playerId: string;
+  hasRawGameStats?: boolean;
+  hasGameEvents?: boolean;
 }
 
 export default function PlayerStatsEmpty({ 
   gameStatsDebug, 
   playerGameEvents,
   onRefresh,
-  playerId
+  playerId,
+  hasRawGameStats = false,
+  hasGameEvents = false
 }: PlayerStatsEmptyProps) {
   const [isPlayerValid, setIsPlayerValid] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
@@ -90,13 +94,6 @@ export default function PlayerStatsEmpty({
     if (!isPlayerValid) {
       toast.error("Cannot calculate stats", { 
         description: "The player ID is not valid in the database. This is likely a data consistency issue."
-      });
-      return;
-    }
-
-    if (!hasValidUserId) {
-      toast.error("Cannot calculate stats", {
-        description: "The player does not have a valid user_id in the team_members table."
       });
       return;
     }
@@ -189,6 +186,9 @@ export default function PlayerStatsEmpty({
       playerGameEvents={playerGameEvents}
       isPlayerValid={isPlayerValid}
       hasValidUserId={hasValidUserId}
+      playerId={playerId}
+      hasRawGameStats={hasRawGameStats}
+      hasGameEvents={hasGameEvents}
     />
   );
 }

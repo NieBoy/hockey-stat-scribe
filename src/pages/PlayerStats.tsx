@@ -110,6 +110,10 @@ export default function PlayerStats() {
     );
   }
 
+  // Calculate these flags here to pass down the component tree
+  const hasGameEvents = playerGameEvents && playerGameEvents.length > 0;
+  const hasRawGameStats = rawGameStats && rawGameStats.length > 0;
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -130,7 +134,10 @@ export default function PlayerStats() {
           rawGameStats={rawGameStats || []}
           playerGameEvents={playerGameEvents || []}
           onRefresh={handleRefreshStats}
+          isRefreshing={isRefreshing}
           playerId={id || ''}
+          hasRawGameStats={hasRawGameStats}
+          hasGameEvents={hasGameEvents}
         />
       </div>
     </MainLayout>

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Mail, Info, FileSearch, Database } from "lucide-react";
 import { useState } from "react";
@@ -22,8 +23,8 @@ export default function EmptyStatsContent({
   isPlayerValid,
   hasValidUserId,
   playerId,
-  hasRawGameStats,
-  hasGameEvents
+  hasRawGameStats = false,
+  hasGameEvents = false
 }: EmptyStatsContentProps) {
   const [showDebugTips, setShowDebugTips] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
