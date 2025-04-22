@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase"; // Use the main supabase client
 import { Label } from "@/components/ui/label";
 
 interface NewOpponentGameDialogProps {
@@ -19,7 +19,7 @@ interface NewOpponentGameDialogProps {
   setOpen: (b: boolean) => void;
   teamId: string;
   teamName: string;
-  onGameAdded?: () => void; // new callback
+  onGameAdded?: () => void; // callback
 }
 
 export default function NewOpponentGameDialog({
@@ -60,33 +60,38 @@ export default function NewOpponentGameDialog({
         location
       });
 
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from("games")
         .insert({
           date: isoDate,
           location,
           home_team_id: teamId,
-          away_team_id: null, // important to explicitly provide null
+          away_team_id: null, // explicitly set to null for opponent games
           opponent_name: opponentName,
           periods: 3,
           is_active: false,
           current_period: 0
         });
+        
       if (error) {
         console.error("Supabase insert error:", error);
         toast.error("Error scheduling game: " + (error.message || "Unknown error"));
         return;
       }
+      
       toast.success("Game scheduled successfully!");
       setOpen(false); // close the dialog
+      
+      // Reset form state
       setOpponentName("");
       setLocation("");
       setDate("");
 
-      // Inform parent to refresh the schedule!
-      if (onGameAdded) onGameAdded();
-
-      console.log("Successfully added opponent game", data);
+      // Call the callback to refresh the schedule
+      if (onGameAdded) {
+        console.log("Calling onGameAdded callback to refresh schedule");
+        onGameAdded();
+      }
     } catch (err) {
       console.error("Error scheduling game:", err);
       toast.error("Error scheduling game");

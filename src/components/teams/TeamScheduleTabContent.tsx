@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Table, TableHead, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import NewOpponentGameDialog from "./NewOpponentGameDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase"; // Use the main supabase client
 import { Team } from "@/types";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface TeamScheduleTabContentProps {
   team: Team;
@@ -22,12 +24,14 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
   const [games, setGames] = useState<GameScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch games for this team
-  async function fetchGames() {
+  const fetchGames = useCallback(async () => {
     setLoading(true);
 
     try {
+      console.log("Fetching games for team", team.id);
       // Query games where team is home or away and include opponent_name
       let { data, error } = await supabase
         .from('games')
@@ -43,6 +47,7 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
 
       if (error) {
         console.error("Error fetching games:", error);
+        toast.error("Failed to load schedule");
         setGames([]);
         setLoading(false);
         return;
@@ -70,23 +75,26 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
         };
       });
 
+      console.log("Fetched games:", asSchedule.length);
       setGames(asSchedule);
     } catch (error) {
       console.error("Unexpected error fetching games:", error);
+      toast.error("Failed to load schedule");
       setGames([]);
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchGames();
-    // eslint-disable-next-line
   }, [team.id]);
 
-  // Callback after a new game is added!
-  const handleGameAdded = () => {
+  // Initial load
+  useEffect(() => {
     fetchGames();
+  }, [fetchGames, refreshKey]);
+
+  // Callback after a new game is added
+  const handleGameAdded = () => {
+    console.log("Game added, refreshing schedule...");
+    setRefreshKey(prev => prev + 1); // Trigger a refresh
   };
 
   return (
