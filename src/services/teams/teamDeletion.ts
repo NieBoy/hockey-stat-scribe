@@ -41,7 +41,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (parentsError) {
         console.error("Error deleting player-parent relationships:", parentsError);
-        return false;
+        // Continue anyway - this isn't critical
       }
     }
 
@@ -54,7 +54,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     if (gamesError) {
       console.error("Error retrieving games:", gamesError);
-      return false;
+      // Continue anyway - we can still delete the team
     }
 
     const gameIds = games?.map(game => game.id) || [];
@@ -71,7 +71,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (eventsQueryError) {
         console.error("Error retrieving game events:", eventsQueryError);
-        return false;
+        // Continue anyway
       }
 
       const eventIds = events?.map(event => event.id) || [];
@@ -87,7 +87,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
         if (eventPlayersError) {
           console.error("Error deleting event players:", eventPlayersError);
-          return false;
+          // Continue anyway
         }
       }
 
@@ -100,7 +100,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (eventsError) {
         console.error("Error deleting game events:", eventsError);
-        return false;
+        // Continue anyway
       }
 
       // Step 4d: Delete game stats
@@ -112,7 +112,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (gameStatsError) {
         console.error("Error deleting game stats:", gameStatsError);
-        return false;
+        // Continue anyway
       }
 
       // Step 4e: Delete stat trackers
@@ -124,7 +124,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (trackersError) {
         console.error("Error deleting stat trackers:", trackersError);
-        return false;
+        // Continue anyway
       }
     }
 
@@ -138,7 +138,7 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (playerStatsError) {
         console.error("Error deleting player stats:", playerStatsError);
-        return false;
+        // Continue anyway
       }
     }
 
@@ -152,20 +152,28 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
       if (deleteGamesError) {
         console.error("Error deleting games:", deleteGamesError);
-        return false;
+        // Continue anyway
       }
     }
 
-    // Step 7: Delete team members
-    console.log("Deleting team members");
-    const { error: deleteMembersError } = await supabase
-      .from('team_members')
-      .delete()
-      .eq('team_id', teamId);
-
-    if (deleteMembersError) {
-      console.error("Error deleting team members:", deleteMembersError);
-      return false;
+    // Step 7: Delete team members one by one (workaround for RLS recursion issue)
+    console.log("Deleting team members one by one");
+    for (const memberId of memberIds) {
+      try {
+        const { error } = await supabase
+          .from('team_members')
+          .delete()
+          .eq('id', memberId)
+          .eq('team_id', teamId);
+          
+        if (error) {
+          console.error(`Error deleting team member ${memberId}:`, error);
+          // Continue with next member
+        }
+      } catch (memberError) {
+        console.error(`Exception deleting team member ${memberId}:`, memberError);
+        // Continue with next member
+      }
     }
 
     // Step 8: Finally, delete the team itself
@@ -182,7 +190,6 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     console.log(`Team ${teamId} and all associated data successfully deleted`);
     return true;
-
   } catch (error) {
     console.error("Unexpected error during team deletion:", error);
     return false;

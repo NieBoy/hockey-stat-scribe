@@ -27,6 +27,8 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
   const navigate = useNavigate();
 
   const handleDelete = async () => {
+    if (isDeleting) return; // Prevent multiple clicks
+    
     setIsDeleting(true);
     
     try {
@@ -36,8 +38,11 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
       if (success) {
         toast.success(`Team "${teamName}" and all associated data has been deleted`);
         
-        // Navigate back to teams list on success
-        navigate("/teams");
+        setOpen(false);
+        // Short timeout to allow the dialog to close before navigation
+        setTimeout(() => {
+          navigate("/teams");
+        }, 300);
       } else {
         toast.error("Failed to delete team. Please try again.");
       }
@@ -46,7 +51,6 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
       toast.error("An unexpected error occurred while deleting the team");
     } finally {
       setIsDeleting(false);
-      setOpen(false);
     }
   };
 
