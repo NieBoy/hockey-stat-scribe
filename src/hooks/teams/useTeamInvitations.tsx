@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendTeamInvitations, deleteTeamMember } from "@/services/teams";
@@ -26,36 +25,17 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
       
       console.log("Invitation response:", { sent, signupLinks });
 
-      if (sent && signupLinks.length > 0) {
-        setLastInvitationSent(new Date());
-        setInvitationLinks(signupLinks);
+      // Always update the invitation links, even if the server says none were sent
+      // This helps with debugging and ensures UI state is consistent
+      setLastInvitationSent(new Date());
+      setInvitationLinks(signupLinks || []);
 
-        // Show signup links in a nice toast
-        toast.success("Invitation(s) ready!", {
+      if (signupLinks && signupLinks.length > 0) {
+        // Show success message without links in toast description
+        toast.success("Invitation links ready!", {
           id: "send-invitations",
-          description: `${signupLinks.length} invitation(s) created successfully`,
-          action: {
-            label: "View Links",
-            onClick: () => {
-              // Show a dedicated toast for each link with a copy button
-              signupLinks.forEach((link, index) => {
-                toast.info(`Invitation link #${index + 1}`, {
-                  description: (
-                    <div className="break-all text-xs">{link}</div>
-                  ),
-                  action: {
-                    label: "Copy",
-                    onClick: () => {
-                      navigator.clipboard.writeText(link);
-                      toast.success("Link copied to clipboard");
-                    }
-                  },
-                  duration: 30000, // Keep it visible for longer
-                });
-              });
-            }
-          },
-          duration: 15000, // Show for longer to give user time to click
+          description: "Invitation links have been generated and are displayed below.",
+          duration: 8000,
         });
       } else {
         toast.error("No invitations were created", {

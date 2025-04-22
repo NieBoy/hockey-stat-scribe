@@ -61,7 +61,10 @@ const TeamMembersTable = ({
     if (lastInvitationSent) {
       setLocalLastSent(lastInvitationSent);
     }
+    
+    // Always update links when they change
     if (invitationLinks && invitationLinks.length > 0) {
+      console.log("Updating invitation links in TeamMembersTable:", invitationLinks);
       setLastLinks(invitationLinks);
     }
   }, [lastInvitationSent, invitationLinks]);
@@ -97,19 +100,22 @@ const TeamMembersTable = ({
   
   // Use the prop value if provided, otherwise use local state
   const effectiveLastSent = lastInvitationSent || localLastSent;
+  
+  // Calculate which links to display
+  const linksToDisplay = invitationLinks?.length ? invitationLinks : lastLinks;
 
   // Function to display links in the UI for manual copying
-  const showLastInvitationLinks = () => {
-    if (lastLinks.length === 0) return null;
+  const showInvitationLinks = () => {
+    if (!linksToDisplay || linksToDisplay.length === 0) return null;
     
     return (
       <div className="mt-4 p-4 border rounded-md bg-muted/20">
         <h3 className="font-medium mb-2 flex items-center gap-2">
           <Link2 className="h-4 w-4" /> 
-          Latest Invitation Links
+          Invitation Links
         </h3>
         <div className="space-y-2">
-          {lastLinks.map((link, idx) => (
+          {linksToDisplay.map((link, idx) => (
             <div key={idx} className="flex items-center gap-2 text-sm">
               <div className="truncate flex-1 bg-background p-2 rounded border text-xs">
                 {link}
@@ -162,16 +168,18 @@ const TeamMembersTable = ({
         </div>
       )}
 
-      {/* Show invitation links if available */}
-      {showLastInvitationLinks()}
+      {/* Always show invitation links if available */}
+      {showInvitationLinks()}
 
       {/* Instruction for users */}
-      <div className="mt-2 text-sm text-muted-foreground">
-        <p>
-          After sending invitations, click "View Links" in the notification that appears.
-          You can then copy the invitation links to share with your team members.
-        </p>
-      </div>
+      {!linksToDisplay?.length && (
+        <div className="mt-2 text-sm text-muted-foreground">
+          <p>
+            Select team members and click "Send Invitations" to generate invitation links.
+            The invitation links will appear here after sending.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
