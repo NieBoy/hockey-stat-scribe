@@ -47,17 +47,18 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         });
         setOpen(false);
         
-        // Invalidate React Query cache for teams
-        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        // Completely remove the teams data from the cache
+        queryClient.removeQueries({ queryKey: ['teams'] });
+        queryClient.removeQueries({ queryKey: ['team', teamId] });
         
-        // Force navigation to teams page with a refresh to ensure state is updated
+        // Wait a moment to ensure any database replication is complete
         setTimeout(() => {
-          // Navigate to teams page and replace current history entry
+          // First navigate away
           navigate("/teams", { replace: true });
           
-          // Force a page reload to ensure all states are refreshed
-          window.location.reload();
-        }, 400);
+          // Then force a complete reload
+          window.location.href = "/teams";
+        }, 500);
       } else {
         toast.error("Failed to delete team. Please try again.", {
           duration: 5000
