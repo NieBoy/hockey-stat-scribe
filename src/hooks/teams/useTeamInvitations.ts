@@ -23,6 +23,8 @@ export function useTeamInvitations(teamId: string, refetchTeam?: () => void) {
 
       await ensureInvitationsTableExists();
       const { sent, signupLinks } = await sendTeamInvitations(teamId, memberIds);
+      
+      console.log("Invitation response:", { sent, signupLinks });
 
       if (sent && signupLinks.length > 0) {
         setLastInvitationSent(new Date());

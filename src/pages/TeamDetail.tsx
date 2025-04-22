@@ -44,7 +44,8 @@ function TeamDetailContent({ id, navigate }: { id: string, navigate: ReturnType<
     handleTeamUpdate,
     handleRefreshLineup,
     isSendingInvitations,
-    lastInvitationSent
+    lastInvitationSent,
+    invitationLinks
   } = useTeamData(id);
 
   const handleEditLineupClick = () => {
@@ -104,6 +105,8 @@ function TeamDetailContent({ id, navigate }: { id: string, navigate: ReturnType<
           handleSendInvitations={handleTeamInvitations}
           handleRemoveMember={handleRemoveMember}
           isSendingInvitations={isSendingInvitations}
+          lastInvitationSent={lastInvitationSent}
+          invitationLinks={invitationLinks}
         />
       </div>
 

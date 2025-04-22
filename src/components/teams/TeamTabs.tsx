@@ -16,6 +16,8 @@ interface TeamTabsProps {
   handleSendInvitations: (memberIds: string[]) => void;
   handleRemoveMember: (member: User) => void;
   isSendingInvitations?: boolean;
+  lastInvitationSent?: Date | null;
+  invitationLinks?: string[];
 }
 
 const TeamTabs = ({
@@ -27,7 +29,9 @@ const TeamTabs = ({
   handleTeamUpdate,
   handleSendInvitations,
   handleRemoveMember,
-  isSendingInvitations
+  isSendingInvitations,
+  lastInvitationSent,
+  invitationLinks
 }: TeamTabsProps) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -59,6 +63,8 @@ const TeamTabs = ({
           onSendInvitations={handleSendInvitations}
           onRemoveMember={handleRemoveMember}
           isSendingInvitations={isSendingInvitations}
+          lastInvitationSent={lastInvitationSent}
+          invitationLinks={invitationLinks}
         />
       </TabsContent>
       

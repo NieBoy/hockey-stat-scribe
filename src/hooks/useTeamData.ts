@@ -46,6 +46,7 @@ export function useTeamData(teamId: string) {
   const {
     isSendingInvitations,
     lastInvitationSent,
+    invitationLinks,
     handleSendInvitations,
     handleRemoveMember,
   } = useTeamInvitations(teamId, refetchTeam);
@@ -123,6 +124,7 @@ export function useTeamData(teamId: string) {
     handleRemoveMember,
     isSendingInvitations,
     lastInvitationSent,
+    invitationLinks,
     
     // Computed properties
     selectedTeam: team

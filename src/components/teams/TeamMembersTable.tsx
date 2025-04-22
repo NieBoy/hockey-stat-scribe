@@ -5,7 +5,7 @@ import { TableHeader } from "./members/TableHeader";
 import { MembersTableContent } from "./members/MembersTableContent";
 import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
 import { toast } from "sonner";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { Copy, Link2 } from "lucide-react";
 
@@ -16,6 +16,7 @@ interface TeamMembersTableProps {
   onRemoveMember?: (member: User) => void;
   isSendingInvitations?: boolean;
   lastInvitationSent?: Date | null;
+  invitationLinks?: string[];
 }
 
 const TeamMembersTable = ({ 
@@ -24,7 +25,8 @@ const TeamMembersTable = ({
   onEditMember,
   onRemoveMember,
   isSendingInvitations = false,
-  lastInvitationSent = null
+  lastInvitationSent = null,
+  invitationLinks = []
 }: TeamMembersTableProps) => {
   const {
     selectedMembers,
@@ -50,6 +52,19 @@ const TeamMembersTable = ({
   
   // Track last invitation time locally too as a backup
   const [localLastSent, setLocalLastSent] = useState<Date | null>(lastInvitationSent);
+  
+  // Store the last generated links locally to show in the UI
+  const [lastLinks, setLastLinks] = useState<string[]>([]);
+
+  // Update local state when props change
+  useEffect(() => {
+    if (lastInvitationSent) {
+      setLocalLastSent(lastInvitationSent);
+    }
+    if (invitationLinks && invitationLinks.length > 0) {
+      setLastLinks(invitationLinks);
+    }
+  }, [lastInvitationSent, invitationLinks]);
   
   const handleSendInvitations = useCallback(() => {
     if (selectedMembers.length === 0) {
@@ -82,9 +97,6 @@ const TeamMembersTable = ({
   
   // Use the prop value if provided, otherwise use local state
   const effectiveLastSent = lastInvitationSent || localLastSent;
-
-  // Store the last generated links locally to show in the UI
-  const [lastLinks, setLastLinks] = useState<string[]>([]);
 
   // Function to display links in the UI for manual copying
   const showLastInvitationLinks = () => {
