@@ -18,5 +18,6 @@ export {
 // Export invitationService functions
 export {
   sendTeamInvitations,
-  acceptInvitation
+  acceptInvitation,
+  ensureInvitationsTableExists
 } from './invitationService';
