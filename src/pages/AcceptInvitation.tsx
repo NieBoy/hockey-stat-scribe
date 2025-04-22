@@ -10,6 +10,8 @@ import { InvitationError } from "@/components/invitations/InvitationError";
 import { useInvitationForm } from "@/hooks/invitations/useInvitationForm";
 
 export default function AcceptInvitation() {
+  const navigate = useNavigate();
+  
   const {
     form,
     loading,
