@@ -1,9 +1,11 @@
+
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Users, CalendarDays } from "lucide-react";
+import { Users, CalendarDays, ClipboardList, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
+import { mockGames, mockTeams } from "@/lib/mock-data";
 
 export default function Index() {
   const { user } = useAuth();
@@ -38,7 +40,7 @@ export default function Index() {
           <Button size="lg" asChild>
             <Link to="/games">View Games</Link>
           </Button>
-          {currentUser.role.includes('coach') && (
+          {user.role.includes('coach') && (
             <Button size="lg" variant="outline" asChild>
               <Link to="/games/new">Schedule Game</Link>
             </Button>
