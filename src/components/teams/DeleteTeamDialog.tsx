@@ -61,8 +61,9 @@ export default function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogP
         size="sm" 
         className="gap-2"
         onClick={() => setOpen(true)}
+        disabled={isDeleting}
       >
-        <Trash2 className="h-4 w-4" /> Delete Team
+        <Trash2 className="h-4 w-4" /> {isDeleting ? "Deleting..." : "Delete Team"}
       </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>

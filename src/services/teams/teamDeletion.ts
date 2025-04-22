@@ -34,14 +34,23 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
     // Step 2: Delete player-parent relationships for all team members
     if (memberIds.length > 0) {
       console.log("Deleting player-parent relationships");
-      const { error: parentsError } = await supabase
-        .from('player_parents')
-        .delete()
-        .in('player_id', memberIds);
-
-      if (parentsError) {
-        console.error("Error deleting player-parent relationships:", parentsError);
-        // Continue anyway - this isn't critical
+      
+      // Delete each player-parent relationship individually
+      for (const memberId of memberIds) {
+        try {
+          const { error: parentRelationError } = await supabase
+            .from('player_parents')
+            .delete()
+            .or(`player_id.eq.${memberId},parent_id.eq.${memberId}`);
+            
+          if (parentRelationError) {
+            console.error(`Error deleting parent relationship for member ${memberId}:`, parentRelationError);
+            // Continue anyway
+          }
+        } catch (error) {
+          console.error(`Exception deleting parent relationship for member ${memberId}:`, error);
+          // Continue anyway
+        }
       }
     }
 
@@ -62,97 +71,118 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
 
     // Step 4: Delete game events for all identified games
     if (gameIds.length > 0) {
-      // Step 4a: Get all game events for these games
-      console.log("Retrieving game events");
-      const { data: events, error: eventsQueryError } = await supabase
-        .from('game_events')
-        .select('id')
-        .in('game_id', gameIds);
+      // Delete each game's data separately
+      for (const gameId of gameIds) {
+        try {
+          // Step 4a: Get all game events for this game
+          const { data: events, error: eventsQueryError } = await supabase
+            .from('game_events')
+            .select('id')
+            .eq('game_id', gameId);
 
-      if (eventsQueryError) {
-        console.error("Error retrieving game events:", eventsQueryError);
-        // Continue anyway
-      }
+          if (eventsQueryError) {
+            console.error(`Error retrieving game events for game ${gameId}:`, eventsQueryError);
+            // Continue anyway
+          }
 
-      const eventIds = events?.map(event => event.id) || [];
-      console.log(`Found ${eventIds.length} game events to remove`);
-      
-      // Step 4b: Delete event_players records first (foreign key constraint)
-      if (eventIds.length > 0) {
-        console.log("Deleting event players");
-        const { error: eventPlayersError } = await supabase
-          .from('event_players')
-          .delete()
-          .in('event_id', eventIds);
+          const eventIds = events?.map(event => event.id) || [];
+          
+          // Step 4b: Delete event_players records first (foreign key constraint)
+          for (const eventId of eventIds) {
+            try {
+              const { error: eventPlayersError } = await supabase
+                .from('event_players')
+                .delete()
+                .eq('event_id', eventId);
 
-        if (eventPlayersError) {
-          console.error("Error deleting event players:", eventPlayersError);
+              if (eventPlayersError) {
+                console.error(`Error deleting event players for event ${eventId}:`, eventPlayersError);
+                // Continue anyway
+              }
+            } catch (error) {
+              console.error(`Exception deleting event players for event ${eventId}:`, error);
+              // Continue anyway
+            }
+          }
+
+          // Step 4c: Delete game events
+          const { error: eventsError } = await supabase
+            .from('game_events')
+            .delete()
+            .eq('game_id', gameId);
+
+          if (eventsError) {
+            console.error(`Error deleting game events for game ${gameId}:`, eventsError);
+            // Continue anyway
+          }
+
+          // Step 4d: Delete game stats
+          const { error: gameStatsError } = await supabase
+            .from('game_stats')
+            .delete()
+            .eq('game_id', gameId);
+
+          if (gameStatsError) {
+            console.error(`Error deleting game stats for game ${gameId}:`, gameStatsError);
+            // Continue anyway
+          }
+
+          // Step 4e: Delete stat trackers
+          const { error: trackersError } = await supabase
+            .from('stat_trackers')
+            .delete()
+            .eq('game_id', gameId);
+
+          if (trackersError) {
+            console.error(`Error deleting stat trackers for game ${gameId}:`, trackersError);
+            // Continue anyway
+          }
+        } catch (error) {
+          console.error(`Exception processing game ${gameId}:`, error);
           // Continue anyway
         }
-      }
-
-      // Step 4c: Delete game events
-      console.log("Deleting game events");
-      const { error: eventsError } = await supabase
-        .from('game_events')
-        .delete()
-        .in('game_id', gameIds);
-
-      if (eventsError) {
-        console.error("Error deleting game events:", eventsError);
-        // Continue anyway
-      }
-
-      // Step 4d: Delete game stats
-      console.log("Deleting game stats");
-      const { error: gameStatsError } = await supabase
-        .from('game_stats')
-        .delete()
-        .in('game_id', gameIds);
-
-      if (gameStatsError) {
-        console.error("Error deleting game stats:", gameStatsError);
-        // Continue anyway
-      }
-
-      // Step 4e: Delete stat trackers
-      console.log("Deleting stat trackers");
-      const { error: trackersError } = await supabase
-        .from('stat_trackers')
-        .delete()
-        .in('game_id', gameIds);
-
-      if (trackersError) {
-        console.error("Error deleting stat trackers:", trackersError);
-        // Continue anyway
       }
     }
 
     // Step 5: Delete player stats for all team members with user_ids
     if (userIds.length > 0) {
       console.log("Deleting player stats");
-      const { error: playerStatsError } = await supabase
-        .from('player_stats')
-        .delete()
-        .in('player_id', userIds);
+      for (const userId of userIds) {
+        try {
+          const { error: playerStatsError } = await supabase
+            .from('player_stats')
+            .delete()
+            .eq('player_id', userId);
 
-      if (playerStatsError) {
-        console.error("Error deleting player stats:", playerStatsError);
-        // Continue anyway
+          if (playerStatsError) {
+            console.error(`Error deleting player stats for user ${userId}:`, playerStatsError);
+            // Continue anyway
+          }
+        } catch (error) {
+          console.error(`Exception deleting player stats for user ${userId}:`, error);
+          // Continue anyway
+        }
       }
     }
 
     // Step 6: Delete games
     if (gameIds.length > 0) {
-      console.log("Deleting games");
-      const { error: deleteGamesError } = await supabase
-        .from('games')
-        .delete()
-        .in('id', gameIds);
+      console.log("Deleting games one by one");
+      for (const gameId of gameIds) {
+        try {
+          const { error: deleteGameError } = await supabase
+            .from('games')
+            .delete()
+            .eq('id', gameId);
 
-      if (deleteGamesError) {
-        console.error("Error deleting games:", deleteGamesError);
-        // Continue anyway
+          if (deleteGameError) {
+            console.error(`Error deleting game ${gameId}:`, deleteGameError);
+            // Continue anyway
+          }
+        } catch (error) {
+          console.error(`Exception deleting game ${gameId}:`, error);
+          // Continue anyway
+        }
       }
     }
 
@@ -160,11 +190,12 @@ export const deleteTeamAndAllData = async (teamId: string): Promise<boolean> => 
     console.log("Deleting team members one by one");
     for (const memberId of memberIds) {
       try {
+        // Important: Use a direct delete without any joins or complex queries
+        // This avoids the infinite recursion in RLS policies
         const { error } = await supabase
           .from('team_members')
           .delete()
-          .eq('id', memberId)
-          .eq('team_id', teamId);
+          .eq('id', memberId);
           
         if (error) {
           console.error(`Error deleting team member ${memberId}:`, error);
