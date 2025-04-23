@@ -20,7 +20,7 @@ const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
           <div className="flex items-center gap-2 min-w-0">
             <div className="min-w-0">
               <Link 
-                to={`/players/${player.id}`} 
+                to={`/players/${player.id}/stats`} 
                 className="font-medium text-sm hover:underline truncate block"
               >
                 {player.name}
@@ -41,9 +41,9 @@ const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
               className="h-6 w-6 p-0"
               asChild
             >
-              <Link to={`/players/${player.id}`}>
-                <Edit className="h-3 w-3" />
-                <span className="sr-only">Edit {player.name}</span>
+              <Link to={`/players/${player.id}/stats`}>
+                <Stats className="h-3 w-3" />
+                <span className="sr-only">View Stats for {player.name}</span>
               </Link>
             </Button>
             <Button 

@@ -87,14 +87,17 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold tracking-tight">Team Statistics</h2>
-        <Button 
-          onClick={refreshStats} 
-          disabled={isRefreshing}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh Stats
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={refreshStats} 
+            disabled={isRefreshing}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Stats
+          </Button>
+        </div>
       </div>
 
       <Card>
