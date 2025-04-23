@@ -41,6 +41,7 @@ export function usePlayerStatsData(playerId: string) {
   });
 
   // Game events query - get events where the player is directly involved using team_member.id
+  // Using the same improved JSONB query approach from refreshPlayerStats function
   const { 
     data: playerGameEvents,
     isLoading: eventsLoading,
@@ -52,7 +53,7 @@ export function usePlayerStatsData(playerId: string) {
       try {
         console.log("Fetching game events for player:", playerId);
         
-        // Fetch events where player is directly mentioned in fields
+        // Query 1: Events where player is directly mentioned in specific fields
         const { data: directEvents, error: directError } = await supabase
           .from('game_events')
           .select(`
@@ -72,8 +73,8 @@ export function usePlayerStatsData(playerId: string) {
         }
         
         console.log(`Found ${directEvents?.length || 0} direct events for player ${playerId}`);
-
-        // Fetch events where player is in playersOnIce array
+        
+        // Query 2: Events where player is in playersOnIce array
         const { data: onIceEvents, error: onIceError } = await supabase
           .from('game_events')
           .select(`

@@ -18,7 +18,19 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
         
       if (event.event_type === 'goal') {
         // Process goal event
-        statsCreated = await processGoalEvent(event, playerId, details) || statsCreated;
+        const result = await processGoalEvent(event, playerId, details);
+        statsCreated = result || statsCreated;
+        console.log(`Goal event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+      } else if (event.event_type === 'penalty') {
+        // Process penalty event
+        const result = await processPenaltyEvent(event, playerId, details);
+        statsCreated = result || statsCreated;
+        console.log(`Penalty event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+      } else if (event.event_type === 'faceoff') {
+        // Process faceoff event
+        const result = await processFaceoffEvent(event, playerId, details);
+        statsCreated = result || statsCreated;
+        console.log(`Faceoff event processing result: ${result ? 'Stats created' : 'No stats created'}`);
       }
       // Add other event types as needed
     }
@@ -40,37 +52,85 @@ const processGoalEvent = async (event: any, playerId: string, details: any): Pro
   let statsCreated = false;
   
   try {
+    console.log(`Processing goal event for player ${playerId}`, details);
+    
     // Check if player is scorer
-    if (details.playerId === playerId) {
-      console.log(`Creating goal stat for player ${playerId}`);
+    if (details && details.playerId === playerId) {
+      console.log(`Player ${playerId} is the goal scorer`);
       const goalStat = await createGameStat(event.game_id, playerId, 'goals', event.period);
       statsCreated = goalStat || statsCreated;
     }
     
     // Check for assists
-    if (details.primaryAssistId === playerId) {
-      console.log(`Creating primary assist stat for player ${playerId}`);
+    if (details && details.primaryAssistId === playerId) {
+      console.log(`Player ${playerId} has primary assist`);
       const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'primary');
       statsCreated = assistStat || statsCreated;
     }
     
-    if (details.secondaryAssistId === playerId) {
-      console.log(`Creating secondary assist stat for player ${playerId}`);
+    if (details && details.secondaryAssistId === playerId) {
+      console.log(`Player ${playerId} has secondary assist`);
       const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'secondary');
       statsCreated = assistStat || statsCreated;
     }
     
-    // Check if player was on ice
-    const playersOnIce = details.playersOnIce || [];
-    if (Array.isArray(playersOnIce) && playersOnIce.includes(playerId)) {
-      console.log(`Creating plus/minus stat for player ${playerId}`);
-      const plusMinusStat = await createPlusMinus(event, playerId);
-      statsCreated = plusMinusStat || statsCreated;
+    // Check if player was on ice for this goal
+    if (details && details.playersOnIce && Array.isArray(details.playersOnIce)) {
+      if (details.playersOnIce.includes(playerId)) {
+        console.log(`Player ${playerId} was on ice for this goal`);
+        const plusMinusStat = await createPlusMinus(event, playerId);
+        statsCreated = plusMinusStat || statsCreated;
+      }
     }
     
     return statsCreated;
   } catch (error) {
     console.error(`Error processing goal event for player ${playerId}:`, error);
+    return false;
+  }
+};
+
+const processPenaltyEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
+  try {
+    // Check if this player took the penalty
+    if (details && details.playerId === playerId) {
+      console.log(`Player ${playerId} took a penalty`);
+      const penaltyStat = await createGameStat(event.game_id, playerId, 'penalties', event.period);
+      
+      // If there's PIM (penalty minutes) data, record that too
+      if (details.pim) {
+        await createGameStat(event.game_id, playerId, 'pim', event.period, details.pim);
+      }
+      
+      return penaltyStat;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Error processing penalty event:`, error);
+    return false;
+  }
+};
+
+const processFaceoffEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
+  try {
+    if (!details) return false;
+    
+    // Check if player was involved in the faceoff
+    if (details.winnerId === playerId || details.loserId === playerId) {
+      const won = details.winnerId === playerId;
+      console.log(`Player ${playerId} ${won ? 'won' : 'lost'} a faceoff`);
+      
+      return await createGameStat(
+        event.game_id,
+        playerId,
+        'faceoffs',
+        event.period,
+        won ? 'won' : 'lost'
+      );
+    }
+    return false;
+  } catch (error) {
+    console.error(`Error processing faceoff event:`, error);
     return false;
   }
 };
@@ -83,6 +143,8 @@ const createGameStat = async (
   details: string = ''
 ): Promise<boolean> => {
   try {
+    console.log(`Creating game stat: ${statType} for player ${playerId} in period ${period}`);
+    
     // First check if stat already exists
     const { data: existingStat } = await supabase
       .from('game_stats')
@@ -116,7 +178,7 @@ const createGameStat = async (
       return false;
     }
     
-    console.log(`Successfully created ${statType} stat`);
+    console.log(`Successfully created ${statType} stat for player ${playerId}`);
     return true;
   } catch (error) {
     console.error(`Error in createGameStat:`, error);
@@ -153,6 +215,8 @@ const createPlusMinus = async (event: any, playerId: string): Promise<boolean> =
     const isHomeTeam = playerTeam.team_id === game.home_team_id;
     const isHomeTeamGoal = event.team_type === 'home';
     const isPlus = isHomeTeam === isHomeTeamGoal;
+    
+    console.log(`Player ${playerId} ${isPlus ? '+1' : '-1'} for this goal`);
     
     return await createGameStat(
       event.game_id,
