@@ -160,26 +160,48 @@ const createGameStat = async (
       return true;
     }
     
-    // Create new stat
-    const { error } = await supabase
-      .from('game_stats')
-      .insert({
-        game_id: gameId,
-        player_id: playerId,
-        stat_type: statType,
-        period: period,
-        value: 1,
-        details: details,
-        timestamp: new Date().toISOString()
+    // Create new stat using RPC function for maximum compatibility
+    try {
+      const { data, error } = await supabase.rpc('record_game_stat', {
+        p_game_id: gameId,
+        p_player_id: playerId,
+        p_stat_type: statType,
+        p_period: period,
+        p_value: 1,
+        p_details: details
       });
       
-    if (error) {
-      console.error(`Error creating ${statType} stat:`, error);
-      return false;
+      if (error) {
+        console.error(`Error creating ${statType} stat using RPC:`, error);
+        throw error;
+      }
+      
+      console.log(`Successfully created ${statType} stat for player ${playerId} using RPC`);
+      return true;
+    } catch (rpcError) {
+      console.error(`RPC failed, trying direct insert:`, rpcError);
+      
+      // Fallback to direct insert if RPC fails
+      const { error } = await supabase
+        .from('game_stats')
+        .insert({
+          game_id: gameId,
+          player_id: playerId,
+          stat_type: statType,
+          period: period,
+          value: 1,
+          details: details,
+          timestamp: new Date().toISOString()
+        });
+        
+      if (error) {
+        console.error(`Error creating ${statType} stat:`, error);
+        return false;
+      }
+      
+      console.log(`Successfully created ${statType} stat for player ${playerId}`);
+      return true;
     }
-    
-    console.log(`Successfully created ${statType} stat for player ${playerId}`);
-    return true;
   } catch (error) {
     console.error(`Error in createGameStat:`, error);
     return false;

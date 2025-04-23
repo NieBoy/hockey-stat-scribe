@@ -11,7 +11,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     // Get player details
     const { data: playerData, error: playerError } = await supabase
       .from('team_members')
-      .select('name, team_id')
+      .select('id, name, team_id, user_id')
       .eq('id', playerId)
       .single();
       
@@ -20,38 +20,46 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw playerError;
     }
     
-    const playerName = playerData?.name || 'Unknown Player';
-    console.log("Found player:", playerName, "with ID:", playerId);
+    if (!playerData) {
+      console.error("Player not found with ID:", playerId);
+      return [];
+    }
     
-    // Fetch game events with improved JSONB queries (this is the critical fix)
-    console.log("Fetching game events for player ID:", playerId);
+    // The ID we'll use for stats - team_member.id, NOT user_id
+    // This is critical - we're using team_member.id consistently throughout the application
+    const playerStatsId = playerData.id;
+    const playerName = playerData.name || 'Unknown Player';
     
-    // We'll use separate queries and combine results to handle different JSONB structures
+    console.log("Found player:", playerName, "with team_member ID:", playerStatsId);
+    
+    // Fetch game events with improved JSONB queries
+    console.log("Fetching game events for player ID:", playerStatsId);
+    
     // Query 1: Events where the player is directly mentioned in specific fields
     const { data: directEvents, error: directError } = await supabase
       .from('game_events')
       .select('*')
-      .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
+      .or(`details->>'playerId'.eq.${playerStatsId},details->>'primaryAssistId'.eq.${playerStatsId},details->>'secondaryAssistId'.eq.${playerStatsId}`);
       
     if (directError) {
       console.error("Error fetching direct game events:", directError);
       throw directError;
     }
     
-    console.log(`Found ${directEvents?.length || 0} direct events for player ${playerId}`);
+    console.log(`Found ${directEvents?.length || 0} direct events for player ${playerStatsId}`);
     
     // Query 2: Events where player is in playersOnIce array
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
       .select('*')
-      .contains('details', { playersOnIce: [playerId] });
+      .contains('details', { playersOnIce: [playerStatsId] });
       
     if (onIceError) {
       console.error("Error fetching on-ice events:", onIceError);
       throw onIceError;
     }
     
-    console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerId}`);
+    console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerStatsId}`);
     
     // Combine events, removing duplicates
     const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
@@ -62,12 +70,12 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       return true;
     });
     
-    console.log(`Total unique game events for player ${playerId}: ${gameEvents.length}`);
+    console.log(`Total unique game events for player ${playerStatsId}: ${gameEvents.length}`);
     
     // Process events into game stats - this is where events become statistics
     if (gameEvents && gameEvents.length > 0) {
       console.log(`Processing ${gameEvents.length} events into game stats...`);
-      const statsCreated = await createGameStatsFromEvents(playerId, gameEvents);
+      const statsCreated = await createGameStatsFromEvents(playerStatsId, gameEvents);
       console.log(`Game stats creation result: ${statsCreated ? 'Success' : 'No new stats created'}`);
     } else {
       console.log("No events found to process for this player");
@@ -77,18 +85,18 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const { data: gameStats, error: gameStatsError } = await supabase
       .from('game_stats')
       .select('*')
-      .eq('player_id', playerId);
+      .eq('player_id', playerStatsId);
       
     if (gameStatsError) {
       console.error("Error fetching game stats:", gameStatsError);
       throw gameStatsError;
     }
     
-    console.log(`Found ${gameStats?.length || 0} game stats after processing`);
+    console.log(`Found ${gameStats?.length || 0} game stats for player ${playerStatsId}`);
     
     // Calculate and update player stats
     const statsSummary = calculateStatsSummary(gameStats || []);
-    const playerStats = createPlayerStatsFromSummary(playerId, playerName, statsSummary);
+    const playerStats = createPlayerStatsFromSummary(playerStatsId, playerName, statsSummary);
     
     console.log("Generated player stats summary:", playerStats);
     
@@ -96,7 +104,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     const results = await Promise.all(
       playerStats.map(async (stat) => {
         try {
-          const updated = await updateOrInsertStat(playerId, stat);
+          const updated = await updateOrInsertStat(playerStatsId, stat);
           return updated ? stat : null;
         } catch (error) {
           console.error(`Error updating stat ${stat.statType}:`, error);
@@ -106,7 +114,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     );
     
     const validResults = results.filter((stat): stat is PlayerStat => stat !== null);
-    console.log(`Successfully updated ${validResults.length} stats for player ${playerId}`);
+    console.log(`Successfully updated ${validResults.length} stats for player ${playerStatsId}`);
     
     return validResults;
   } catch (error) {
