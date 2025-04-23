@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Game, User } from '@/types';
-import { GoalActions } from '../GoalActions';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 
@@ -42,7 +41,7 @@ export function GoalSummaryStep({
           <ul className="list-disc pl-5 mt-1">
             {playersOnIce.map(player => (
               <li key={player.id}>
-                {player.name}
+                {player.name || 'Unknown'}
                 {selectedScorer?.id === player.id && ' (scorer)'}
                 {primaryAssist?.id === player.id && ' (primary assist)'}
                 {secondaryAssist?.id === player.id && ' (secondary assist)'}

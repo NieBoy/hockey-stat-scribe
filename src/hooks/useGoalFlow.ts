@@ -46,13 +46,17 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   };
 
   const validatePlayers = () => {
-    const allValidPlayerIds = [...game.homeTeam.players, ...game.awayTeam.players].map(p => p.id);
+    if (!game) return false;
+    
+    const homeTeamPlayers = game.homeTeam?.players || [];
+    const awayTeamPlayers = game.awayTeam?.players || [];
+    const allValidPlayerIds = [...homeTeamPlayers, ...awayTeamPlayers].map(p => p.id);
     
     for (const player of playersOnIce) {
-      if (!allValidPlayerIds.includes(player.id)) {
+      if (!player || !player.id || !allValidPlayerIds.includes(player.id)) {
         toast({
           title: "Invalid Player",
-          description: `Player ${player.name} (${player.id}) is not valid in this game.`,
+          description: `Player ${player?.name || 'Unknown'} (${player?.id || 'no ID'}) is not valid in this game.`,
           variant: "destructive"
         });
         return false;
@@ -87,7 +91,14 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   };
 
   const handleSubmit = async () => {
-    if (!selectedTeam || !game.id) return;
+    if (!selectedTeam || !game?.id) {
+      toast({
+        title: "Missing Data",
+        description: "Team or game information is missing",
+        variant: "destructive"
+      });
+      return;
+    }
 
     if (!validatePlayers()) {
       return;
