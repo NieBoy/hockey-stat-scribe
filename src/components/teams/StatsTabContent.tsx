@@ -4,12 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Team } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Bug } from "lucide-react";
+import { RefreshCw, AlertCircle, Bug, History } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SortableStatsTable } from "@/components/stats/SortableStatsTable";
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
 import { refreshPlayerStats } from "@/services/stats/playerStatsService";
+import { reprocessAllStats } from "@/services/stats/core/statsRefresh";
 import { toast } from "sonner";
 import {
   Accordion,
@@ -24,6 +25,7 @@ interface StatsTabContentProps {
 
 const StatsTabContent = ({ team }: StatsTabContentProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<Record<string, string>>({});
   
@@ -159,6 +161,24 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     }
   };
 
+  const handleReprocessAllStats = async () => {
+    setIsReprocessing(true);
+    try {
+      const success = await reprocessAllStats();
+      if (success) {
+        toast.success("All statistics have been reprocessed from game events");
+        await refetch();
+      } else {
+        toast.error("Failed to reprocess statistics");
+      }
+    } catch (error) {
+      console.error("Error reprocessing stats:", error);
+      toast.error("Error reprocessing statistics");
+    } finally {
+      setIsReprocessing(false);
+    }
+  };
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -225,14 +245,26 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
                 <li>No stats have been recorded</li>
                 <li>Stats need to be refreshed</li>
               </ul>
-              <Button 
-                onClick={refreshStats} 
-                variant="outline" 
-                className="mt-4"
-                disabled={isRefreshing}
-              >
-                Try Refreshing Stats
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+                <Button 
+                  onClick={refreshStats} 
+                  variant="outline" 
+                  className="gap-2"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh Stats
+                </Button>
+                <Button 
+                  onClick={handleReprocessAllStats} 
+                  variant="outline" 
+                  className="gap-2"
+                  disabled={isReprocessing}
+                >
+                  <History className="h-4 w-4" />
+                  Reprocess All Stats
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -247,6 +279,19 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={handleReprocessAllStats} 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                disabled={isReprocessing}
+              >
+                <History className="h-4 w-4" />
+                Reprocess All Stats
+              </Button>
+            </div>
+            
             <div>
               <h3 className="font-medium mb-2">Refresh Status by Player</h3>
               <div className="grid grid-cols-2 gap-2">

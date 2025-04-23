@@ -8,7 +8,7 @@ import { calculateStatsSummary, createPlayerStatsFromSummary } from "../utils/st
 export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
   console.log("refreshPlayerStats called for player:", playerId);
   try {
-    // Get player details
+    // Verify player exists in team_members
     const { data: playerData, error: playerError } = await supabase
       .from('team_members')
       .select('id, name, team_id, user_id')
@@ -25,8 +25,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       return [];
     }
     
-    // The ID we'll use for stats - team_member.id, NOT user_id
-    // This is critical - we're using team_member.id consistently throughout the application
+    // We use team_member.id consistently throughout the application
     const playerStatsId = playerData.id;
     const playerName = playerData.name || 'Unknown Player';
     

@@ -9,7 +9,8 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
     // Get all team members who should have stats
     const { data: teamMembers, error: membersError } = await supabase
       .from('team_members')
-      .select('id, name');
+      .select('id, name')
+      .order('name');
       
     if (membersError) {
       console.error("Error fetching team members:", membersError);
@@ -35,5 +36,26 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
   } catch (error) {
     console.error("Error in refreshAllPlayerStats:", error);
     throw error;
+  }
+};
+
+// Function to call the database function to reprocess all stats from events
+export const reprocessAllStats = async (): Promise<boolean> => {
+  try {
+    console.log("Calling database function to reprocess all stats");
+    
+    const { data, error } = await supabase
+      .rpc('reprocess_all_player_stats');
+      
+    if (error) {
+      console.error("Error reprocessing all stats:", error);
+      throw error;
+    }
+    
+    console.log("Successfully reprocessed all stats");
+    return true;
+  } catch (error) {
+    console.error("Error in reprocessAllStats:", error);
+    return false;
   }
 };

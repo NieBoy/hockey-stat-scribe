@@ -1,9 +1,17 @@
 
 import { supabase } from "@/lib/supabase";
+import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 
 export const createGameStatsFromEvents = async (playerId: string, events: any[]): Promise<boolean> => {
   try {
     console.log(`Creating game stats from ${events.length} events for player ${playerId}`);
+    
+    // First validate that the playerId exists in team_members
+    const isValid = await validatePlayerId(playerId);
+    if (!isValid) {
+      console.error(`Invalid player ID: ${playerId}. Must exist in team_members table.`);
+      return false;
+    }
     
     let statsCreated = false;
     
@@ -144,6 +152,13 @@ const createGameStat = async (
 ): Promise<boolean> => {
   try {
     console.log(`Creating game stat: ${statType} for player ${playerId} in period ${period}`);
+    
+    // Validate that player ID exists in team_members
+    const isValid = await validatePlayerId(playerId);
+    if (!isValid) {
+      console.error(`Cannot create stat: Player ID ${playerId} not found in team_members table`);
+      return false;
+    }
     
     // First check if stat already exists
     const { data: existingStat } = await supabase
