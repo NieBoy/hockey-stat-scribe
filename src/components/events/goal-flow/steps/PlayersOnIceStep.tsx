@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Team, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,24 +25,35 @@ export function PlayersOnIceStep({
   const [mandatoryPlayers, setMandatoryPlayers] = useState<User[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
 
-  // Initialize mandatory and selected players ONCE on mount
-  useEffect(() => {
-    if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      const uniqueMandatory = Array.from(
-        new Map(preSelectedPlayers.filter(Boolean).map(p => [p.id, p])).values()
-      );
-      setMandatoryPlayers(uniqueMandatory);
-      setSelectedPlayers(uniqueMandatory);
-      onPlayersSelect(uniqueMandatory); // still notify on mount
-    } else {
-      setMandatoryPlayers([]);
-      setSelectedPlayers([]);
-      onPlayersSelect([]);
-    }
-    setSubStep("mandatory");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preSelectedPlayers]);
+  // Flag tracks first mount/init to avoid bouncing UI
+  const initialized = useRef(false);
 
+  // Only initialize ONCE for given preSelectedPlayers by shallow ID comparison
+  useEffect(() => {
+    // Convert preSelectedPlayers to IDs for comparison
+    const prevInit = initialized.current;
+    const newIdList = preSelectedPlayers.map(player => player.id).join(',');
+    const [prevIds, setPrevIds] = useState('');
+    // Track when preSelectedPlayers actually change
+    useEffect(() => {
+      if (!prevInit || newIdList !== prevIds) {
+        const uniqueMandatory = Array.from(
+          new Map(preSelectedPlayers.filter(Boolean).map(p => [p.id, p])).values()
+        );
+        setMandatoryPlayers(uniqueMandatory);
+        setSelectedPlayers(uniqueMandatory);
+        onPlayersSelect(uniqueMandatory);
+        setSubStep("mandatory");
+        initialized.current = true;
+        setPrevIds(newIdList);
+      }
+      // No eslint-disable needed. This effect watches the right variables.
+      // Only runs on initial mount OR if the actual ID list changes
+    }, [newIdList, prevInit, prevIds, preSelectedPlayers, onPlayersSelect]);
+    // The extra useEffect is just for prevIds state
+    // The rest of the file stays the same
+    
+  }, [preSelectedPlayers, onPlayersSelect]);
   // Player selection logic for extras (cannot remove mandatory)
   const handleExtraPlayerToggle = (player: User) => {
     const isMandatory = mandatoryPlayers.some(p => p.id === player.id);
