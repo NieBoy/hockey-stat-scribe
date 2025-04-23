@@ -1,22 +1,9 @@
 
-import { useToast as useShadcnToast } from "@/components/ui/use-toast";
+// Import directly from sonner
 import { toast as sonnerToast } from "sonner";
 
-// We're creating a unified hook that works with both toast systems
-export function useToast() {
-  const shadcnToast = useShadcnToast();
-  
-  return {
-    ...shadcnToast,
-    toast: (props: any) => {
-      // For backwards compatibility with existing code
-      if (typeof props === 'string') {
-        return sonnerToast(props);
-      }
-      return shadcnToast.toast(props);
-    }
-  };
-}
+// Re-export the shadcn toast hook
+export { useToast } from "@/components/ui/toast";
 
-// Toast function for direct use without hook
+// Export the toast function for direct use without hook
 export const toast = sonnerToast;
