@@ -1,18 +1,16 @@
-import { supabase } from '@/lib/supabase';
-import { User, Game } from '@/types';
-import { toast } from 'sonner';
-import { refreshPlayerStats } from '@/services/stats/playerStatsService';
 
-interface ShotEventData {
-  gameId: string;
-  period: number;
-  teamType: 'home' | 'away';
-  playerId: string;
-  isForUs: boolean;
-}
+import { supabase } from '@/lib/supabase';
+import { ShotEventData } from '../types';
+import { validatePlayer } from '../shared/validatePlayer';
+import { refreshPlayerStats } from '@/services/stats';
 
 export const recordShotEvent = async (data: ShotEventData) => {
   try {
+    console.log("Recording shot event with data:", data);
+    
+    // Validate the player
+    await validatePlayer(data.playerId);
+    
     // Record the game event
     const { data: eventData, error: eventError } = await supabase
       .rpc('create_game_event', {
@@ -20,10 +18,10 @@ export const recordShotEvent = async (data: ShotEventData) => {
         p_event_type: 'shot',
         p_period: data.period,
         p_team_type: data.teamType,
-        p_details: JSON.stringify({
+        p_details: {
           playerId: data.playerId,
           isForUs: data.isForUs
-        })
+        }
       });
 
     if (eventError) throw eventError;
@@ -40,18 +38,12 @@ export const recordShotEvent = async (data: ShotEventData) => {
 
     if (statError) throw statError;
 
-    // Automatically refresh player stats to update aggregates
-    try {
-      await refreshPlayerStats(data.playerId);
-      console.log("Player stats refreshed after recording shot");
-    } catch (refreshError) {
-      console.error("Error refreshing player stats:", refreshError);
-      // Don't throw here to avoid affecting the main flow
-    }
+    // Refresh player stats
+    await refreshPlayerStats(data.playerId);
 
-    return eventData;
+    return { success: true, eventId: eventData?.id };
   } catch (error) {
-    console.error("Error recording shot:", error);
+    console.error("Error in recordShotEvent:", error);
     throw error;
   }
 };
