@@ -60,7 +60,7 @@ export default function NewOpponentGameDialog({
         location
       });
 
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from("games")
         .insert({
           date: isoDate,
@@ -71,17 +71,25 @@ export default function NewOpponentGameDialog({
           periods: 3,
           is_active: false,
           current_period: 0
-        });
-        
+        })
+        .select();
+
       if (error) {
         console.error("Supabase insert error:", error);
         toast.error("Error scheduling game: " + (error.message || "Unknown error"));
         return;
       }
-      
-      toast.success("Game scheduled successfully!");
+
+      // Debug: Output the full data from the DB insert for troubleshooting
+      console.log("Game insert result:", data);
+      if (data && data.length > 0) {
+        toast.success("Game scheduled successfully! (ID: " + data[0].id + ")");
+      } else {
+        toast.success("Game scheduled successfully (but no ID returned).");
+      }
+
       setOpen(false); // close the dialog
-      
+
       // Reset form state
       setOpponentName("");
       setLocation("");
@@ -94,7 +102,7 @@ export default function NewOpponentGameDialog({
       }
     } catch (err) {
       console.error("Error scheduling game:", err);
-      toast.error("Error scheduling game");
+      toast.error("Error scheduling game, see console.");
     } finally {
       setLoading(false);
     }

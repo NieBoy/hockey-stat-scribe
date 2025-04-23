@@ -1,10 +1,9 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Table, TableHead, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import NewOpponentGameDialog from "./NewOpponentGameDialog";
-import { supabase } from "@/lib/supabase"; // Use the main supabase client
+import { supabase } from "@/lib/supabase";
 import { Team } from "@/types";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -26,13 +25,10 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
   const [dialogOpen, setDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch games for this team
   const fetchGames = useCallback(async () => {
     setLoading(true);
-
     try {
       console.log("Fetching games for team", team.id);
-      // Query games where team is home or away and include opponent_name
       let { data, error } = await supabase
         .from('games')
         .select(`
@@ -52,8 +48,6 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
         setLoading(false);
         return;
       }
-
-      // Compose a readable 'opponent' label per game
       const asSchedule = (data || []).map((g: any) => {
         let opponent: string = '';
 
@@ -75,7 +69,7 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
         };
       });
 
-      console.log("Fetched games:", asSchedule.length);
+      console.log("Fetched games array:", asSchedule);
       setGames(asSchedule);
     } catch (error) {
       console.error("Unexpected error fetching games:", error);
@@ -86,12 +80,10 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
     }
   }, [team.id]);
 
-  // Initial load
   useEffect(() => {
     fetchGames();
   }, [fetchGames, refreshKey]);
 
-  // Callback after a new game is added
   const handleGameAdded = () => {
     console.log("Game added, refreshing schedule...");
     setRefreshKey(prev => prev + 1); // Trigger a refresh
@@ -116,7 +108,14 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
         <div className="text-center py-8">Loading schedule…</div>
       ) : games.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          No games scheduled.
+          <div>No games scheduled.</div>
+          <div className="mt-3 p-4 rounded bg-yellow-100 text-yellow-900 text-sm">
+            <b>Debug:</b> No games returned for team ID <span className="font-mono">{team.id}</span>
+            <br />
+            Last refresh key: <span className="font-mono">{refreshKey}</span>
+            <br />
+            If you just added a game and it does not appear, check logs for game creation issues.
+          </div>
         </div>
       ) : (
         <Table>
