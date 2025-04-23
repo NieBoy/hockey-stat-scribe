@@ -168,7 +168,8 @@ export const recordGoalEvent = async (data: GoalEventData) => {
           data.gameId,
           data.playersOnIce,
           data.period,
-          data.teamType === 'home'
+          data.teamType === 'home',
+          1 // Adding the missing 5th argument (value)
         );
       } catch (plusMinusError) {
         console.error("Error recording plus/minus stats:", plusMinusError);

@@ -12,18 +12,24 @@ import { Button } from "@/components/ui/button";
 import { Bug } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlayerStat } from "@/types";
 
 export default function Stats() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
-  const [debugData, setDebugData] = useState<any>({
+  const [debugData, setDebugData] = useState<{
+    rawGameStats: any[];
+    playerStats: any[];
+    gameCount: number;
+    playerCount: number;
+  }>({
     rawGameStats: [],
     playerStats: [],
     gameCount: 0,
     playerCount: 0
   });
   
-  const { data: stats, isLoading, error, refetch } = useQuery({
+  const { data: stats, isLoading, error, refetch } = useQuery<PlayerStat[]>({
     queryKey: ['playerStats'],
     queryFn: getAllPlayerStats,
   });

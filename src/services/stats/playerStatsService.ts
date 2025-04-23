@@ -1,2 +1,3 @@
 
-export { refreshPlayerStats, refreshAllPlayerStats } from './core/statsUpdates';
+export { refreshPlayerStats } from './core/statsUpdates';
+export { refreshAllPlayerStats } from './core/statsRefresh';

@@ -10,5 +10,5 @@ export {
 } from './game-stats/creation';
 
 export {
-  createStatsFromEvents
+  createGameStatsFromEvents as createStatsFromEvents
 } from './game-stats/eventProcessing';
