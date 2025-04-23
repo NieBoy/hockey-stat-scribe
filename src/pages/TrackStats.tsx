@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import GameStatsList from "@/components/stats/GameStatsList";
 import { useGameStats } from "@/hooks/useGameStats";
 import GameStats from "@/components/stats/GameStats";
+import { StatType } from "@/types"; // Add this import
 
 export default function TrackStats() {
   const { id = '' } = useParams<{ id: string }>();
