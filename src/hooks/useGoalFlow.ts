@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { User, Game } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { recordGoalEvent } from '@/services/events/goalEventService';
 
 type FlowStep = 'team-select' | 'scorer-select' | 'primary-assist' | 'secondary-assist' | 'players-on-ice' | 'submit';
@@ -14,7 +14,6 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   const [secondaryAssist, setSecondaryAssist] = useState<User | null>(null);
   const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
@@ -54,10 +53,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     
     for (const player of playersOnIce) {
       if (!player || !player.id || !allValidPlayerIds.includes(player.id)) {
-        toast({
-          title: "Invalid Player",
-          description: `Player ${player?.name || 'Unknown'} (${player?.id || 'no ID'}) is not valid in this game.`,
-          variant: "destructive"
+        toast.error("Invalid Player", {
+          description: `Player ${player?.name || 'Unknown'} (${player?.id || 'no ID'}) is not valid in this game.`
         });
         return false;
       }
@@ -92,10 +89,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
 
   const handleSubmit = async () => {
     if (!selectedTeam || !game?.id) {
-      toast({
-        title: "Missing Data",
-        description: "Team or game information is missing",
-        variant: "destructive"
+      toast.error("Missing Data", {
+        description: "Team or game information is missing"
       });
       return;
     }
@@ -134,8 +129,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
 
-      toast({
-        title: "Goal Recorded",
+      toast.success("Goal Recorded", {
         description: selectedTeam === 'home' 
           ? `Goal by ${selectedScorer?.name || 'Unknown player'}`
           : `Goal against by ${game.awayTeam?.name || 'Away team'}`
@@ -144,10 +138,8 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       onComplete();
     } catch (error: any) {
       console.error("Error recording goal:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record goal event",
-        variant: "destructive"
+      toast.error("Error", {
+        description: error.message || "Failed to record goal event"
       });
     } finally {
       setIsSubmitting(false);

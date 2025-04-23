@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { User, Game } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { recordPenaltyEvent } from '@/services/events/penalty/penaltyEventService';
 
 type FlowStep = 'team-select' | 'player-select' | 'penalty-type' | 'penalty-duration' | 'additional-penalty' | 'submit';
@@ -27,7 +28,6 @@ export function usePenaltyFlow(game: Game, period: number, onComplete: () => voi
   const [penaltyDuration, setPenaltyDuration] = useState<PenaltyDuration | null>(null);
   const [additionalPenalty, setAdditionalPenalty] = useState<AdditionalPenalty>('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
@@ -72,18 +72,15 @@ export function usePenaltyFlow(game: Game, period: number, onComplete: () => voi
         additionalPenalty
       });
 
-      toast({
-        title: "Penalty Recorded",
+      toast.success("Penalty Recorded", {
         description: `${selectedPenaltyType} penalty by ${selectedPlayer.name}`
       });
 
       onComplete();
     } catch (error: any) {
       console.error("Error recording penalty:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record penalty",
-        variant: "destructive"
+      toast.error("Failed to record penalty", {
+        description: error.message || "Unknown error occurred"
       });
     } finally {
       setIsSubmitting(false);
