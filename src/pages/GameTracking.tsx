@@ -69,6 +69,10 @@ export default function GameTracking() {
     );
   }
 
+  // Make sure homeTeam and awayTeam both exist before trying to access their properties
+  const homeTeamName = game.homeTeam?.name || 'Home Team';
+  const awayTeamName = game.awayTeam?.name || 'Away Team';
+
   return (
     <MainLayout>
       <div className="mb-6">
@@ -81,7 +85,7 @@ export default function GameTracking() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">Track Game Events</h1>
             <p className="text-muted-foreground">
-              {game.homeTeam.name} vs {game.awayTeam.name}
+              {homeTeamName} vs {awayTeamName}
             </p>
           </div>
         </div>
