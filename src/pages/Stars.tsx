@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { PlayerStat } from "@/types";
+import { toast } from "sonner";
 
 // Helper function to make stat types more readable
 const formatStatType = (statType: string): string => {
@@ -43,12 +44,18 @@ const getStatTypeColor = (statType: string): string => {
 export default function Stars() {
   const [statTypeFilter, setStatTypeFilter] = useState<string>("all");
   
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ['playerStats'],
     queryFn: getAllPlayerStats
   });
 
   console.log("Stars page - stats data:", stats);
+
+  // If error occurred during data fetching
+  if (error) {
+    toast.error("Failed to load player statistics");
+    console.error("Error loading stars data:", error);
+  }
 
   // Filter stats by type if needed
   const filteredStats = statTypeFilter === "all" 
@@ -150,6 +157,7 @@ export default function Stars() {
             ) : (
               <div className="text-center p-6 text-muted-foreground">
                 <p>No statistics found {statTypeFilter !== "all" ? `for ${formatStatType(statTypeFilter)}` : ""}.</p>
+                <p className="mt-2">Try refreshing player statistics from the Stats page.</p>
               </div>
             )}
           </CardContent>
