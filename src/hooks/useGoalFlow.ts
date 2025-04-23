@@ -21,27 +21,28 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     if (team === 'home') {
       setCurrentStep('scorer-select');
     } else {
-      // Instead of 'opponent-players-on-ice', we'll use 'players-on-ice' which is in our FlowStep type
       setCurrentStep('players-on-ice');
     }
   };
 
   const handleScorerSelect = (player: User) => {
     setSelectedScorer(player);
-    setPlayersOnIce(prev => [...prev, player]);
     setCurrentStep('primary-assist');
   };
 
   const handlePrimaryAssistSelect = (player: User | null) => {
     setPrimaryAssist(player);
-    if (player) setPlayersOnIce(prev => [...prev.filter(p => p.id !== player.id), player]);
     setCurrentStep('secondary-assist');
   };
 
   const handleSecondaryAssistSelect = (player: User | null) => {
     setSecondaryAssist(player);
-    if (player) setPlayersOnIce(prev => [...prev.filter(p => p.id !== player.id), player]);
     setCurrentStep('players-on-ice');
+  };
+  
+  // New function to handle moving to the next step
+  const handleNextStep = () => {
+    setCurrentStep('submit');
   };
 
   const validatePlayers = () => {
@@ -63,24 +64,26 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   const handlePlayersOnIceSelect = (players: User[]) => {
     console.log("handlePlayersOnIceSelect called with players:", players);
     
-    const allPlayers = [...players];
+    // Create a new array with unique players
+    const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
     
-    if (selectedScorer && !players.some(p => p.id === selectedScorer.id)) {
-      allPlayers.push(selectedScorer);
-    }
+    // Add mandatory players (scorer, primary assist, secondary assist) if not already included
+    const mandatoryPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
     
-    if (primaryAssist && !players.some(p => p.id === primaryAssist.id)) {
-      allPlayers.push(primaryAssist);
-    }
+    const allPlayers = [...uniquePlayers];
     
-    if (secondaryAssist && !players.some(p => p.id === secondaryAssist.id)) {
-      allPlayers.push(secondaryAssist);
-    }
+    // Add any mandatory players not already in the selection
+    mandatoryPlayers.forEach(requiredPlayer => {
+      if (requiredPlayer && !allPlayers.some(p => p.id === requiredPlayer.id)) {
+        allPlayers.push(requiredPlayer);
+      }
+    });
     
+    // Limit to 6 players maximum
     const limitedPlayers = allPlayers.slice(0, 6);
+    
     console.log("Final players on ice set to:", limitedPlayers);
     setPlayersOnIce(limitedPlayers);
-    setCurrentStep('submit');
   };
 
   const handleSubmit = async () => {
@@ -124,7 +127,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
         title: "Goal Recorded",
         description: selectedTeam === 'home' 
           ? `Goal by ${selectedScorer?.name || 'Unknown player'}`
-          : `Goal against by ${game.awayTeam.name}`
+          : `Goal against by ${game.awayTeam?.name || 'Away team'}`
       });
 
       onComplete();
@@ -153,6 +156,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     handlePrimaryAssistSelect,
     handleSecondaryAssistSelect,
     handlePlayersOnIceSelect,
+    handleNextStep,
     handleSubmit
   };
 }

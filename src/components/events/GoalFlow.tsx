@@ -1,12 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Game, User } from '@/types';
 import { GoalHeader } from './goal-flow/GoalHeader';
 import { GoalActions } from './goal-flow/GoalActions';
 import { useGoalFlow } from '@/hooks/useGoalFlow';
-import { recordGoalEvent } from '@/services/events/goalEventService';
-import { useToast } from '@/hooks/use-toast';
 import { TeamSelectionStep } from './goal-flow/steps/TeamSelectionStep';
 import { ScorerSelectionStep } from './goal-flow/steps/ScorerSelectionStep';
 import { AssistSelectionStep } from './goal-flow/steps/AssistSelectionStep';
@@ -34,6 +32,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     handlePrimaryAssistSelect,
     handleSecondaryAssistSelect,
     handlePlayersOnIceSelect,
+    handleNextStep,
     handleSubmit
   } = useGoalFlow(game, period, onComplete);
 
@@ -84,7 +83,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
             onPlayersSelect={handlePlayersOnIceSelect}
             preSelectedPlayers={[selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[]}
-            onComplete={() => {}} // This is handled in the hook
+            onComplete={handleNextStep}
           />
         );
       case 'submit':
@@ -111,7 +110,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
       <GoalHeader game={game} selectedTeam={selectedTeam} />
       <CardContent>
         {renderStepContent()}
-        {currentStep !== 'submit' && (
+        {currentStep !== 'submit' && currentStep !== 'players-on-ice' && (
           <GoalActions isSubmitting={isSubmitting} onCancel={onCancel} />
         )}
       </CardContent>

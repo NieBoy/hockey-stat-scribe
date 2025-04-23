@@ -18,11 +18,20 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
-  const [selectedPlayers, setSelectedPlayers] = useState<User[]>(preSelectedPlayers);
-
+  const [selectedPlayers, setSelectedPlayers] = useState<User[]>(preSelectedPlayers || []);
+  const [mandatoryPlayers, setMandatoryPlayers] = useState<User[]>(preSelectedPlayers || []);
+  
+  // Ensure we're working with a deduplicated list of preselected players
   useEffect(() => {
     if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      setSelectedPlayers([...new Map(preSelectedPlayers.map(p => [p.id, p])).values()]);
+      // Remove duplicates by creating a map keyed by player ID
+      const uniquePlayers = [...new Map(preSelectedPlayers
+        .filter(p => p) // Filter out null/undefined players
+        .map(p => [p.id, p])
+      ).values()];
+      
+      setSelectedPlayers(uniquePlayers);
+      setMandatoryPlayers(uniquePlayers);
     }
   }, [preSelectedPlayers]);
 
@@ -31,16 +40,42 @@ export function PlayersOnIceStep({
     let newSelection: User[];
     
     if (isSelected) {
+      // Don't allow deselection of mandatory players (scorer & assists)
+      if (mandatoryPlayers.some(p => p.id === player.id)) {
+        return;
+      }
       newSelection = selectedPlayers.filter(p => p.id !== player.id);
     } else {
+      // Maximum 6 players on ice
       if (selectedPlayers.length >= 6) {
-        return; // Maximum players reached
+        return;
       }
       newSelection = [...selectedPlayers, player];
     }
     
     setSelectedPlayers(newSelection);
     onPlayersSelect(newSelection);
+  };
+
+  const handleConfirm = () => {
+    // Make sure we have at least the mandatory players
+    if (selectedPlayers.length === 0) {
+      return;
+    }
+    
+    // Make sure mandatory players are included
+    const finalSelection = [...selectedPlayers];
+    mandatoryPlayers.forEach(mandatory => {
+      if (!finalSelection.some(p => p.id === mandatory.id)) {
+        finalSelection.push(mandatory);
+      }
+    });
+    
+    // Limit to 6 players maximum
+    const limitedSelection = finalSelection.slice(0, 6);
+    
+    onPlayersSelect(limitedSelection);
+    onComplete();
   };
 
   return (
@@ -68,7 +103,7 @@ export function PlayersOnIceStep({
           
           <div className="mt-4 flex justify-end">
             <Button 
-              onClick={onComplete}
+              onClick={handleConfirm}
               disabled={selectedPlayers.length === 0}
             >
               Confirm Players
