@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/lib/supabase";
-import { User, Position, UserRole } from "@/types";
+import { User, Position, UserRole, TeamBasic } from "@/types";
 
 export function usePlayerDetails(playerId: string | undefined) {
   const [player, setPlayer] = useState<User | null>(null);
@@ -93,11 +93,8 @@ export function usePlayerDetails(playerId: string | undefined) {
         number: memberData.line_number ? String(memberData.line_number) : undefined,
         teams: teamName ? [{ 
           id: memberData.team_id, 
-          name: teamName,
-          players: [],
-          coaches: [],
-          parents: []
-        }] : [],
+          name: teamName
+        } as TeamBasic] : [],
         children: children.length > 0 ? children : undefined
       };
       

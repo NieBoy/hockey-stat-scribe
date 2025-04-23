@@ -25,13 +25,17 @@ export const fetchGameStats = async (gameId: string, playerId?: string): Promise
     
     console.log(`Found ${data?.length || 0} game stats`);
     
+    // Create properly formatted GameStat objects with both property naming conventions
     return data?.map(stat => ({
       id: stat.id,
-      gameId: stat.game_id,
-      playerId: stat.player_id,
-      statType: stat.stat_type,
+      game_id: stat.game_id,
+      gameId: stat.game_id, // Alias 
+      player_id: stat.player_id,
+      playerId: stat.player_id, // Alias
+      stat_type: stat.stat_type as any, // Cast to match the expected type
+      statType: stat.stat_type as any, // Alias
       period: stat.period,
-      timestamp: new Date(stat.timestamp),
+      timestamp: stat.timestamp,
       value: stat.value,
       details: stat.details || ''
     })) || [];

@@ -9,6 +9,8 @@ export type Player = {
   name: string;
   position?: string;
   number?: string;
+  email?: string;
+  lineNumber?: number;
   teams?: TeamBasic[];
 };
 
@@ -25,6 +27,7 @@ export type User = {
   teams?: TeamBasic[];
   children?: User[];
   isAdmin?: boolean; // Add isAdmin property
+  lineNumber?: number;
 };
 
 export type UserRole = 'admin' | 'coach' | 'parent' | 'player';
@@ -80,7 +83,7 @@ export type Game = {
 
 export type StatTracker = {
   user: User;
-  statTypes: string[];
+  statTypes: StatType[];
 };
 
 export type GameEventType = 

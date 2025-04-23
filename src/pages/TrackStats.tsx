@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,9 @@ export default function TrackStats() {
   ) : undefined;
   
   const assignedStatTypes = userAssignment?.statTypes || [];
+
+  // Convert string array to StatType array
+  const typedStatTypes = assignedStatTypes as StatType[];
 
   if (isGameLoading) {
     return (
@@ -81,7 +83,7 @@ export default function TrackStats() {
           <>
             <StatTracker 
               game={game}
-              statTypes={assignedStatTypes}
+              statTypes={typedStatTypes}
               onStatRecorded={handleStatRecorded}
               existingStats={gameStats}
             />

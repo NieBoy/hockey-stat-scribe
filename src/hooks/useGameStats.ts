@@ -41,13 +41,16 @@ export function useGameStats(gameId: string) {
         (payload) => {
           switch(payload.eventType) {
             case 'INSERT':
-              const newStat = {
+              const newStat: GameStat = {
                 id: payload.new.id,
+                game_id: payload.new.game_id,
                 gameId: payload.new.game_id,
+                player_id: payload.new.player_id,
                 playerId: payload.new.player_id,
+                stat_type: payload.new.stat_type,
                 statType: payload.new.stat_type,
                 period: payload.new.period,
-                timestamp: new Date(payload.new.timestamp),
+                timestamp: payload.new.timestamp,
                 value: payload.new.value,
                 details: payload.new.details || ''
               };
