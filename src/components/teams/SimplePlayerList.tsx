@@ -23,12 +23,6 @@ export default function SimplePlayerList({
   // Compare using player.id to match current step selection logic
   const isSelected = (player: User) => selectedPlayers.some(p => p.id === player.id);
 
-  // Determine if a player is in the mandatory selection (cannot be deselected)
-  const isMandatory = (player: User) => {
-    // This is just UI indication - actual logic is in PlayersOnIceStep
-    return false; // We'll handle the mandatory logic in the parent component
-  };
-
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
       {sortedPlayers.map(player => (
@@ -39,6 +33,7 @@ export default function SimplePlayerList({
             ${isSelected(player) ? 'border-primary ring-2 ring-primary' : ''}
             hover:bg-accent/50 transition-colors
           `}
+          // Toggle select/deselect on click
           onClick={() => onPlayerSelect && onPlayerSelect(player)}
         >
           <CardContent className="p-3">
