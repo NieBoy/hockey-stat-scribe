@@ -140,7 +140,7 @@ export type Database = {
       }
       games: {
         Row: {
-          away_team_id: string
+          away_team_id: string | null
           created_at: string
           current_period: number
           date: string
@@ -152,7 +152,7 @@ export type Database = {
           periods: number
         }
         Insert: {
-          away_team_id: string
+          away_team_id?: string | null
           created_at?: string
           current_period?: number
           date: string
@@ -164,7 +164,7 @@ export type Database = {
           periods?: number
         }
         Update: {
-          away_team_id?: string
+          away_team_id?: string | null
           created_at?: string
           current_period?: number
           date?: string

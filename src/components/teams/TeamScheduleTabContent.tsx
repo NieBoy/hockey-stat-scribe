@@ -1,7 +1,9 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Table, TableHead, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { useNavigate } from "react-router-dom";
 import NewOpponentGameDialog from "./NewOpponentGameDialog";
 import { supabase } from "@/lib/supabase";
 import { Team } from "@/types";
@@ -20,6 +22,7 @@ type GameScheduleItem = {
 };
 
 export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentProps) {
+  const navigate = useNavigate();
   const [games, setGames] = useState<GameScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -89,6 +92,10 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
     setRefreshKey(prev => prev + 1); // Trigger a refresh
   };
 
+  const handleGameClick = (gameId: string) => {
+    navigate(`/games/${gameId}`);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -128,7 +135,11 @@ export default function TeamScheduleTabContent({ team }: TeamScheduleTabContentP
           </TableHeader>
           <TableBody>
             {games.map(game => (
-              <TableRow key={game.id}>
+              <TableRow 
+                key={game.id} 
+                onClick={() => handleGameClick(game.id)}
+                className="cursor-pointer hover:bg-muted/70 transition-colors"
+              >
                 <TableCell>{format(new Date(game.date), "MMM d, yyyy h:mm a")}</TableCell>
                 <TableCell>{game.opponent}</TableCell>
                 <TableCell>{game.location}</TableCell>
