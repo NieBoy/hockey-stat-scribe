@@ -31,14 +31,15 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     
     console.log("Found player:", playerName, "with team_member ID:", playerStatsId);
     
-    // Fetch game events with improved JSONB queries
+    // Fetch game events with proper JSONB queries
     console.log("Fetching game events for player ID:", playerStatsId);
     
-    // Query 1: Events where the player is directly mentioned in specific fields
+    // Fixed Query 1: Events where the player is directly mentioned in specific fields
+    // Using proper JSONB path operators instead of string concatenation
     const { data: directEvents, error: directError } = await supabase
       .from('game_events')
       .select('*')
-      .or(`details->>'playerId'.eq.${playerStatsId},details->>'primaryAssistId'.eq.${playerStatsId},details->>'secondaryAssistId'.eq.${playerStatsId}`);
+      .or(`details->playerId.eq.${playerStatsId},details->primaryAssistId.eq.${playerStatsId},details->secondaryAssistId.eq.${playerStatsId}`);
       
     if (directError) {
       console.error("Error fetching direct game events:", directError);
@@ -46,12 +47,14 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     console.log(`Found ${directEvents?.length || 0} direct events for player ${playerStatsId}`);
+    console.log("Sample direct event:", directEvents && directEvents.length > 0 ? directEvents[0] : "No events");
     
-    // Query 2: Events where player is in playersOnIce array
+    // Fixed Query 2: Events where player is in playersOnIce array
+    // Using the proper contains operator for JSONB arrays
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
       .select('*')
-      .contains('details', { playersOnIce: [playerStatsId] });
+      .filter('details->playersOnIce', 'cs', `[${playerStatsId}]`);
       
     if (onIceError) {
       console.error("Error fetching on-ice events:", onIceError);
@@ -59,6 +62,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerStatsId}`);
+    console.log("Sample on-ice event:", onIceEvents && onIceEvents.length > 0 ? onIceEvents[0] : "No events");
     
     // Combine events, removing duplicates
     const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
@@ -74,8 +78,13 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     // Process events into game stats - this is where events become statistics
     if (gameEvents && gameEvents.length > 0) {
       console.log(`Processing ${gameEvents.length} events into game stats...`);
-      const statsCreated = await createGameStatsFromEvents(playerStatsId, gameEvents);
-      console.log(`Game stats creation result: ${statsCreated ? 'Success' : 'No new stats created'}`);
+      try {
+        const statsCreated = await createGameStatsFromEvents(playerStatsId, gameEvents);
+        console.log(`Game stats creation result: ${statsCreated ? 'Success' : 'No new stats created'}`);
+      } catch (createStatsError) {
+        console.error("Error creating game stats from events:", createStatsError);
+        // Continue execution to at least try to summarize existing stats
+      }
     } else {
       console.log("No events found to process for this player");
     }

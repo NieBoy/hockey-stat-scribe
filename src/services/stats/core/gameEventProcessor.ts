@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 
@@ -17,30 +16,50 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     
     // Process each event
     for (const event of events) {
-      console.log(`Processing event:`, event);
+      console.log(`Processing event ID: ${event.id}, type: ${event.event_type}`);
       
       // Convert details to proper format if needed
-      const details = typeof event.details === 'string' 
-        ? JSON.parse(event.details) 
-        : event.details;
-        
-      if (event.event_type === 'goal') {
-        // Process goal event
-        const result = await processGoalEvent(event, playerId, details);
-        statsCreated = result || statsCreated;
-        console.log(`Goal event processing result: ${result ? 'Stats created' : 'No stats created'}`);
-      } else if (event.event_type === 'penalty') {
-        // Process penalty event
-        const result = await processPenaltyEvent(event, playerId, details);
-        statsCreated = result || statsCreated;
-        console.log(`Penalty event processing result: ${result ? 'Stats created' : 'No stats created'}`);
-      } else if (event.event_type === 'faceoff') {
-        // Process faceoff event
-        const result = await processFaceoffEvent(event, playerId, details);
-        statsCreated = result || statsCreated;
-        console.log(`Faceoff event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+      let details;
+      try {
+        details = typeof event.details === 'string' 
+          ? JSON.parse(event.details) 
+          : event.details;
+          
+        console.log(`Event details: ${JSON.stringify(details)}`);
+      } catch (parseError) {
+        console.error(`Error parsing event details:`, parseError);
+        console.log(`Raw details value:`, event.details);
+        continue; // Skip this event if details can't be parsed
       }
-      // Add other event types as needed
+      
+      if (!details) {
+        console.log(`No details found for event ${event.id}, skipping`);
+        continue;
+      }
+      
+      try {
+        let result = false;
+        
+        if (event.event_type === 'goal') {
+          // Process goal event
+          result = await processGoalEvent(event, playerId, details);
+          console.log(`Goal event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+        } else if (event.event_type === 'penalty') {
+          // Process penalty event
+          result = await processPenaltyEvent(event, playerId, details);
+          console.log(`Penalty event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+        } else if (event.event_type === 'faceoff') {
+          // Process faceoff event
+          result = await processFaceoffEvent(event, playerId, details);
+          console.log(`Faceoff event processing result: ${result ? 'Stats created' : 'No stats created'}`);
+        }
+        
+        statsCreated = result || statsCreated;
+        
+      } catch (eventProcessError) {
+        console.error(`Error processing event ${event.id} of type ${event.event_type}:`, eventProcessError);
+        // Continue with next event rather than breaking the entire process
+      }
     }
     
     if (statsCreated) {
@@ -151,7 +170,7 @@ const createGameStat = async (
   details: string = ''
 ): Promise<boolean> => {
   try {
-    console.log(`Creating game stat: ${statType} for player ${playerId} in period ${period}`);
+    console.log(`Creating game stat: ${statType} for player ${playerId} in period ${period}, game ${gameId}`);
     
     // Validate that player ID exists in team_members
     const isValid = await validatePlayerId(playerId);
