@@ -2,10 +2,10 @@
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Trophy, Stats } from "lucide-react";
+import { BarChart3, Trophy, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function Stats() {
+export default function StatsPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -54,7 +54,7 @@ export default function Stats() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Stats className="h-5 w-5 text-purple-500" />
+                <Activity className="h-5 w-5 text-purple-500" />
                 Individual Stats
               </CardTitle>
               <CardDescription>

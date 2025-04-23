@@ -3,7 +3,7 @@ import React from "react";
 import { User } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit } from "lucide-react";
+import { X, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface PlayerCardProps {
@@ -42,7 +42,7 @@ const PlayerCard = ({ player, teamId, onRemovePlayer }: PlayerCardProps) => {
               asChild
             >
               <Link to={`/players/${player.id}/stats`}>
-                <Stats className="h-3 w-3" />
+                <Activity className="h-3 w-3" />
                 <span className="sr-only">View Stats for {player.name}</span>
               </Link>
             </Button>
