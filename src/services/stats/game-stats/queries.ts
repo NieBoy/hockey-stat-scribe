@@ -1,13 +1,13 @@
 
-import { supabase } from '@/lib/supabase';
-import { GameStat } from '@/types';
+import { supabase } from "@/lib/supabase";
+import { GameStat } from "@/types";
 
-export const fetchGameStats = async (gameId: string, playerId?: string): Promise<GameStat[]> => {
+export const fetchGameStats = async (gameId?: string, playerId?: string): Promise<GameStat[]> => {
   try {
-    console.log(`Fetching game stats for game: ${gameId || 'all'}, player: ${playerId || 'all'}`);
-    
-    let query = supabase.from('game_stats').select('*');
-    
+    let query = supabase
+      .from('game_stats')
+      .select('*');
+      
     if (gameId) {
       query = query.eq('game_id', gameId);
     }
@@ -16,47 +16,36 @@ export const fetchGameStats = async (gameId: string, playerId?: string): Promise
       query = query.eq('player_id', playerId);
     }
     
-    const { data, error } = await query;
+    const { data, error } = await query.order('timestamp', { ascending: false });
     
-    if (error) {
-      console.error("Error fetching game stats:", error);
-      throw error;
-    }
+    if (error) throw error;
     
-    console.log(`Found ${data?.length || 0} game stats`);
-    
-    // Create properly formatted GameStat objects with both property naming conventions
-    return data?.map(stat => ({
+    // Map to standard format
+    return (data || []).map(stat => ({
       id: stat.id,
       game_id: stat.game_id,
-      gameId: stat.game_id, // Alias 
+      gameId: stat.game_id,
       player_id: stat.player_id,
-      playerId: stat.player_id, // Alias
-      stat_type: stat.stat_type as any, // Cast to match the expected type
-      statType: stat.stat_type as any, // Alias
+      playerId: stat.player_id,
+      stat_type: stat.stat_type,
+      statType: stat.stat_type,
       period: stat.period,
-      timestamp: stat.timestamp,
       value: stat.value,
-      details: stat.details || ''
-    })) || [];
+      details: stat.details,
+      timestamp: stat.timestamp
+    }));
   } catch (error) {
-    console.error("Error in fetchGameStats:", error);
-    throw error;
+    console.error("Error fetching game stats:", error);
+    return [];
   }
 };
 
 export const deleteGameStat = async (statId: string) => {
-  try {
-    const { error } = await supabase.from('game_stats').delete().eq('id', statId);
+  const { error } = await supabase
+    .from('game_stats')
+    .delete()
+    .eq('id', statId);
     
-    if (error) {
-      console.error("Error deleting game stat:", error);
-      throw error;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error in deleteGameStat:", error);
-    throw error;
-  }
+  if (error) throw error;
+  return true;
 };

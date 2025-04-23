@@ -1,36 +1,67 @@
 
 import { supabase } from "@/lib/supabase";
-import { Team } from "@/types";
-import { getTeamMembers, processTeamMembersByRole } from "./teamMembers";
+import { Team, User } from "@/types";
 
 export const getTeamById = async (id: string): Promise<Team | null> => {
   try {
-    const { data, error } = await supabase
+    // Fetch team data
+    const { data: team, error } = await supabase
       .from('teams')
       .select(`
         id, 
-        name
+        name,
+        created_at
       `)
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error(`Error fetching team ${id}:`, error);
-      throw error;
-    }
+    if (error) throw error;
+    if (!team) return null;
     
-    const teamMembers = await getTeamMembers(id);
-    const { players, coaches, parents } = processTeamMembersByRole(teamMembers);
+    // Fetch team members for this team
+    const { data: teamMembers, error: membersError } = await supabase
+      .from('team_members')
+      .select(`
+        id,
+        user_id,
+        name,
+        email,
+        position,
+        line_number,
+        role
+      `)
+      .eq('team_id', id);
+      
+    if (membersError) throw membersError;
     
-    return {
-      id: data.id,
-      name: data.name,
+    // Group members by role
+    const players = teamMembers
+      .filter(member => member.role === 'player')
+      .map(player => ({
+        id: player.id,
+        name: player.name || 'Unknown Player',
+        position: player.position,
+        lineNumber: player.line_number,
+        email: player.email
+      }));
+    
+    const coaches = teamMembers
+      .filter(member => member.role === 'coach')
+      .map(coach => ({
+        id: coach.id,
+        name: coach.name || 'Unknown Coach',
+        email: coach.email
+      }));
+      
+    const fullTeam: Team = {
+      ...team,
       players,
-      coaches,
-      parents
+      coaches
     };
+    
+    return fullTeam;
   } catch (error) {
-    console.error(`Error in getTeamById for team ${id}:`, error);
-    throw error;
+    console.error("Error fetching team:", error);
+    return null;
   }
 };

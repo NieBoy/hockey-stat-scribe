@@ -111,54 +111,58 @@ export function SortableStatsTable({ stats, getPlayerName }: SortableStatsTableP
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>
-              <Button
+            <TableHead className="w-[200px]">
+              <Button 
                 variant="ghost"
+                className="flex items-center justify-between w-full px-0"
+                onClick={() => handleSort("name")}
+              >
+                Player {getSortIcon("name")}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button 
+                variant="ghost"
+                className="flex items-center justify-between w-full px-0"
                 onClick={() => handleSort("statType")}
-                className="h-8 flex items-center gap-1"
               >
                 Stat Type {getSortIcon("statType")}
               </Button>
             </TableHead>
             <TableHead>
-              <Button
+              <Button 
                 variant="ghost"
+                className="flex items-center justify-between w-full px-0"
                 onClick={() => handleSort("value")}
-                className="h-8 flex items-center gap-1"
               >
                 Total {getSortIcon("value")}
               </Button>
             </TableHead>
             <TableHead>
-              <Button
+              <Button 
                 variant="ghost"
+                className="flex items-center justify-between w-full px-0"
                 onClick={() => handleSort("gamesPlayed")}
-                className="h-8 flex items-center gap-1"
               >
                 Games {getSortIcon("gamesPlayed")}
               </Button>
             </TableHead>
             <TableHead>
-              <Button
+              <Button 
                 variant="ghost"
+                className="flex items-center justify-between w-full px-0"
                 onClick={() => handleSort("average")}
-                className="h-8 flex items-center gap-1"
               >
-                Average {getSortIcon("average")}
+                Per Game {getSortIcon("average")}
               </Button>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedStats.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="h-24 text-center">
-                No stats available for this player
-              </TableCell>
-            </TableRow>
-          ) : (
-            sortedStats.map((stat) => (
-              <TableRow key={`${stat.playerId}-${stat.statType}`}>
+          {sortedStats.length > 0 ? (
+            sortedStats.map((stat, index) => (
+              <TableRow key={`${stat.playerId}-${stat.statType}-${index}`}>
+                <TableCell className="font-medium">{getPlayerName(stat.playerId)}</TableCell>
                 <TableCell>
                   <Badge className={getStatTypeColor(stat.statType)}>
                     {formatStatType(stat.statType)}
@@ -167,12 +171,16 @@ export function SortableStatsTable({ stats, getPlayerName }: SortableStatsTableP
                 <TableCell>{stat.value}</TableCell>
                 <TableCell>{stat.gamesPlayed}</TableCell>
                 <TableCell>
-                  {stat.gamesPlayed > 0
-                    ? (stat.value / stat.gamesPlayed).toFixed(2)
-                    : "0.00"}
+                  {stat.gamesPlayed > 0 ? (stat.value / stat.gamesPlayed).toFixed(2) : "-"}
                 </TableCell>
               </TableRow>
             ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                No statistics available
+              </TableCell>
+            </TableRow>
           )}
         </TableBody>
       </Table>
