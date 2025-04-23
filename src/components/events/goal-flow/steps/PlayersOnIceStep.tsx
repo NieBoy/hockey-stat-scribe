@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Team, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -18,76 +19,76 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
-  // Always store the list as User[] to keep selection logic compatible
-  const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
+  // Make sure preSelectedPlayers are always in selection and can't be removed
   const [mandatoryPlayers, setMandatoryPlayers] = useState<User[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
 
-  // Initialize with preselected players when the component mounts or preSelectedPlayers changes
+  // Initialize mandatory and selected players (mandatory + extras) ONCE on mount
   useEffect(() => {
     if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      // Make unique list by player id
-      const validPlayers = preSelectedPlayers
-        .filter(Boolean)
-        .map(player => ({
-          id: player.id,
-          name: player.name,
-          number: player.number || '',
-        } as User));
-      const uniquePlayers = Array.from(new Map(validPlayers.map(p => [p.id, p])).values());
-      setSelectedPlayers(uniquePlayers);
-      setMandatoryPlayers(uniquePlayers);
-      // Also report to parent immediately with initial selection
-      onPlayersSelect(uniquePlayers);
+      // Uniqueness by ID
+      const uniqueMandatory = Array.from(
+        new Map(preSelectedPlayers.filter(Boolean).map(p => [p.id, p])).values()
+      );
+      setMandatoryPlayers(uniqueMandatory);
+      setSelectedPlayers(uniqueMandatory); // Start only with mandatory, user picks extras
+      onPlayersSelect(uniqueMandatory); // Notify parent initially
+    } else {
+      setMandatoryPlayers([]);
+      setSelectedPlayers([]);
+      onPlayersSelect([]); // No default selection
     }
-  }, [preSelectedPlayers, onPlayersSelect]);
+    // Only want to set this ONCE on mount or when preSelectedPlayers changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preSelectedPlayers]);
 
-  // Allow multi-select: add or remove players from selectedPlayers
+  // Update parent whenever selection changes
+  useEffect(() => {
+    onPlayersSelect(selectedPlayers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlayers]);
+
+  // Player select/deselect
   const handlePlayerSelect = (player: User) => {
-    const isAlreadySelected = selectedPlayers.some(p => p.id === player.id);
     const isMandatory = mandatoryPlayers.some(p => p.id === player.id);
+    const isSelected = selectedPlayers.some(p => p.id === player.id);
 
-    // Don't allow removing mandatory players (scorer/assists)
-    if (isAlreadySelected && isMandatory) {
-      toast(`${player.name} cannot be deselected`);
+    // Can't remove mandatory players
+    if (isMandatory && isSelected) {
+      toast(`${player.name} cannot be deselected (involved in the goal)`);
       return;
     }
 
-    let updatedSelection: User[];
-    if (isAlreadySelected) {
-      // Remove player if not mandatory
-      updatedSelection = selectedPlayers.filter(p => p.id !== player.id);
-    } else {
-      // Add player if under limit
+    // Add extra player if not full and not already selected
+    if (!isSelected) {
       if (selectedPlayers.length >= 6) {
         toast("Maximum of 6 players allowed on ice");
         return;
       }
-      updatedSelection = [...selectedPlayers, player];
+      setSelectedPlayers([...selectedPlayers, player]);
+      return;
     }
 
-    setSelectedPlayers(updatedSelection);
-    onPlayersSelect(updatedSelection);
+    // Remove extra players (never mandatory)
+    if (!isMandatory && isSelected) {
+      setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id));
+    }
   };
 
-  // Confirm selection (used by Confirm button)
   const handleConfirm = () => {
+    if (selectedPlayers.length < mandatoryPlayers.length) {
+      toast("All goal-involved players must be included");
+      return;
+    }
     if (selectedPlayers.length === 0) {
       toast("Please select at least one player");
       return;
     }
-
-    // Ensure all mandatory players are included
-    const withAllMandatory = [...selectedPlayers];
-    for (const mandatory of mandatoryPlayers) {
-      if (!withAllMandatory.some(p => p.id === mandatory.id)) {
-        withAllMandatory.push(mandatory);
-      }
+    if (selectedPlayers.length > 6) {
+      toast("Impossible state: more than 6 players selected!");
+      return;
     }
-
-    // Limit to 6
-    const finalPlayers = withAllMandatory.slice(0, 6);
-
-    onPlayersSelect(finalPlayers);
+    onPlayersSelect(selectedPlayers);
     onComplete();
   };
 
@@ -121,7 +122,7 @@ export function PlayersOnIceStep({
               <div className="mt-4 flex justify-end">
                 <Button 
                   onClick={handleConfirm}
-                  disabled={selectedPlayers.length === 0}
+                  disabled={selectedPlayers.length < mandatoryPlayers.length}
                 >
                   Confirm Players
                 </Button>
@@ -135,3 +136,4 @@ export function PlayersOnIceStep({
     </div>
   );
 }
+
