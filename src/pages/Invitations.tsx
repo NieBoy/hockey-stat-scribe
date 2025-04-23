@@ -4,7 +4,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InviteUserForm from "@/components/invitations/InviteUserForm";
 import InvitationsList from "@/components/invitations/InvitationsList";
-import { Invitation } from "@/types";
+import { Invitation, UserRole } from "@/types";
 import { currentUser, mockTeams } from "@/lib/mock-data";
 import { toast } from "sonner";
 
@@ -13,19 +13,19 @@ const mockSentInvitations: Invitation[] = [
   {
     id: '1',
     email: 'newplayer@example.com',
-    role: ['player'],
-    teamId: '1',
+    role: 'player',
+    team_id: '1',
     invitedBy: '1',
     status: 'pending',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     id: '2',
     email: 'newcoach@example.com',
-    role: ['coach'],
+    role: 'coach',
     invitedBy: '1',
     status: 'accepted',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];
 
@@ -33,11 +33,11 @@ const mockReceivedInvitations: Invitation[] = [
   {
     id: '3',
     email: currentUser.email,
-    role: ['admin'],
-    teamId: '2',
+    role: 'admin',
+    team_id: '2',
     invitedBy: '6',
     status: 'pending',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];
 
@@ -84,11 +84,11 @@ export default function Invitations() {
     const newInvitation: Invitation = {
       id: Date.now().toString(),
       email: invitation.email || "",
-      role: invitation.role || ["player"],
-      teamId: invitation.teamId,
+      role: invitation.role || "player",
+      team_id: invitation.team_id,
       invitedBy: currentUser.id,
       status: "pending",
-      createdAt: new Date(),
+      created_at: new Date().toISOString(),
     };
     
     setSentInvitations([newInvitation, ...sentInvitations]);

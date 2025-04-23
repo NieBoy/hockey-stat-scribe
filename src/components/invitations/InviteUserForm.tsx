@@ -58,12 +58,12 @@ export default function InviteUserForm({ teams, onInvite }: InviteUserFormProps)
   const onSubmit = (values: InvitationFormValues) => {
     const invitation: Partial<Invitation> = {
       email: values.email,
-      role: [values.role as UserRole],
-      teamId: values.teamId,
+      role: values.role as UserRole,
+      team_id: values.teamId,
       invitedBy: "1", // Currently logged in user ID
       status: "pending",
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
     };
     
     onInvite(invitation);

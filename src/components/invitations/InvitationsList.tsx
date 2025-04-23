@@ -67,8 +67,8 @@ export default function InvitationsList({
                   {invitation.email}
                 </CardTitle>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className={getRoleBadgeColor(invitation.role[0])}>
-                    {invitation.role[0].charAt(0).toUpperCase() + invitation.role[0].slice(1)}
+                  <Badge variant="outline" className={getRoleBadgeColor(invitation.role)}>
+                    {typeof invitation.role === 'string' ? invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1) : 'Unknown Role'}
                   </Badge>
                   <Badge variant="outline" className={getStatusColor(invitation.status)}>
                     {invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
@@ -79,7 +79,7 @@ export default function InvitationsList({
               <div className="flex items-center text-sm text-muted-foreground">
                 <Clock className="h-3 w-3 mr-1" />
                 <span>
-                  {formatDistanceToNow(new Date(invitation.createdAt), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(invitation.created_at || invitation.createdAt || ''), { addSuffix: true })}
                 </span>
               </div>
             </div>

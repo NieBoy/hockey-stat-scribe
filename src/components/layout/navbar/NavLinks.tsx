@@ -31,7 +31,7 @@ export default function NavLinks({ user }: NavLinksProps) {
         <Users className="h-4 w-4" />
         Teams
       </Link>
-      {user.isAdmin && (
+      {(user.isAdmin || user.role?.includes('admin')) && (
         <Link to="/organizations" className="flex items-center gap-2 text-sm font-medium">
           <Building className="h-4 w-4" />
           Organizations

@@ -1,12 +1,12 @@
 
 import { Link } from "react-router-dom";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User as UserType } from "@/types";
+import { User } from "@/types";
 
 interface UserMenuProps {
-  user: UserType;
+  user: User;
   signOut: () => void;
 }
 
@@ -28,7 +28,7 @@ export default function UserMenu({ user, signOut }: UserMenuProps) {
         {user.role && user.role.length > 0 && (
           <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
             {hasMultipleRoles 
-              ? `${user.role[0].charAt(0).toUpperCase() + user.role[0].slice(1)}${user.isAdmin ? '+' : ''}` 
+              ? `${user.role[0].charAt(0).toUpperCase() + user.role[0].slice(1)}${(user.isAdmin || user.role.includes('admin')) ? '+' : ''}` 
               : user.role[0].charAt(0).toUpperCase() + user.role[0].slice(1)}
           </span>
         )}

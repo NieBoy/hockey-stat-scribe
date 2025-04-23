@@ -26,7 +26,10 @@ export default function TeamStats({
           key={statType}
           statType={statType}
           players={players}
-          stats={stats.filter(s => s.statType === statType && s.period === period)}
+          stats={stats.filter(s => (s.statType || s.stat_type) === statType && s.period === period).map(s => ({
+            playerId: s.playerId || s.player_id,
+            value: s.value
+          }))}
           getTeamName={getTeamName}
           onStatRecorded={(playerId, value) => onStatRecorded(playerId, statType, value)}
           showWonLost={statType === 'faceoffs'}

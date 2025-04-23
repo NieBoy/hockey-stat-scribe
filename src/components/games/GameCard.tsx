@@ -18,7 +18,7 @@ export default function GameCard({ game }: GameCardProps) {
   const { user } = useAuth();
   const isCoach = user?.role?.includes('coach');
   
-  // Use is_active as the main property, but fall back to isActive if needed
+  // Use is_active as the main property
   const gameActive = game.is_active;
   const awayTeamName = game.awayTeam ? game.awayTeam.name : (game.opponent_name || "Unknown Opponent");
   
