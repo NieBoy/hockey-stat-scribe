@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { User, Game } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { recordPenaltyEvent } from '@/services/events/penaltyEventService';
+import { recordPenaltyEvent } from '@/services/events/penalty/penaltyEventService';
 
 type FlowStep = 'team-select' | 'player-select' | 'penalty-type' | 'penalty-duration' | 'additional-penalty' | 'submit';
 type PenaltyDuration = 'minor' | 'major';

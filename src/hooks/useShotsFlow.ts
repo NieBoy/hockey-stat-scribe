@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { User, Game } from '@/types';
 import { toast } from 'sonner';
-import { recordShotEvent } from '@/services/events/shotsEventService';
+import { recordShotEvent } from '@/services/events/shots/shotsEventService';
 
 type FlowStep = 'team-select' | 'player-select' | 'submit';
 

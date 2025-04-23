@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { User, Game } from '@/types';
 import { toast } from 'sonner';
-import { recordFaceoffEvent } from '@/services/events/faceoffEventService';
+import { recordFaceoffEvent } from '@/services/events/faceoff/faceoffEventService';
 
 type FlowStep = 'outcome-select' | 'player-select' | 'submit';
 

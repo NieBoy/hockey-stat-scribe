@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Game, User } from '@/types';
 import { PlayerSelect } from './goal-flow/PlayerSelect';
-import { recordHitEvent } from '@/services/events/hitsEventService';
+import { recordHitEvent } from '@/services/events/hits/hitsEventService';
 import { toast } from 'sonner';
 
 interface HitsFlowProps {
