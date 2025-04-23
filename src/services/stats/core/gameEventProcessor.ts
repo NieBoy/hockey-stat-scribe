@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 

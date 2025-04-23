@@ -44,16 +44,29 @@ export const reprocessAllStats = async (): Promise<boolean> => {
   try {
     console.log("Calling database function to reprocess all stats");
     
-    const { data, error } = await supabase
-      .rpc('reprocess_all_player_stats');
+    // First, clear existing player stats
+    const { error: clearError } = await supabase
+      .from('player_stats')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // This is a safe way to clear all rows
       
-    if (error) {
-      console.error("Error reprocessing all stats:", error);
-      throw error;
+    if (clearError) {
+      console.error("Error clearing player stats:", clearError);
+      return false;
     }
     
-    console.log("Successfully reprocessed all stats");
-    return true;
+    console.log("Existing player stats cleared. Rebuilding from game stats...");
+    
+    // Refresh stats for each player
+    return await refreshAllPlayerStats()
+      .then(() => {
+        console.log("Successfully reprocessed all stats");
+        return true;
+      })
+      .catch(error => {
+        console.error("Error in refreshAllPlayerStats during reprocessAll:", error);
+        return false;
+      });
   } catch (error) {
     console.error("Error in reprocessAllStats:", error);
     return false;

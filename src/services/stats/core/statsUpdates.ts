@@ -34,12 +34,12 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     // Fetch game events with proper JSONB queries
     console.log("Fetching game events for player ID:", playerStatsId);
     
-    // Fixed Query 1: Events where the player is directly mentioned in specific fields
-    // Using proper JSONB path operators instead of string concatenation
+    // Query 1: Events where the player is directly mentioned in specific fields
+    // Using proper JSONB path operators
     const { data: directEvents, error: directError } = await supabase
       .from('game_events')
       .select('*')
-      .or(`details->playerId.eq.${playerStatsId},details->primaryAssistId.eq.${playerStatsId},details->secondaryAssistId.eq.${playerStatsId}`);
+      .or(`details->>'playerId'.eq.${playerStatsId},details->>'primaryAssistId'.eq.${playerStatsId},details->>'secondaryAssistId'.eq.${playerStatsId}`);
       
     if (directError) {
       console.error("Error fetching direct game events:", directError);
@@ -49,12 +49,12 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     console.log(`Found ${directEvents?.length || 0} direct events for player ${playerStatsId}`);
     console.log("Sample direct event:", directEvents && directEvents.length > 0 ? directEvents[0] : "No events");
     
-    // Fixed Query 2: Events where player is in playersOnIce array
-    // Using the proper contains operator for JSONB arrays
+    // Query 2: Events where player is in playersOnIce array
+    // Using contains operator for JSONB arrays
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
       .select('*')
-      .filter('details->playersOnIce', 'cs', `[${playerStatsId}]`);
+      .contains('details', { playersOnIce: [playerStatsId] });
       
     if (onIceError) {
       console.error("Error fetching on-ice events:", onIceError);
