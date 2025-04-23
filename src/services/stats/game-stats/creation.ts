@@ -23,10 +23,10 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>) =
 
 export const recordPlusMinusStats = async (
   gameId: string,
-  teamType: 'home' | 'away',
   playerIds: string[],
   period: number,
-  isPlus: boolean
+  isHomeScoringTeam: boolean,
+  value: number
 ) => {
   try {
     const insertPromises = playerIds.map(playerId => 
@@ -37,8 +37,8 @@ export const recordPlusMinusStats = async (
           player_id: playerId,
           stat_type: 'plusMinus',
           period: period,
-          value: isPlus ? 1 : -1,
-          details: isPlus ? 'plus' : 'minus',
+          value: value,
+          details: value > 0 ? 'plus' : 'minus',
           timestamp: new Date().toISOString()
         })
     );
