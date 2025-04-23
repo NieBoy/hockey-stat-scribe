@@ -16,14 +16,18 @@ export default function GameCard({ game }: GameCardProps) {
   const formattedDate = format(new Date(game.date), "MMM d, yyyy");
   const formattedTime = format(new Date(game.date), "h:mm a");
   const { user } = useAuth();
-  const isCoach = user?.role.includes('coach');
+  const isCoach = user?.role?.includes('coach');
+  
+  // Use is_active as the main property, but fall back to isActive if needed
+  const gameActive = game.is_active;
+  const awayTeamName = game.awayTeam ? game.awayTeam.name : (game.opponent_name || "Unknown Opponent");
   
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/50 pb-4">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg">{game.homeTeam.name} vs {game.awayTeam.name}</CardTitle>
+            <CardTitle className="text-lg">{game.homeTeam.name} vs {awayTeamName}</CardTitle>
             <CardDescription className="flex items-center mt-1">
               <CalendarClock className="h-3.5 w-3.5 mr-1" />
               {formattedDate} at {formattedTime}
@@ -33,8 +37,8 @@ export default function GameCard({ game }: GameCardProps) {
               {game.location}
             </CardDescription>
           </div>
-          <Badge variant={game.isActive ? "default" : "secondary"}>
-            {game.isActive ? "Active" : "Upcoming"}
+          <Badge variant={gameActive ? "default" : "secondary"}>
+            {gameActive ? "Active" : "Upcoming"}
           </Badge>
         </div>
       </CardHeader>
@@ -42,7 +46,7 @@ export default function GameCard({ game }: GameCardProps) {
         <h4 className="text-sm font-medium flex items-center mb-2">
           <Users className="mr-2 h-4 w-4" /> Stat Trackers
         </h4>
-        {game.statTrackers.length > 0 ? (
+        {game.statTrackers && game.statTrackers.length > 0 ? (
           <div className="space-y-2">
             {game.statTrackers.map((tracker, index) => (
               <div key={index} className="flex items-center justify-between text-sm">
@@ -62,7 +66,7 @@ export default function GameCard({ game }: GameCardProps) {
           <Button asChild>
             <Link to={`/games/${game.id}`}>View Game</Link>
           </Button>
-          {game.isActive ? (
+          {gameActive ? (
             <Button variant="secondary" asChild>
               <Link to={`/games/${game.id}/track`}>Track Stats</Link>
             </Button>

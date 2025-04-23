@@ -34,9 +34,9 @@ export default function StatTracker({
 
   const handleStatRecorded = (playerId: string, statType: StatType, value: number = 1) => {
     const newStat: Omit<GameStat, 'id' | 'timestamp'> = {
-      gameId: game.id,
-      playerId,
-      statType,
+      game_id: game.id,
+      player_id: playerId,
+      stat_type: statType,
       period: selectedPeriod,
       value,
       details: ""

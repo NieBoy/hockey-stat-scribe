@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Team } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,19 +9,18 @@ import { useEffect, useState } from "react";
 interface TeamsListProps {
   teams: Team[];
   isAdmin?: boolean;
+  onAddTeam?: () => void;
 }
 
-export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
+export function TeamsList({ teams, isAdmin = false, onAddTeam }: TeamsListProps) {
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   
-  // Debug log to see what teams are passed in
   useEffect(() => {
     console.log("TeamsList received teams:", teams?.map(t => ({ id: t.id, name: t.name })));
   }, [teams]);
   
-  // Auto refresh data on mount
   useEffect(() => {
     refreshTeams();
   }, []);
@@ -68,7 +66,7 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
       {displayTeams.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayTeams.map((team) => (
-            <Card key={team.id} className="transition-all hover:shadow-md">
+            <Card key={team.id} className="relative">
               <CardHeader className="pb-2">
                 <CardTitle>{team.name}</CardTitle>
                 <CardDescription>
@@ -76,8 +74,8 @@ export default function TeamsList({ teams, isAdmin = false }: TeamsListProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <span>{team.players?.length || 0} Players</span>
                   </div>

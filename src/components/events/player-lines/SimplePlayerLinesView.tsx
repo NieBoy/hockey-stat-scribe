@@ -12,6 +12,30 @@ interface SimplePlayerLinesViewProps {
 export function SimplePlayerLinesView({ team, onPlayerSelect, selectedPlayers = [] }: SimplePlayerLinesViewProps) {
   const isSelected = (player: User) => selectedPlayers.some(p => p.id === player.id);
 
+  // Simple player list if lines aren't available
+  if (!team.lines) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {team.players.map((player) => (
+          <button
+            key={player.id}
+            onClick={() => onPlayerSelect(player as User)}
+            className={cn(
+              "p-2 text-sm rounded-md border transition-colors",
+              "hover:bg-primary/10",
+              isSelected(player as User) && "bg-primary/20 border-primary"
+            )}
+          >
+            <div className="font-medium truncate">{player.name}</div>
+            <div className="text-xs text-muted-foreground">
+              {player.position || "No Pos"}
+            </div>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Forward Lines */}
