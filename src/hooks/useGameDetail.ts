@@ -16,7 +16,14 @@ export function useGameDetail() {
   const { data: game, isLoading, error } = useQuery({
     queryKey: ['game', id],
     queryFn: () => id ? getGameById(id) : null,
-    enabled: !!id
+    enabled: !!id,
+    retry: 1, // Reduce retries for non-existent games
+    // Add proper error handling for games that don't exist
+    meta: {
+      onError: (error: any) => {
+        console.error('Error fetching game:', error);
+      }
+    }
   });
 
   useEffect(() => {

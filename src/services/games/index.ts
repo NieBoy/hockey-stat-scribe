@@ -1,260 +1,160 @@
-import { Game } from '@/types';
-import { fetchGameWithTeams, fetchTeamMembers, createNewGame, queries } from './queries';
-import { transformTeamData } from './teamTransforms';
-import { GameDbResponse } from './types';
 
-export const getGames = async (): Promise<Game[]> => {
+import { supabase } from "@/lib/supabase";
+import { transform, transformSingle } from "./teamTransforms";
+import { Game } from "@/types";
+
+export async function getGames(): Promise<Game[]> {
   try {
-    // Get games with team data
-    const gamesData = await fetchGameWithTeams();
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        id,
+        date,
+        location,
+        periods,
+        current_period,
+        is_active,
+        opponent_name,
+        home_team_id (
+          id,
+          name
+        ),
+        away_team_id (
+          id,
+          name
+        )
+      `)
+      .order('date', { ascending: false });
+
+    if (error) throw error;
     
-    // Ensure we're handling an array
-    const gamesArray = Array.isArray(gamesData) ? gamesData : [gamesData];
-    
-    // Transform the database response to match our Game type
-    const transformedData = await Promise.all(gamesArray.map(async game => {
-      // Get team members for both teams
-      const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-        fetchTeamMembers(game.home_team.id),
-        fetchTeamMembers(game.away_team.id)
-      ]);
-      
-      // Transform the team data
-      const homeTeam = transformTeamData(
-        game.home_team.id,
-        game.home_team.name,
-        homeTeamMembers
-      );
-      
-      const awayTeam = transformTeamData(
-        game.away_team.id,
-        game.away_team.name,
-        awayTeamMembers
-      );
-      
-      return {
-        id: game.id,
-        date: new Date(game.date),
-        homeTeam,
-        awayTeam,
-        location: game.location,
-        statTrackers: [],
-        periods: game.periods,
-        currentPeriod: game.current_period,
-        isActive: game.is_active,
-        stats: []
-      };
-    }));
-    
-    return transformedData;
+    // Transform the data
+    return transform(data || []);
   } catch (error) {
     console.error("Error fetching games:", error);
     return [];
   }
-};
+}
 
-export const getGameById = async (id: string): Promise<Game | null> => {
+export async function getGameById(id: string): Promise<Game | null> {
   try {
-    // Get game data with proper type handling
-    const data = await fetchGameWithTeams(id);
-    
-    if (!data) {
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        id,
+        date,
+        location,
+        periods,
+        current_period,
+        is_active,
+        opponent_name,
+        home_team_id (
+          id,
+          name
+        ),
+        away_team_id (
+          id,
+          name
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching game:", error);
       return null;
     }
     
-    // The data is definitely a single GameDbResponse, not an array
-    // thanks to the .single() in fetchGameWithTeams
-    const gameData = data as GameDbResponse;
+    // First get the basic game object with team references
+    const game = transformSingle(data);
     
-    // Get team members for both teams
-    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      fetchTeamMembers(gameData.home_team.id),
-      fetchTeamMembers(gameData.away_team.id)
-    ]);
+    if (!game) return null;
     
-    // Transform the team data
-    const homeTeam = transformTeamData(
-      gameData.home_team.id,
-      gameData.home_team.name,
-      homeTeamMembers
-    );
-    
-    const awayTeam = transformTeamData(
-      gameData.away_team.id,
-      gameData.away_team.name,
-      awayTeamMembers
-    );
-    
-    return {
-      id: gameData.id,
-      date: new Date(gameData.date),
-      homeTeam,
-      awayTeam,
-      location: gameData.location,
-      statTrackers: [],
-      periods: gameData.periods,
-      currentPeriod: gameData.current_period,
-      isActive: gameData.is_active,
-      stats: []
-    };
-  } catch (error) {
-    console.error("Error fetching game:", error);
-    return null;
-  }
-};
-
-export const createGame = async (gameData: {
-  date: Date;
-  location: string;
-  homeTeam: string;
-  awayTeam: string;
-  periods: number;
-}): Promise<Game | null> => {
-  try {
-    // Create the game
-    const data = await createNewGame(
-      gameData.date,
-      gameData.location,
-      gameData.homeTeam,
-      gameData.awayTeam,
-      gameData.periods
-    );
-    
-    if (!data) {
-      return null;
+    // Fetch players for home team
+    if (game.homeTeam) {
+      const { data: homePlayers, error: homeError } = await supabase
+        .from('team_members')
+        .select('id, name, position')
+        .eq('team_id', game.homeTeam.id)
+        .eq('role', 'player');
+      
+      if (homeError) {
+        console.error("Error fetching home players:", homeError);
+      } else {
+        game.homeTeam.players = homePlayers || [];
+      }
     }
     
-    // The response is a single game, not an array
-    const gameResponse = data as GameDbResponse;
+    // Fetch players for away team if it exists
+    if (game.awayTeam) {
+      const { data: awayPlayers, error: awayError } = await supabase
+        .from('team_members')
+        .select('id, name, position')
+        .eq('team_id', game.awayTeam.id)
+        .eq('role', 'player');
+      
+      if (awayError) {
+        console.error("Error fetching away players:", awayError);
+      } else {
+        game.awayTeam.players = awayPlayers || [];
+      }
+    } else if (game.opponent_name) {
+      // For opponent games, ensure we still have a valid structure but mark as external
+      game.awayTeam = null;
+    }
     
-    // Get team members for both teams
-    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      fetchTeamMembers(gameResponse.home_team.id),
-      fetchTeamMembers(gameResponse.away_team.id)
-    ]);
-    
-    // Transform the team data
-    const homeTeam = transformTeamData(
-      gameResponse.home_team.id,
-      gameResponse.home_team.name,
-      homeTeamMembers
-    );
-    
-    const awayTeam = transformTeamData(
-      gameResponse.away_team.id,
-      gameResponse.away_team.name,
-      awayTeamMembers
-    );
-    
-    return {
-      id: gameResponse.id,
-      date: new Date(gameResponse.date),
-      homeTeam,
-      awayTeam,
-      location: gameResponse.location,
-      statTrackers: [],
-      periods: gameResponse.periods,
-      currentPeriod: gameResponse.current_period,
-      isActive: gameResponse.is_active,
-      stats: []
-    };
+    return game;
   } catch (error) {
-    console.error("Error creating game:", error);
+    console.error("Error in getGameById:", error);
     return null;
   }
-};
+}
 
-export const startGame = async (id: string): Promise<Game | null> => {
+export async function createGame(gameData: any): Promise<{ success: boolean; id?: string; error?: any }> {
   try {
-    const data = await queries.startGame(id);
-    if (!data) return null;
-    
-    // Get team members for both teams
-    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      queries.fetchTeamMembers(data.home_team.id),
-      queries.fetchTeamMembers(data.away_team.id)
-    ]);
-    
-    // Transform the team data
-    const homeTeam = transformTeamData(
-      data.home_team.id,
-      data.home_team.name,
-      homeTeamMembers
-    );
-    
-    const awayTeam = transformTeamData(
-      data.away_team.id,
-      data.away_team.name,
-      awayTeamMembers
-    );
-    
-    return {
-      id: data.id,
-      date: new Date(data.date),
-      homeTeam,
-      awayTeam,
-      location: data.location,
-      statTrackers: [],
-      periods: data.periods,
-      currentPeriod: data.current_period,
-      isActive: data.is_active,
-      stats: []
+    const { data, error } = await supabase
+      .from('games')
+      .insert(gameData)
+      .select();
+
+    if (error) {
+      return { 
+        success: false, 
+        error 
+      };
+    }
+
+    return { 
+      success: true, 
+      id: data?.[0]?.id 
     };
   } catch (error) {
-    console.error("Error starting game:", error);
-    return null;
-  }
-};
-
-export const endGame = async (id: string): Promise<Game | null> => {
-  try {
-    const data = await queries.endGame(id);
-    if (!data) return null;
-    
-    // Get team members for both teams
-    const [homeTeamMembers, awayTeamMembers] = await Promise.all([
-      queries.fetchTeamMembers(data.home_team.id),
-      queries.fetchTeamMembers(data.away_team.id)
-    ]);
-    
-    // Transform the team data
-    const homeTeam = transformTeamData(
-      data.home_team.id,
-      data.home_team.name,
-      homeTeamMembers
-    );
-    
-    const awayTeam = transformTeamData(
-      data.away_team.id,
-      data.away_team.name,
-      awayTeamMembers
-    );
-    
-    return {
-      id: data.id,
-      date: new Date(data.date),
-      homeTeam,
-      awayTeam,
-      location: data.location,
-      statTrackers: [],
-      periods: data.periods,
-      currentPeriod: data.current_period,
-      isActive: data.is_active,
-      stats: []
+    return { 
+      success: false, 
+      error 
     };
-  } catch (error) {
-    console.error("Error ending game:", error);
-    return null;
   }
-};
+}
 
-export const getGamesByTeam = async (teamId: string): Promise<Game[]> => {
+export async function updateGame(id: string, gameData: any): Promise<{ success: boolean; error?: any }> {
   try {
-    // This will need to be implemented with actual Supabase calls
-    console.log("Getting games for team:", teamId);
-    return [];
+    const { error } = await supabase
+      .from('games')
+      .update(gameData)
+      .eq('id', id);
+
+    if (error) {
+      return { 
+        success: false, 
+        error 
+      };
+    }
+
+    return { success: true };
   } catch (error) {
-    console.error("Error fetching team games:", error);
-    return [];
+    return { 
+      success: false, 
+      error 
+    };
   }
-};
+}

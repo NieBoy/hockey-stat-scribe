@@ -48,6 +48,10 @@ export default function GameDetail() {
     );
   }
 
+  // Display team name or opponent name based on what's available
+  const awayTeamOrOpponentName = game.opponent_name || 
+    (game.awayTeam ? game.awayTeam.name : "Unknown Opponent");
+
   return (
     <MainLayout>
       <div className="container mx-auto p-4 space-y-6">
@@ -61,7 +65,7 @@ export default function GameDetail() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight mb-1">Game Details</h1>
               <p className="text-muted-foreground">
-                {game.homeTeam.name} vs {game.awayTeam.name}
+                {game.homeTeam.name} vs {awayTeamOrOpponentName}
               </p>
             </div>
             <GameActions
