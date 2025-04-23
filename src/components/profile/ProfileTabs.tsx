@@ -1,15 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserSettings from "@/components/profile/UserSettings";
-import TeamsList from "@/components/profile/TeamsList";
+import { TeamsList } from "@/components/profile/TeamsList";
 import PlayersList from "@/components/profile/PlayersList";
 import RoleManager from "@/components/profile/RoleManager";
-import { User, User as UserType } from "@/types";
-import { Team } from "@/types";
+import { User, Team } from "@/types";
 
 interface ProfileTabsProps {
-  user: UserType;
+  user: User;
   teams: Team[];
   allPlayers: User[];
   isAdmin: boolean;
@@ -33,7 +31,6 @@ export default function ProfileTabs({
 }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<string>("settings");
 
-  // Manually refresh data when the component mounts or tab changes
   useEffect(() => {
     const refreshData = async () => {
       console.log("Manual data refresh triggered");
