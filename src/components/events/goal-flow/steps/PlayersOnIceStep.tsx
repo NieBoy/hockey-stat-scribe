@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Team, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -27,33 +28,27 @@ export function PlayersOnIceStep({
 
   // Flag tracks first mount/init to avoid bouncing UI
   const initialized = useRef(false);
+  const prevIdsRef = useRef<string>('');
 
   // Only initialize ONCE for given preSelectedPlayers by shallow ID comparison
   useEffect(() => {
     // Convert preSelectedPlayers to IDs for comparison
-    const prevInit = initialized.current;
     const newIdList = preSelectedPlayers.map(player => player.id).join(',');
-    const [prevIds, setPrevIds] = useState('');
-    // Track when preSelectedPlayers actually change
-    useEffect(() => {
-      if (!prevInit || newIdList !== prevIds) {
-        const uniqueMandatory = Array.from(
-          new Map(preSelectedPlayers.filter(Boolean).map(p => [p.id, p])).values()
-        );
-        setMandatoryPlayers(uniqueMandatory);
-        setSelectedPlayers(uniqueMandatory);
-        onPlayersSelect(uniqueMandatory);
-        setSubStep("mandatory");
-        initialized.current = true;
-        setPrevIds(newIdList);
-      }
-      // No eslint-disable needed. This effect watches the right variables.
-      // Only runs on initial mount OR if the actual ID list changes
-    }, [newIdList, prevInit, prevIds, preSelectedPlayers, onPlayersSelect]);
-    // The extra useEffect is just for prevIds state
-    // The rest of the file stays the same
     
+    // Track when preSelectedPlayers actually change
+    if (!initialized.current || newIdList !== prevIdsRef.current) {
+      const uniqueMandatory = Array.from(
+        new Map(preSelectedPlayers.filter(Boolean).map(p => [p.id, p])).values()
+      );
+      setMandatoryPlayers(uniqueMandatory);
+      setSelectedPlayers(uniqueMandatory);
+      onPlayersSelect(uniqueMandatory);
+      setSubStep("mandatory");
+      initialized.current = true;
+      prevIdsRef.current = newIdList;
+    }
   }, [preSelectedPlayers, onPlayersSelect]);
+  
   // Player selection logic for extras (cannot remove mandatory)
   const handleExtraPlayerToggle = (player: User) => {
     const isMandatory = mandatoryPlayers.some(p => p.id === player.id);
