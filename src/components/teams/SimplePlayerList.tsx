@@ -20,16 +20,18 @@ export default function SimplePlayerList({
     return numA - numB;
   });
 
-  const isSelected = (playerId: string) => {
-    return selectedPlayers.some(p => p.id === playerId);
-  };
+  // Compare using player.id to match current step selection logic no matter source
+  const isSelected = (player: User) => selectedPlayers.some(p => p.id === player.id);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
       {sortedPlayers.map(player => (
         <Card 
           key={player.id}
-          className={`${onPlayerSelect ? 'cursor-pointer' : ''} ${isSelected(player.id) ? 'border-primary' : ''}`}
+          className={[
+            onPlayerSelect ? 'cursor-pointer' : '',
+            isSelected(player) ? 'border-primary ring-2 ring-primary' : ''
+          ].join(' ')}
           onClick={() => onPlayerSelect && onPlayerSelect(player)}
         >
           <CardContent className="p-3">

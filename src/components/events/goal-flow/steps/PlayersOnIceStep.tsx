@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Team, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -18,16 +17,17 @@ export function PlayersOnIceStep({
   preSelectedPlayers,
   onComplete
 }: PlayersOnIceStepProps) {
+  // Always store the list as User[] to keep selection logic compatible
   const [selectedPlayers, setSelectedPlayers] = useState<User[]>(preSelectedPlayers || []);
   const [mandatoryPlayers, setMandatoryPlayers] = useState<User[]>(preSelectedPlayers || []);
   
-  // Ensure we're working with a deduplicated list of preselected players
+  // Ensure we're working with a deduplicated list of preselected players (by id)
   useEffect(() => {
     if (preSelectedPlayers && preSelectedPlayers.length > 0) {
-      // Remove duplicates by creating a map keyed by player ID
-      const uniquePlayers = [...new Map(preSelectedPlayers
-        .filter(p => p) // Filter out null/undefined players
-        .map(p => [p.id, p])
+      const uniquePlayers = [...new Map(
+        preSelectedPlayers
+          .filter(Boolean)
+          .map(p => [p.id, p as User])
       ).values()];
       
       setSelectedPlayers(uniquePlayers);
@@ -35,10 +35,11 @@ export function PlayersOnIceStep({
     }
   }, [preSelectedPlayers]);
 
+  // Fix: always use User type for selection
   const handlePlayerSelect = (player: User) => {
     const isSelected = selectedPlayers.some(p => p.id === player.id);
     let newSelection: User[];
-    
+
     if (isSelected) {
       // Don't allow deselection of mandatory players (scorer & assists)
       if (mandatoryPlayers.some(p => p.id === player.id)) {
@@ -52,28 +53,25 @@ export function PlayersOnIceStep({
       }
       newSelection = [...selectedPlayers, player];
     }
-    
+
     setSelectedPlayers(newSelection);
     onPlayersSelect(newSelection);
   };
 
+  // Fix: ensure mandatory are enforced and unique
   const handleConfirm = () => {
-    // Make sure we have at least the mandatory players
     if (selectedPlayers.length === 0) {
       return;
     }
-    
-    // Make sure mandatory players are included
+    // Add any mandatory players not in selection
     const finalSelection = [...selectedPlayers];
     mandatoryPlayers.forEach(mandatory => {
       if (!finalSelection.some(p => p.id === mandatory.id)) {
         finalSelection.push(mandatory);
       }
     });
-    
-    // Limit to 6 players maximum
+    // Limit to 6
     const limitedSelection = finalSelection.slice(0, 6);
-    
     onPlayersSelect(limitedSelection);
     onComplete();
   };
@@ -85,7 +83,7 @@ export function PlayersOnIceStep({
         <p className="text-sm text-muted-foreground">
           Select all players on the ice at the time of the goal (max 6)
         </p>
-        
+
         <div className="mt-3 mb-4">
           <p className="text-sm font-medium">
             Selected: {selectedPlayers.length}/6 players
@@ -96,11 +94,10 @@ export function PlayersOnIceStep({
       <Card>
         <CardContent className="p-4">
           <SimplePlayerList
-            players={team.players}
+            players={team.players as User[]}
             onPlayerSelect={handlePlayerSelect}
             selectedPlayers={selectedPlayers}
           />
-          
           <div className="mt-4 flex justify-end">
             <Button 
               onClick={handleConfirm}
