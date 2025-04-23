@@ -1,18 +1,8 @@
-import { supabase } from '@/lib/supabase';
-import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
-import { toast } from 'sonner';
-import { Database } from '@/types/supabase';
-import { refreshPlayerStats } from '@/services/stats';
 
-export interface GoalEventData {
-  gameId: string;
-  period: number;
-  teamType: 'home' | 'away';
-  scorerId?: string;
-  primaryAssistId?: string;
-  secondaryAssistId?: string;
-  playersOnIce: string[];
-}
+import { supabase } from '@/lib/supabase';
+import { validatePlayers } from './goal/validatePlayers';
+import { recordGoalStats } from './goal/recordGoalStats';
+import { GoalEventData } from './goal/types';
 
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
@@ -23,42 +13,8 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
 
-    // Validate player IDs before proceeding
-    if (data.scorerId) {
-      const { count: scorerExists } = await supabase
-        .from('team_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('id', data.scorerId);
-        
-      if (!scorerExists) {
-        console.error(`Invalid scorer ID: ${data.scorerId}`);
-        throw new Error(`Player with ID ${data.scorerId} does not exist`);
-      }
-    }
-    
-    if (data.primaryAssistId) {
-      const { count: primaryAssistExists } = await supabase
-        .from('team_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('id', data.primaryAssistId);
-        
-      if (!primaryAssistExists) {
-        console.error(`Invalid primary assist ID: ${data.primaryAssistId}`);
-        throw new Error(`Player with ID ${data.primaryAssistId} does not exist`);
-      }
-    }
-    
-    if (data.secondaryAssistId) {
-      const { count: secondaryAssistExists } = await supabase
-        .from('team_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('id', data.secondaryAssistId);
-        
-      if (!secondaryAssistExists) {
-        console.error(`Invalid secondary assist ID: ${data.secondaryAssistId}`);
-        throw new Error(`Player with ID ${data.secondaryAssistId} does not exist`);
-      }
-    }
+    // Validate all players before proceeding
+    await validatePlayers(data.scorerId, data.primaryAssistId, data.secondaryAssistId);
 
     // Validate players on ice
     if (data.playersOnIce.length > 0) {
@@ -108,129 +64,20 @@ export const recordGoalEvent = async (data: GoalEventData) => {
     
     console.log("Successfully created game event:", eventData);
     
-    // Record goal stat if scorer provided
-    if (data.scorerId) {
-      console.log(`Recording goal for player: ${data.scorerId}`);
-      const goalResult = await insertStatSafely(data.gameId, data.scorerId, 'goals', data.period, 1);
-      if (goalResult) {
-        console.log("Successfully recorded goal stat:", goalResult);
-      }
-      
-      // Refresh scorer's stats
-      try {
-        await refreshPlayerStats(data.scorerId);
-        console.log("Scorer stats refreshed");
-      } catch (refreshError) {
-        console.error("Error refreshing scorer stats:", refreshError);
-      }
-    }
-    
-    // Record primary assist if provided
-    if (data.primaryAssistId) {
-      console.log(`Recording primary assist for player: ${data.primaryAssistId}`);
-      const primaryAssistResult = await insertStatSafely(data.gameId, data.primaryAssistId, 'assists', data.period, 1, 'primary');
-      if (primaryAssistResult) {
-        console.log("Successfully recorded primary assist stat:", primaryAssistResult);
-      }
-      
-      // Refresh primary assist player's stats
-      try {
-        await refreshPlayerStats(data.primaryAssistId);
-        console.log("Primary assist player stats refreshed");
-      } catch (refreshError) {
-        console.error("Error refreshing primary assist player stats:", refreshError);
-      }
-    }
-    
-    // Record secondary assist if provided
-    if (data.secondaryAssistId) {
-      console.log(`Recording secondary assist for player: ${data.secondaryAssistId}`);
-      const secondaryAssistResult = await insertStatSafely(data.gameId, data.secondaryAssistId, 'assists', data.period, 1, 'secondary');
-      if (secondaryAssistResult) {
-        console.log("Successfully recorded secondary assist stat:", secondaryAssistResult);
-      }
-      
-      // Refresh secondary assist player's stats
-      try {
-        await refreshPlayerStats(data.secondaryAssistId);
-        console.log("Secondary assist player stats refreshed");
-      } catch (refreshError) {
-        console.error("Error refreshing secondary assist player stats:", refreshError);
-      }
-    }
-    
-    // Ensure the players on ice exist before recording plus/minus
-    if (data.playersOnIce.length > 0) {
-      console.log("Recording plus/minus for players:", data.playersOnIce);
-      try {
-        await recordPlusMinusStats(
-          data.gameId,
-          data.playersOnIce,
-          data.period,
-          data.teamType === 'home',
-          1 // Adding the missing 5th argument (value)
-        );
-      } catch (plusMinusError) {
-        console.error("Error recording plus/minus stats:", plusMinusError);
-        // Continue execution even if plus/minus stats fail
-      }
-      
-      // Refresh stats for all players on ice
-      for (const playerId of data.playersOnIce) {
-        try {
-          await refreshPlayerStats(playerId);
-          console.log(`Stats refreshed for player on ice: ${playerId}`);
-        } catch (refreshError) {
-          console.error(`Error refreshing stats for player ${playerId}:`, refreshError);
-        }
-      }
-    }
+    // Record all related stats
+    await recordGoalStats({
+      gameId: data.gameId,
+      period: data.period,
+      scorerId: data.scorerId,
+      primaryAssistId: data.primaryAssistId,
+      secondaryAssistId: data.secondaryAssistId,
+      playersOnIce: data.playersOnIce,
+      isHomeScoringTeam: data.teamType === 'home'
+    });
 
     return { success: true, eventId: eventData?.id };
   } catch (error) {
     console.error("Error recording goal event:", error);
     throw error;
-  }
-};
-
-const insertStatSafely = async (
-  gameId: string,
-  playerId: string,
-  statType: string,
-  period: number,
-  value: number,
-  details: string = ''
-) => {
-  try {
-    // First verify that the player exists
-    const { count } = await supabase
-      .from('team_members')
-      .select('*', { count: 'exact', head: true })
-      .eq('id', playerId);
-      
-    if (!count) {
-      console.error(`Player ID ${playerId} does not exist`);
-      return null;
-    }
-    
-    const { data, error } = await supabase
-      .rpc('record_game_stat', {
-        p_game_id: gameId,
-        p_player_id: playerId,
-        p_stat_type: statType,
-        p_period: period,
-        p_value: value,
-        p_details: details
-      });
-    
-    if (error) {
-      console.error(`Error recording ${statType} stat:`, error);
-      return null;
-    }
-    
-    return data;
-  } catch (err) {
-    console.error(`Failed to record ${statType} stat:`, err);
-    return null;
   }
 };
