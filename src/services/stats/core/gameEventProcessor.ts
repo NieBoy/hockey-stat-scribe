@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 
@@ -70,6 +71,13 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     
     if (statsCreated) {
       console.log(`Successfully created stats from events for player ${playerId}`);
+      
+      // After creating individual stats, refresh aggregated stats
+      const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
+      if (error) {
+        console.error(`Error calling refresh_player_stats for ${playerId}:`, error);
+        return statsCreated; // Still return true if stats were created, even if refresh failed
+      }
     } else {
       console.log(`No stats were created from events for player ${playerId}`);
     }

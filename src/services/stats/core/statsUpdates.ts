@@ -95,6 +95,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
             }
             
             // Call refresh_player_stats database function
+            // FIX: Changed RPC call to pass parameter as an object with named parameter
             const { error: refreshError } = await supabase
               .rpc('refresh_player_stats', { player_id: playerId });
               
