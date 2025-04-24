@@ -5,8 +5,13 @@ import { createGameStatsFromEvents } from "./gameEventProcessor";
 import { updateOrInsertStat } from "./playerStatsDb";
 import { calculateStatsSummary, createPlayerStatsFromSummary } from "../utils/statCalculations";
 
+/**
+ * Refreshes stats for a player by processing game events and updating database
+ * @param playerId The team_member.id of the player to refresh stats for
+ * @returns Promise<PlayerStat[]> The refreshed player stats
+ */
 export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
-  console.log("refreshPlayerStats called for player:", playerId);
+  console.log("refreshPlayerStats called for team_member.id:", playerId);
   try {
     // Verify player exists in team_members
     const { data: playerData, error: playerError } = await supabase
@@ -21,14 +26,16 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     if (!playerData) {
-      console.error("Player not found with ID:", playerId);
+      console.error("Player not found with team_member.id:", playerId);
       return [];
     }
     
     const playerName = playerData.name || 'Unknown Player';
     console.log("Found player:", playerName, "with team_member ID:", playerId);
     
-    // Use two separate queries for better performance and clarity
+    // Use separate queries with the correct JSONB syntax for different event types
+    // Query for goal-related events
+    console.log("Fetching goal events for player:", playerId);
     const { data: goalEvents, error: goalError } = await supabase
       .from('game_events')
       .select('*')
@@ -40,6 +47,10 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw goalError;
     }
     
+    console.log(`Found ${goalEvents?.length || 0} goal events for player ${playerId}`);
+    
+    // Query for on-ice events
+    console.log("Fetching on-ice events for player:", playerId);
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
       .select('*')
@@ -50,11 +61,13 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw onIceError;
     }
     
+    console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerId}`);
+    
     // Combine and deduplicate events
     const allEvents = [...(goalEvents || []), ...(onIceEvents || [])];
     const uniqueEvents = Array.from(new Map(allEvents.map(event => [event.id, event])).values());
     
-    console.log(`Processing ${uniqueEvents.length} total events for player ${playerId}`);
+    console.log(`Processing ${uniqueEvents.length} total unique events for player ${playerId}`);
     
     // Process events into game stats
     if (uniqueEvents.length > 0) {
@@ -63,6 +76,7 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     }
     
     // Call the database refresh function
+    console.log("Calling refresh_player_stats database function");
     const { data: refreshResult, error: refreshError } = await supabase
       .rpc('refresh_player_stats', { player_id: playerId });
       
@@ -70,6 +84,8 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       console.error("Error calling refresh_player_stats function:", refreshError);
       throw refreshError;
     }
+    
+    console.log("refresh_player_stats execution result:", refreshResult);
     
     // Fetch the updated stats
     const { data: playerStats, error: statsError } = await supabase
@@ -82,10 +98,22 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw statsError;
     }
     
-    return playerStats || [];
+    console.log(`Retrieved ${playerStats?.length || 0} refreshed stats for player ${playerId}`);
+    
+    // Format the stats for return
+    const formattedStats = playerStats?.map(stat => ({
+      id: stat.id,
+      playerId: stat.player_id,
+      playerName: playerName,
+      statType: stat.stat_type,
+      value: stat.value,
+      gamesPlayed: stat.games_played,
+      details: ''
+    })) || [];
+    
+    return formattedStats;
   } catch (error) {
     console.error("Error in refreshPlayerStats:", error);
     throw error;
   }
 };
-

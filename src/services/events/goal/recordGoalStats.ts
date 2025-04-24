@@ -3,16 +3,22 @@ import { supabase } from '@/lib/supabase';
 import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
 import { refreshPlayerStats } from '@/services/stats';
 
+/**
+ * Data structure for recording goal stats
+ */
 interface GoalStatsData {
   gameId: string;
   period: number;
-  scorerId?: string;
-  primaryAssistId?: string;
-  secondaryAssistId?: string;
-  playersOnIce: string[];
+  scorerId?: string;  // team_member.id
+  primaryAssistId?: string;  // team_member.id
+  secondaryAssistId?: string;  // team_member.id
+  playersOnIce: string[];  // Array of team_member.id
   isHomeScoringTeam: boolean;
 }
 
+/**
+ * Records all stats related to a goal event
+ */
 export async function recordGoalStats({
   gameId,
   period,
@@ -24,7 +30,7 @@ export async function recordGoalStats({
 }: GoalStatsData) {
   // Record goal stat if scorer provided
   if (scorerId) {
-    console.log(`Recording goal for player: ${scorerId}`);
+    console.log(`Recording goal for player (team_member.id): ${scorerId}`);
     await insertStatSafely(gameId, scorerId, 'goals', period, 1);
     
     try {
@@ -37,7 +43,7 @@ export async function recordGoalStats({
   
   // Record primary assist if provided
   if (primaryAssistId) {
-    console.log(`Recording primary assist for player: ${primaryAssistId}`);
+    console.log(`Recording primary assist for player (team_member.id): ${primaryAssistId}`);
     await insertStatSafely(gameId, primaryAssistId, 'assists', period, 1, 'primary');
     
     try {
@@ -50,7 +56,7 @@ export async function recordGoalStats({
   
   // Record secondary assist if provided
   if (secondaryAssistId) {
-    console.log(`Recording secondary assist for player: ${secondaryAssistId}`);
+    console.log(`Recording secondary assist for player (team_member.id): ${secondaryAssistId}`);
     await insertStatSafely(gameId, secondaryAssistId, 'assists', period, 1, 'secondary');
     
     try {
@@ -63,7 +69,7 @@ export async function recordGoalStats({
   
   // Record plus/minus for players on ice
   if (playersOnIce.length > 0) {
-    console.log("Recording plus/minus for players:", playersOnIce);
+    console.log("Recording plus/minus for players (team_member.ids):", playersOnIce);
     try {
       await recordPlusMinusStats(
         gameId,
@@ -78,19 +84,24 @@ export async function recordGoalStats({
   }
 }
 
+/**
+ * Helper function to safely insert a game stat
+ */
 async function insertStatSafely(
   gameId: string,
-  playerId: string,
+  playerId: string,  // team_member.id
   statType: string,
   period: number,
   value: number,
   details: string = ''
 ) {
   try {
+    console.log(`Recording ${statType} stat for player ${playerId}`);
+    
     const { data, error } = await supabase
       .rpc('record_game_stat', {
         p_game_id: gameId,
-        p_player_id: playerId,
+        p_player_id: playerId,  // Using team_member.id consistently
         p_stat_type: statType,
         p_period: period,
         p_value: value,

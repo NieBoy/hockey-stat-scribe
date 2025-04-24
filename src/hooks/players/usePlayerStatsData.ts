@@ -1,175 +1,113 @@
 
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { fetchPlayerStats } from "@/services/stats/core/statsQueries";
+import { fetchGameStats } from "@/services/stats/game-stats/queries";
 import { supabase } from "@/lib/supabase";
-import { getPlayerStats } from "@/services/stats";
-import { fetchGameStats } from "@/services/stats/gameStatsService";
+import { toast } from "sonner";
 
+/**
+ * Hook to provide player stats data
+ * @param playerId The team_member.id (not user.id) of the player
+ */
 export function usePlayerStatsData(playerId: string) {
-  // Stats query - directly get stats for the player using team_member.id
-  const { 
-    data: stats, 
-    isLoading: statsLoading, 
+  const [playerTeam, setPlayerTeam] = useState<any>(null);
+  const [teamGames, setTeamGames] = useState<any[]>([]);
+
+  // Fetch player stats using team_member.id
+  const {
+    data: stats,
+    isLoading: statsLoading,
     error: statsError,
-    refetch: refetchStats 
+    refetch: refetchStats
   } = useQuery({
     queryKey: ['playerStats', playerId],
-    queryFn: () => getPlayerStats(playerId),
+    queryFn: () => fetchPlayerStats(playerId),
     enabled: !!playerId
   });
 
-  // Raw game stats query - directly get game stats using team_member.id
-  const { 
-    data: rawGameStats, 
-    refetch: refetchRawStats,
-    isLoading: rawStatsLoading 
+  // Fetch raw game stats using team_member.id
+  const {
+    data: rawGameStats,
+    isLoading: rawStatsLoading,
+    error: rawStatsError,
+    refetch: refetchRawStats
   } = useQuery({
     queryKey: ['rawGameStats', playerId],
     queryFn: async () => {
-      if (!playerId) return [];
       try {
-        console.log("Fetching raw game stats for player:", playerId);
-        // Using team_member.id directly
-        const stats = await fetchGameStats('', playerId);
-        console.log(`Found ${stats.length} raw game stats for player`);
+        const stats = await fetchGameStats(undefined, playerId);
         return stats;
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
+        toast.error("Could not load raw game stats");
         return [];
       }
     },
     enabled: !!playerId
   });
 
-  // Game events query - get events where the player is directly involved using team_member.id
-  // Using the same improved JSONB query approach from refreshPlayerStats function
-  const { 
+  // Fetch game events player was involved in
+  const {
     data: playerGameEvents,
     isLoading: eventsLoading,
-    refetch: refetchEvents 
+    error: eventsError,
+    refetch: refetchEvents
   } = useQuery({
     queryKey: ['playerGameEvents', playerId],
     queryFn: async () => {
-      if (!playerId) return [];
       try {
-        console.log("Fetching game events for player:", playerId);
-        
-        // Query 1: Events where player is directly mentioned in specific fields
-        const { data: directEvents, error: directError } = await supabase
-          .from('game_events')
-          .select(`
-            id, 
-            game_id, 
-            event_type, 
-            period, 
-            team_type, 
-            timestamp,
-            details
-          `)
-          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
-        
-        if (directError) {
-          console.error("Error fetching player game events (direct):", directError);
-          throw directError;
-        }
-        
-        console.log(`Found ${directEvents?.length || 0} direct events for player ${playerId}`);
-        
-        // Query 2: Events where player is in playersOnIce array
-        const { data: onIceEvents, error: onIceError } = await supabase
-          .from('game_events')
-          .select(`
-            id, 
-            game_id, 
-            event_type, 
-            period, 
-            team_type, 
-            timestamp,
-            details
-          `)
-          .contains('details', { playersOnIce: [playerId] });
-
-        if (onIceError) {
-          console.error("Error fetching on-ice events:", onIceError);
-          // Don't throw here, we might still have directEvents
-        } else {
-          console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerId}`);
-        }
-        
-        // Combine both result sets and remove duplicates
-        const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
-        const uniqueEvents = allEvents.filter((event, index, self) =>
-          index === self.findIndex((e) => e.id === event.id)
-        );
-        
-        console.log(`Found ${uniqueEvents.length} total unique game events for player ${playerId}`);
-        return uniqueEvents;
-      } catch (error) {
-        console.error("Error in fetchPlayerGameEvents:", error);
-        return [];
-      }
-    },
-    enabled: !!playerId
-  });
-
-  // Player's team query - get the team info for this player using team_member.id
-  const { data: playerTeam } = useQuery({
-    queryKey: ['playerTeam', playerId],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
+        // First get player team info
+        const { data: playerData } = await supabase
           .from('team_members')
-          .select('team_id')
+          .select('team_id, name')
           .eq('id', playerId)
           .single();
-          
-        if (error) throw error;
-        
-        if (data?.team_id) {
-          const { data: teamData, error: teamError } = await supabase
-            .from('teams')
-            .select('id, name')
-            .eq('id', data.team_id)
-            .single();
-            
-          if (teamError) throw teamError;
-          return teamData;
+
+        if (!playerData) {
+          throw new Error("Player not found");
         }
-        return null;
+
+        setPlayerTeam(playerData);
+
+        // Get team games
+        const { data: games } = await supabase
+          .from('games')
+          .select('*')
+          .or(`home_team_id.eq.${playerData.team_id},away_team_id.eq.${playerData.team_id}`)
+          .order('date', { ascending: false });
+
+        setTeamGames(games || []);
+
+        if (!games || games.length === 0) return [];
+
+        // Get game IDs
+        const gameIds = games.map(game => game.id);
+
+        // Get events where this player is mentioned in the details
+        // Note: We need to search in the JSONB for player mentions
+        const { data: events, error } = await supabase
+          .from('game_events')
+          .select('*')
+          .in('game_id', gameIds)
+          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`)
+          .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
+        return events || [];
       } catch (error) {
-        console.error("Error fetching player team:", error);
-        return null;
+        console.error("Error fetching player game events:", error);
+        return [];
       }
     },
     enabled: !!playerId
   });
-
-  // Team games query - get all games for the player's team
-  const { data: teamGames } = useQuery({
-    queryKey: ['teamGames', playerTeam?.id],
-    queryFn: async () => {
-      if (!playerTeam?.id) return [];
-      try {
-        const { data, error } = await supabase
-          .from('games')
-          .select('id, date, home_team_id, away_team_id, location')
-          .or(`home_team_id.eq.${playerTeam.id},away_team_id.eq.${playerTeam.id}`);
-          
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error("Error fetching team games:", error);
-        return [];
-      }
-    },
-    enabled: !!playerTeam?.id
-  });
-
-  const isLoading = statsLoading || rawStatsLoading || eventsLoading;
 
   return {
     stats,
-    statsLoading: isLoading,
-    statsError,
+    statsLoading: statsLoading || rawStatsLoading || eventsLoading,
+    statsError: statsError || rawStatsError || eventsError,
     rawGameStats,
     playerGameEvents,
     playerTeam,

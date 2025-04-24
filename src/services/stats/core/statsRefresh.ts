@@ -2,11 +2,16 @@
 import { supabase } from "@/lib/supabase";
 import { refreshPlayerStats } from "./statsUpdates";
 
+/**
+ * Refreshes stats for all players in the system
+ * @returns Promise<void>
+ */
 export const refreshAllPlayerStats = async (): Promise<void> => {
   try {
     console.log("Starting to refresh all player stats");
     
     // Get all team members who should have stats
+    // Important: We're using team_members.id as the consistent player identifier
     const { data: teamMembers, error: membersError } = await supabase
       .from('team_members')
       .select('id, name')
@@ -27,7 +32,7 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
       await Promise.all(
         batch.map(async (player) => {
           try {
-            console.log(`Refreshing stats for player: ${player.name} (${player.id})`);
+            console.log(`Refreshing stats for player: ${player.name} (team_member.id: ${player.id})`);
             await refreshPlayerStats(player.id);
             console.log(`Completed stats refresh for ${player.name}`);
           } catch (error) {
@@ -44,6 +49,10 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
   }
 };
 
+/**
+ * Reprocesses all player stats by clearing existing stats and regenerating them
+ * @returns Promise<boolean> Success status
+ */
 export const reprocessAllStats = async (): Promise<boolean> => {
   try {
     console.log("Starting complete stats reprocessing");

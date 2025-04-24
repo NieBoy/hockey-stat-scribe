@@ -4,6 +4,11 @@ import { validatePlayers } from './goal/validatePlayers';
 import { recordGoalStats } from './goal/recordGoalStats';
 import { GoalEventData } from './goal/types';
 
+/**
+ * Records a goal event and related statistics
+ * @param data Goal event data
+ * @returns Promise with success status and event ID
+ */
 export const recordGoalEvent = async (data: GoalEventData) => {
   try {
     console.log("Recording goal event with data:", data);
@@ -13,10 +18,10 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       throw new Error("Missing required goal event data");
     }
 
-    // Validate all players before proceeding
+    // Validate all players before proceeding (all IDs are team_member.id)
     await validatePlayers(data.scorerId, data.primaryAssistId, data.secondaryAssistId);
 
-    // Validate players on ice
+    // Validate players on ice (all IDs are team_member.id)
     if (data.playersOnIce.length > 0) {
       const { data: validPlayers, error: validationError } = await supabase
         .from('team_members')
@@ -37,7 +42,7 @@ export const recordGoalEvent = async (data: GoalEventData) => {
       }
     }
 
-    // Create the details object with player information
+    // Create the details object with player information (all team_member.id references)
     const details = {
       playerId: data.scorerId,
       primaryAssistId: data.primaryAssistId,

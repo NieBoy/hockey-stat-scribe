@@ -1,10 +1,15 @@
-
 import { supabase } from "@/lib/supabase";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 
+/**
+ * Creates game stats from events for a player
+ * @param playerId The team_member.id of the player to process events for
+ * @param events Array of game events to process
+ * @returns Promise<boolean> Success status
+ */
 export const createGameStatsFromEvents = async (playerId: string, events: any[]): Promise<boolean> => {
   try {
-    console.log(`Creating game stats from ${events.length} events for player ${playerId}`);
+    console.log(`Creating game stats from ${events.length} events for player (team_member.id): ${playerId}`);
     
     // First validate that the playerId exists in team_members
     const isValid = await validatePlayerId(playerId);
@@ -163,6 +168,15 @@ const processFaceoffEvent = async (event: any, playerId: string, details: any): 
   }
 };
 
+/**
+ * Creates a game stat record
+ * @param gameId The ID of the game
+ * @param playerId The team_member.id of the player
+ * @param statType Type of stat
+ * @param period Game period
+ * @param details Optional details
+ * @returns Promise<boolean> Success status
+ */
 const createGameStat = async (
   gameId: string,
   playerId: string,
@@ -245,11 +259,11 @@ const createGameStat = async (
 
 const createPlusMinus = async (event: any, playerId: string): Promise<boolean> => {
   try {
-    // Get player's team info
+    // Get player's team info from team_members table
     const { data: playerTeam } = await supabase
       .from('team_members')
       .select('team_id')
-      .eq('id', playerId)
+      .eq('id', playerId)  // Using team_member.id consistently
       .single();
       
     if (!playerTeam) {
