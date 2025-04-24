@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -15,6 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
+import StatsDebugPanel from "./debug/StatsDebugPanel";
 
 interface AdvancedStatsViewProps {
   game: Game;
@@ -25,11 +29,16 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
   const [statTypeFilter, setStatTypeFilter] = useState<StatType | "all">("all");
   const [teamFilter, setTeamFilter] = useState<"all" | "home" | "away">("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
-
+  const [showDebug, setShowDebug] = useState(false);
+  
+  // Fetch game stats
   const { data: stats, isLoading } = useQuery({
     queryKey: ['gameStats', game.id],
     queryFn: () => fetchGameStats(game.id),
   });
+
+  // Fetch debug information
+  const { debugData, refetchAll } = useStatsDebugData();
 
   const filteredStats = useMemo(() => {
     if (!stats) return [];
@@ -85,9 +94,9 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
       } else if (stat.statType === "plusMinus") {
         // Handle plus/minus stats based on the details field
         if (stat.details === "plus") {
-          playerStat.plusMinus += stat.value;
+          playerStat.plusMinus += stat.value; // Should be +1
         } else if (stat.details === "minus") {
-          playerStat.plusMinus -= stat.value;
+          playerStat.plusMinus -= stat.value; // Should be -1 (but we subtract from the sum)
         }
       }
     });
@@ -98,89 +107,109 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Advanced Stats View</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              placeholder="Search by player name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Advanced Stats View</CardTitle>
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="show-debug"
+              checked={showDebug}
+              onCheckedChange={setShowDebug}
             />
-            <Select value={statTypeFilter} onValueChange={(value: StatType | "all") => setStatTypeFilter(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by stat type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stats</SelectItem>
-                <SelectItem value="goals">Goals</SelectItem>
-                <SelectItem value="assists">Assists</SelectItem>
-                <SelectItem value="plusMinus">Plus/Minus</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select 
-              value={teamFilter} 
-              onValueChange={(value: "all" | "home" | "away") => setTeamFilter(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
-                <SelectItem value="home">Home Team</SelectItem>
-                <SelectItem value="away">Away Team</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Periods</SelectItem>
-                {Array.from({ length: game.periods }, (_, i) => (
-                  <SelectItem key={i + 1} value={(i + 1).toString()}>
-                    Period {i + 1}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="show-debug">Show Debug Panel</Label>
           </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Input
+                placeholder="Search by player name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Select value={statTypeFilter} onValueChange={(value: StatType | "all") => setStatTypeFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by stat type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stats</SelectItem>
+                  <SelectItem value="goals">Goals</SelectItem>
+                  <SelectItem value="assists">Assists</SelectItem>
+                  <SelectItem value="plusMinus">Plus/Minus</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select 
+                value={teamFilter} 
+                onValueChange={(value: "all" | "home" | "away") => setTeamFilter(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Teams</SelectItem>
+                  <SelectItem value="home">Home Team</SelectItem>
+                  <SelectItem value="away">Away Team</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Periods</SelectItem>
+                  {Array.from({ length: game.periods }, (_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                      Period {i + 1}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead className="text-right">Goals</TableHead>
-                <TableHead className="text-right">Assists</TableHead>
-                <TableHead className="text-right">+/-</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {aggregatedStats.length > 0 ? (
-                aggregatedStats.map(({ player, team, goals, assists, plusMinus }) => (
-                  <TableRow key={player.id}>
-                    <TableCell>{player.name}</TableCell>
-                    <TableCell>{team}</TableCell>
-                    <TableCell className="text-right">{goals}</TableCell>
-                    <TableCell className="text-right">{assists}</TableCell>
-                    <TableCell className="text-right">{plusMinus}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    No stats found matching the current filters
-                  </TableCell>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead className="text-right">Goals</TableHead>
+                  <TableHead className="text-right">Assists</TableHead>
+                  <TableHead className="text-right">+/-</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {aggregatedStats.length > 0 ? (
+                  aggregatedStats.map(({ player, team, goals, assists, plusMinus }) => (
+                    <TableRow key={player.id}>
+                      <TableCell>{player.name}</TableCell>
+                      <TableCell>{team}</TableCell>
+                      <TableCell className="text-right">{goals}</TableCell>
+                      <TableCell className="text-right">{assists}</TableCell>
+                      <TableCell className={`text-right ${plusMinus > 0 ? 'text-green-600' : plusMinus < 0 ? 'text-red-600' : ''}`}>
+                        {plusMinus > 0 ? `+${plusMinus}` : plusMinus}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-4">
+                      No stats found matching the current filters
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {showDebug && (
+        <StatsDebugPanel 
+          debugData={debugData} 
+          stats={filteredStats}
+          onRefresh={refetchAll}
+        />
+      )}
+    </>
   );
 }

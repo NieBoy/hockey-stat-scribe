@@ -3,28 +3,34 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
-export function useStatsDebugData() {
+export function useStatsDebugData(playerId?: string) {
   const [debugData, setDebugData] = useState<{
     rawGameStats: any[];
     playerStats: any[];
     gameCount: number;
     playerCount: number;
+    plusMinusStats: any[];
   }>({
     rawGameStats: [],
     playerStats: [],
     gameCount: 0,
-    playerCount: 0
+    playerCount: 0,
+    plusMinusStats: []
   });
 
-  // Game stats query
-  useQuery({
-    queryKey: ['debugGameStats'],
+  // Game stats query - optionally filtered by player ID
+  const { isLoading: loadingRawStats, refetch: refetchRawStats } = useQuery({
+    queryKey: ['debugGameStats', playerId],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from('game_stats')
-          .select('*');
-          
+        const query = supabase.from('game_stats').select('*');
+        
+        if (playerId) {
+          query.eq('player_id', playerId);
+        }
+        
+        const { data, error } = await query;
+        
         if (error) throw error;
         
         setDebugData(prev => ({ ...prev, rawGameStats: data || [] }));
@@ -37,13 +43,17 @@ export function useStatsDebugData() {
   });
   
   // Player stats query
-  useQuery({
-    queryKey: ['debugPlayerStats'],
+  const { isLoading: loadingPlayerStats, refetch: refetchPlayerStats } = useQuery({
+    queryKey: ['debugPlayerStats', playerId],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from('player_stats')
-          .select('*');
+        const query = supabase.from('player_stats').select('*, team_members!player_stats_player_id_fkey (name, team_id)');
+        
+        if (playerId) {
+          query.eq('player_id', playerId);
+        }
+        
+        const { data, error } = await query;
           
         if (error) throw error;
         
@@ -56,8 +66,35 @@ export function useStatsDebugData() {
     }
   });
   
+  // Plus/minus specific stats query
+  const { isLoading: loadingPlusMinusStats, refetch: refetchPlusMinusStats } = useQuery({
+    queryKey: ['debugPlusMinusStats', playerId],
+    queryFn: async () => {
+      try {
+        const query = supabase
+          .from('game_stats')
+          .select('*, games!game_stats_game_id_fkey(id, home_team_id, away_team_id), team_members!game_stats_player_id_fkey(name, team_id)')
+          .eq('stat_type', 'plusMinus');
+        
+        if (playerId) {
+          query.eq('player_id', playerId);
+        }
+        
+        const { data, error } = await query;
+          
+        if (error) throw error;
+        
+        setDebugData(prev => ({ ...prev, plusMinusStats: data || [] }));
+        return data;
+      } catch (error) {
+        console.error("Error fetching debug plus/minus stats:", error);
+        return [];
+      }
+    }
+  });
+  
   // Game count query
-  useQuery({
+  const { isLoading: loadingGameCount, refetch: refetchGameCount } = useQuery({
     queryKey: ['debugGameCount'],
     queryFn: async () => {
       try {
@@ -77,7 +114,7 @@ export function useStatsDebugData() {
   });
   
   // Player count query
-  useQuery({
+  const { isLoading: loadingPlayerCount, refetch: refetchPlayerCount } = useQuery({
     queryKey: ['debugPlayerCount'],
     queryFn: async () => {
       try {
@@ -96,6 +133,23 @@ export function useStatsDebugData() {
       }
     }
   });
+  
+  const isLoading = loadingRawStats || loadingPlayerStats || loadingGameCount || 
+                   loadingPlayerCount || loadingPlusMinusStats;
+  
+  const refetchAll = async () => {
+    await Promise.all([
+      refetchRawStats(),
+      refetchPlayerStats(), 
+      refetchGameCount(), 
+      refetchPlayerCount(),
+      refetchPlusMinusStats()
+    ]);
+  };
 
-  return { debugData };
+  return { 
+    debugData, 
+    isLoading,
+    refetchAll 
+  };
 }

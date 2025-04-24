@@ -4,13 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlayerStatsData } from "@/hooks/players/usePlayerStatsData";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import StatsOverview from "../../../components/stats/StatsOverview";
-import StatsDetailView from "../../../components/stats/StatsDetailView";
-import GameStatsView from "../../../components/stats/GameStatsView";
+import { Bug, RefreshCw } from "lucide-react";
+import StatsOverview from "@/components/stats/StatsOverview";
+import StatsDetailView from "@/components/stats/StatsDetailView";
+import GameStatsView from "@/components/stats/GameStatsView";
 import { Skeleton } from "@/components/ui/skeleton";
-import StatsProcessingDebug from "../../../components/stats/debug/StatsProcessingDebug";
+import StatsProcessingDebug from "@/components/stats/debug/StatsProcessingDebug";
 import { PlayerStat } from "@/types";
+import StatsDebugPanel from "@/components/stats/debug/StatsDebugPanel";
+import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface PlayerStatsContentProps {
   playerId: string; // This is the team_member.id, not user.id
@@ -18,6 +22,8 @@ interface PlayerStatsContentProps {
 
 const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showDebug, setShowDebug] = useState(false);
+  
   const { 
     stats, 
     statsLoading, 
@@ -31,11 +37,15 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     refetchEvents
   } = usePlayerStatsData(playerId);
 
+  // Get detailed debug data
+  const { debugData, refetchAll: refetchDebugData } = useStatsDebugData(playerId);
+
   const handleRefresh = async () => {
     await Promise.all([
       refetchStats(),
       refetchRawStats(),
-      refetchEvents()
+      refetchEvents(),
+      refetchDebugData()
     ]);
   };
 
@@ -43,7 +53,8 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     Promise.all([
       refetchStats(),
       refetchRawStats(),
-      refetchEvents()
+      refetchEvents(),
+      refetchDebugData()
     ]);
   };
 
@@ -107,49 +118,68 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Player Statistics 
-          <Button 
-            onClick={handleRefresh} 
-            variant="outline"
-            size="sm" 
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="games">Game Stats</TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview" className="mt-4">
-            <StatsOverview stats={stats} />
-          </TabsContent>
-          <TabsContent value="details" className="mt-4">
-            <StatsDetailView stats={stats} />
-          </TabsContent>
-          <TabsContent value="games" className="mt-4">
-            <GameStatsView 
-              gameStats={rawGameStats} 
-              gameEvents={playerGameEvents}
-              games={teamGames} 
-            />
-          </TabsContent>
-        </Tabs>
-        
-        <StatsProcessingDebug 
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Player Statistics</CardTitle>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="show-debug"
+                checked={showDebug}
+                onCheckedChange={setShowDebug}
+              />
+              <Label htmlFor="show-debug">Debug Mode</Label>
+            </div>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline"
+              size="sm" 
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="games">Game Stats</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="mt-4">
+              <StatsOverview stats={stats} />
+            </TabsContent>
+            <TabsContent value="details" className="mt-4">
+              <StatsDetailView stats={stats} />
+            </TabsContent>
+            <TabsContent value="games" className="mt-4">
+              <GameStatsView 
+                gameStats={rawGameStats} 
+                gameEvents={playerGameEvents}
+                games={teamGames} 
+              />
+            </TabsContent>
+          </Tabs>
+          
+          <StatsProcessingDebug 
+            playerId={playerId}
+            onStatsRefreshed={handleStatsRefreshed}
+          />
+        </CardContent>
+      </Card>
+      
+      {showDebug && (
+        <StatsDebugPanel 
+          debugData={debugData} 
+          stats={stats}
           playerId={playerId}
-          onStatsRefreshed={handleStatsRefreshed}
+          onRefresh={refetchDebugData}
         />
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
-};
+}
 
 export default PlayerStatsContent;
