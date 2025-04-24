@@ -207,8 +207,12 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
         <StatsDebugPanel 
           debugData={debugData} 
           stats={filteredStats.map(stat => ({
-            ...stat,
-            gamesPlayed: 1 // Add missing gamesPlayed prop to satisfy PlayerStat type
+            id: stat.id,
+            playerId: stat.player_id || stat.playerId || "", // Ensure playerId is always set
+            statType: stat.stat_type || stat.statType || "goals", // Default to a valid stat type
+            value: stat.value,
+            gamesPlayed: 1, // Add missing gamesPlayed prop
+            details: stat.details || ""
           }))}
           onRefresh={refetchAll}
         />
