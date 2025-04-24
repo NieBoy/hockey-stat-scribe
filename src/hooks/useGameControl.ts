@@ -3,7 +3,8 @@ import { usePeriodControl } from './game/usePeriodControl';
 import { useGameStatus } from './game/useGameStatus';
 import { useTeamControl } from './game/useTeamControl';
 import { useGameSubscription } from './game/useGameSubscription';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
+import { GameStatus } from '@/types/game-control';
 
 export function useGameControl(gameId?: string) {
   const { 
@@ -44,7 +45,7 @@ export function useGameControl(gameId?: string) {
     gameId,
     setIsGameActive,
     setCurrentPeriod,
-    setGameStatus,
+    setGameStatus: (status: GameStatus) => setGameStatus(status),
     gameStatus
   });
 

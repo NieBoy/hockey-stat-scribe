@@ -28,16 +28,23 @@ import { useState } from "react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  searchKey?: string
+  filterColumn?: string
+  filterPlaceholder?: string
+  searchKey?: string // Keep for backward compatibility
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchKey,
+  filterColumn,
+  filterPlaceholder = "Search...",
+  searchKey, // Keep for backward compatibility
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  // Use filterColumn or fall back to searchKey for backward compatibility
+  const activeFilterColumn = filterColumn || searchKey;
 
   const table = useReactTable({
     data,
@@ -56,13 +63,13 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      {searchKey && (
+      {activeFilterColumn && (
         <div className="flex items-center py-4">
           <Input
-            placeholder="Search..."
-            value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+            placeholder={filterPlaceholder}
+            value={(table.getColumn(activeFilterColumn)?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
+              table.getColumn(activeFilterColumn)?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
           />

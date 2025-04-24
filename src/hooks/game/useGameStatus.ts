@@ -4,12 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { processEventsToStats } from '@/services/stats/core/gameEventProcessor';
-
-export type GameStatus = 'pending' | 'in-progress' | 'period-end' | 'stopped' | 'completed';
+import { GameStatus } from '@/types/game-control';
 
 export function useGameStatus(gameId?: string) {
   const [isGameActive, setIsGameActive] = useState(false);
-  const [gameStatus, setGameStatus] = useState<GameStatus>('pending');
+  const [gameStatus, setGameStatus] = useState<GameStatus>('not-started');
   const [stopReason, setStopReason] = useState<string>('');
   
   // Fetch initial game status
@@ -122,8 +121,8 @@ export function useGameStatus(gameId?: string) {
   }, [gameId]);
   
   // Handle stoppage
-  const handleStoppage = useCallback((reason: string) => {
-    setStopReason(reason);
+  const handleStoppage = useCallback(() => {
+    setStopReason('stoppage');
     setGameStatus('stopped');
   }, []);
   
