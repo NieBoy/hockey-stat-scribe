@@ -53,7 +53,7 @@ const TeamStats = ({ team }: TeamStatsProps) => {
       cell: ({ row }) => {
         const statType = row.getValue("statType");
         return (
-          <Badge variant="outline">{statType}</Badge>
+          <Badge variant="outline">{String(statType)}</Badge>
         );
       },
     },
