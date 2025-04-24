@@ -25,11 +25,14 @@ const StatsProcessingDebug = ({ playerId, onStatsRefreshed }: StatsProcessingDeb
     setSuccess(null);
     
     try {
+      // Note: refreshPlayerStats returns a Record<string, string> but we need a boolean success indicator
       const result = await refreshPlayerStats(playerId);
-      setDebugLog(prev => [...prev, `Stats refresh completed with result: ${result ? 'Success' : 'Failed'}`]);
-      setSuccess(Boolean(result)); // Ensure we're setting a boolean value
+      const isSuccess = Object.values(result).some(status => status === "Success");
       
-      if (result && onStatsRefreshed) {
+      setDebugLog(prev => [...prev, `Stats refresh completed with result: ${isSuccess ? 'Success' : 'Failed'}`]);
+      setSuccess(isSuccess); // Set boolean value for success state
+      
+      if (isSuccess && onStatsRefreshed) {
         // If successful and handler provided, call it
         onStatsRefreshed([]);
       }

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +15,7 @@ import StatsDebugPanel from "@/components/stats/debug/StatsDebugPanel";
 import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import StatsSystemDebug from "@/components/stats/debug/StatsSystemDebug";
 
 interface PlayerStatsContentProps {
   playerId: string; // This is the team_member.id, not user.id
@@ -94,14 +96,24 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Player Statistics
-            <Button 
-              onClick={handleRefresh} 
-              variant="outline"
-              size="sm" 
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" /> Refresh
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  id="show-debug"
+                  checked={showDebug}
+                  onCheckedChange={setShowDebug}
+                />
+                <Label htmlFor="show-debug">Debug Mode</Label>
+              </div>
+              <Button 
+                onClick={handleRefresh} 
+                variant="outline"
+                size="sm" 
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -110,6 +122,19 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
             <br />
             Statistics will be available after participating in games.
           </p>
+          
+          {showDebug && (
+            <>
+              <StatsProcessingDebug 
+                playerId={playerId}
+                onStatsRefreshed={handleStatsRefreshed}
+              />
+              <StatsSystemDebug
+                playerId={playerId}
+                onProcessingComplete={handleRefresh}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     );
@@ -161,10 +186,18 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
             </TabsContent>
           </Tabs>
           
-          <StatsProcessingDebug 
-            playerId={playerId}
-            onStatsRefreshed={handleStatsRefreshed}
-          />
+          {showDebug && (
+            <>
+              <StatsProcessingDebug 
+                playerId={playerId}
+                onStatsRefreshed={handleStatsRefreshed}
+              />
+              <StatsSystemDebug
+                playerId={playerId}
+                onProcessingComplete={handleRefresh}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
       
@@ -178,6 +211,6 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
       )}
     </>
   );
-}
+};
 
 export default PlayerStatsContent;

@@ -96,10 +96,15 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
       console.log(`Successfully created stats from events for player ${playerId}`);
       
       // After creating individual stats, refresh aggregated stats
-      const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
-      if (error) {
-        console.error(`Error calling refresh_player_stats for ${playerId}:`, error);
-        return statsCreated; // Still return true if stats were created, even if refresh failed
+      try {
+        const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
+        if (error) {
+          console.error(`Error calling refresh_player_stats for ${playerId}:`, error);
+          // Still return true if stats were created, even if refresh failed
+        }
+      } catch (refreshError) {
+        console.error(`Error refreshing player stats for ${playerId}:`, refreshError);
+        // Still return true if stats were created, even if refresh failed
       }
     } else {
       console.log(`No stats were created from events for player ${playerId}`);
@@ -108,6 +113,63 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     return statsCreated;
   } catch (error) {
     console.error("Error creating game stats from events:", error);
+    return false;
+  }
+};
+
+/**
+ * Main entry point for processing events to stats
+ * This is the main function that should be called to generate stats from events
+ */
+export const processEventsToStats = async (playerId: string, events: any[]): Promise<boolean> => {
+  try {
+    console.log(`Processing ${events.length} events to stats for player ${playerId}`);
+    
+    // First check if this player ID is valid
+    const isValid = await validatePlayerId(playerId);
+    if (!isValid) {
+      console.error(`Cannot process stats: Player ID ${playerId} not found in team_members table`);
+      return false;
+    }
+    
+    // Filter events to those relevant to this player
+    const relevantEvents = events.filter(event => {
+      // If event has no details, it can't be processed
+      if (!event.details) return false;
+      
+      // Parse details if needed
+      let details;
+      try {
+        details = typeof event.details === 'string' 
+          ? JSON.parse(event.details) 
+          : event.details;
+      } catch (error) {
+        return false;
+      }
+      
+      // Check if this player is involved in the event
+      if (!details) return false;
+      
+      return (
+        details.playerId === playerId ||
+        details.primaryAssistId === playerId ||
+        details.secondaryAssistId === playerId ||
+        (details.playersOnIce && details.playersOnIce.includes(playerId))
+      );
+    });
+    
+    if (relevantEvents.length === 0) {
+      console.log(`No relevant events found for player ${playerId}`);
+      return false;
+    }
+    
+    console.log(`Found ${relevantEvents.length} relevant events for player ${playerId}`);
+    
+    // Process the events to create stats
+    return await createGameStatsFromEvents(playerId, relevantEvents);
+    
+  } catch (error) {
+    console.error(`Error processing events to stats for player ${playerId}:`, error);
     return false;
   }
 };
