@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,12 +10,14 @@ interface StatsProcessingStatusProps {
   playerId?: string;
   gameId?: string;
   onRefresh?: () => void;
+  className?: string;
 }
 
 export default function StatsProcessingStatus({ 
   playerId, 
   gameId,
-  onRefresh
+  onRefresh,
+  className
 }: StatsProcessingStatusProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({
@@ -115,7 +116,7 @@ export default function StatsProcessingStatus({
   };
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-base">
           Stats Processing Status
@@ -156,7 +157,7 @@ export default function StatsProcessingStatus({
         )}
 
         {stats.gameStatsCount > 0 && stats.playerStatsCount === 0 && (
-          <Alert variant="warning">
+          <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Aggregation Issue</AlertTitle>
             <AlertDescription>
