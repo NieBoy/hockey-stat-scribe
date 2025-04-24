@@ -3,6 +3,7 @@ import { validatePlayerId, validateMultiplePlayers } from "@/services/events/sha
 import { processGoalEvent } from './processors/goalProcessor';
 import { processPenaltyEvent } from './processors/penaltyProcessor';
 import { processFaceoffEvent } from './processors/faceoffProcessor';
+import { supabase } from "@/lib/supabase";
 
 /**
  * Creates game stats from events for a player

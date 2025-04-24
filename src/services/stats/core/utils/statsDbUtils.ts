@@ -84,33 +84,3 @@ export const createGameStat = async (
     return false;
   }
 };
-
-export const getPlayerTeam = async (playerId: string) => {
-  try {
-    const { data: playerTeam } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('id', playerId)
-      .single();
-      
-    return playerTeam;
-  } catch (error) {
-    console.error(`Error fetching player team:`, error);
-    return null;
-  }
-};
-
-export const getGameTeams = async (gameId: string) => {
-  try {
-    const { data: game } = await supabase
-      .from('games')
-      .select('home_team_id, away_team_id')
-      .eq('id', gameId)
-      .single();
-      
-    return game;
-  } catch (error) {
-    console.error(`Error fetching game:`, error);
-    return null;
-  }
-};

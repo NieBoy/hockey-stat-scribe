@@ -1,7 +1,5 @@
 
 import { supabase } from "@/lib/supabase";
-import { getGameTeams } from "@/services/games";
-import { getPlayerTeam } from "@/services/teams";
 import { GameEvent, GameStat } from "@/types";
 import { createGameStat } from "../utils/statsDbUtils";
 
@@ -50,8 +48,8 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
 const createPlusMinus = async (event: any, playerId: string): Promise<boolean> => {
   try {
     // Get player's team info and game info
-    const playerTeam = await getPlayerTeam(playerId);
-    const game = await getGameTeams(event.game_id);
+    const playerTeam = await getPlayerTeamFromDb(playerId);
+    const game = await getGameTeamsFromDb(event.game_id);
     
     if (!playerTeam || !game) {
       console.error(`Could not find team/game info for player ${playerId}`);
@@ -74,5 +72,37 @@ const createPlusMinus = async (event: any, playerId: string): Promise<boolean> =
   } catch (error) {
     console.error(`Error creating plus/minus stat:`, error);
     return false;
+  }
+};
+
+// Helper function to get player team from database
+const getPlayerTeamFromDb = async (playerId: string) => {
+  try {
+    const { data: playerTeam } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('id', playerId)
+      .single();
+      
+    return playerTeam;
+  } catch (error) {
+    console.error(`Error fetching player team:`, error);
+    return null;
+  }
+};
+
+// Helper function to get game teams from database
+const getGameTeamsFromDb = async (gameId: string) => {
+  try {
+    const { data: game } = await supabase
+      .from('games')
+      .select('home_team_id, away_team_id')
+      .eq('id', gameId)
+      .single();
+      
+    return game;
+  } catch (error) {
+    console.error(`Error fetching game:`, error);
+    return null;
   }
 };
