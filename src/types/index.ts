@@ -1,4 +1,3 @@
-
 export type TeamBasic = {
   id: string;
   name: string;
@@ -159,13 +158,11 @@ export type Invitation = {
   invitedBy?: string;
 };
 
-// Add GameFormState type
+// Update GameFormState type
 export type GameFormState = {
-  homeTeamId: string;
-  awayTeamId: string | null;
-  opponentName: string;
   date: Date;
-  time: string;
+  homeTeam: string;
+  opponentName: string;
   location: string;
   periods: number;
 };

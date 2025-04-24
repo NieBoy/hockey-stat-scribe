@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -9,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OpponentSelect } from './OpponentSelect';
 
 // Define a schema for form validation
 const gameFormSchema = z.object({
@@ -18,10 +20,10 @@ const gameFormSchema = z.object({
   homeTeam: z.string({
     required_error: "Please select a home team",
   }),
-  awayTeam: z.string({
-    required_error: "Please select an away team",
-  }).refine(val => val !== '', {
-    message: "Please select an away team"
+  opponentName: z.string({
+    required_error: "Please enter an opponent name",
+  }).min(3, {
+    message: "Opponent name must be at least 3 characters",
   }),
   location: z.string({
     required_error: "Please enter a location",
@@ -44,7 +46,7 @@ interface NewGameFormProps {
 export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewGameFormProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [homeTeam, setHomeTeam] = useState('');
-  const [awayTeam, setAwayTeam] = useState('');
+  const [opponentName, setOpponentName] = useState('');
   const [location, setLocation] = useState('');
   const [periods, setPeriods] = useState(3);
 
@@ -54,7 +56,7 @@ export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewG
     const result = gameFormSchema.safeParse({
       date,
       homeTeam,
-      awayTeam,
+      opponentName,
       location,
       periods,
     });
@@ -78,7 +80,7 @@ export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewG
       const formData: GameFormState = {
         date: date!,
         homeTeam,
-        awayTeam,
+        opponentName,
         location,
         periods,
       };
@@ -136,24 +138,13 @@ export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewG
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="awayTeam">Away Team</Label>
-        <Select value={awayTeam} onValueChange={setAwayTeam}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select away team" />
-          </SelectTrigger>
-          <SelectContent>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.awayTeam && (
-          <p className="text-sm text-red-500">{errors.awayTeam}</p>
-        )}
-      </div>
+      <OpponentSelect 
+        value={opponentName} 
+        onChange={setOpponentName} 
+      />
+      {errors.opponentName && (
+        <p className="text-sm text-red-500">{errors.opponentName}</p>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="location">Location</Label>

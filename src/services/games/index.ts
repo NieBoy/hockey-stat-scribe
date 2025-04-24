@@ -117,7 +117,8 @@ export async function createGame(gameData: any): Promise<{ success: boolean; id?
       date: gameData.date.toISOString(),
       location: gameData.location,
       home_team_id: gameData.homeTeam,
-      away_team_id: gameData.awayTeam,
+      away_team_id: null, // No away team ID when using opponent name
+      opponent_name: gameData.opponentName,
       periods: gameData.periods,
       current_period: 0,
       is_active: false

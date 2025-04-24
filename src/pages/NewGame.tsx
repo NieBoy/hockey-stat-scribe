@@ -24,7 +24,16 @@ export default function NewGame() {
     try {
       setLoading(true);
       console.log("Submitting game data:", data);
-      const result = await createGame(data);
+      
+      const gameData = {
+        date: data.date,
+        location: data.location,
+        homeTeam: data.homeTeam,
+        opponentName: data.opponentName,
+        periods: data.periods
+      };
+      
+      const result = await createGame(gameData);
       
       if (result.success) {
         toast.success("Game created successfully!");
@@ -50,7 +59,7 @@ export default function NewGame() {
         </Button>
         <h1 className="text-3xl font-bold tracking-tight mb-1">Schedule New Game</h1>
         <p className="text-muted-foreground">
-          Create a new game and assign stat trackers.
+          Create a new game against an opponent team.
         </p>
       </div>
 
