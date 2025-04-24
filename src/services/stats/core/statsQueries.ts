@@ -48,3 +48,39 @@ export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> 
     throw error;
   }
 };
+
+export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
+  console.log("Fetching all player stats");
+  
+  try {
+    // First, get all team members who are players
+    const { data: teamMembers, error: membersError } = await supabase
+      .from('team_members')
+      .select('id, name, team_id')
+      .eq('role', 'player');
+    
+    if (membersError) {
+      console.error("Error fetching team members:", membersError);
+      throw membersError;
+    }
+
+    // Fetch stats for each player
+    const allPlayerStats: PlayerStat[] = [];
+    
+    for (const member of teamMembers || []) {
+      try {
+        const playerStats = await fetchPlayerStats(member.id);
+        allPlayerStats.push(...playerStats);
+      } catch (playerStatError) {
+        console.error(`Error fetching stats for player ${member.id}:`, playerStatError);
+      }
+    }
+
+    console.log(`Total stats for all players: ${allPlayerStats.length}`);
+    
+    return allPlayerStats;
+  } catch (error) {
+    console.error("Error in fetchAllPlayerStats:", error);
+    throw error;
+  }
+};
