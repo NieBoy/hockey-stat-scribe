@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PlayerStat } from "@/types";
-import { getAllPlayerStats, refreshAllPlayerStats, reprocessAllStats } from "@/services/stats";
+import { getAllPlayerStats, refreshPlayerStats, reprocessAllStats } from "@/services/stats";
 
 export function useStatsData() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -22,7 +22,7 @@ export function useStatsData() {
   const handleRefreshAllStats = async () => {
     setIsRefreshing(true);
     try {
-      await refreshAllPlayerStats();
+      await refreshPlayerStats('all'); // Pass 'all' to indicate system-wide refresh
       toast.success("All player statistics have been recalculated.");
       await refetch();
     } catch (error) {
