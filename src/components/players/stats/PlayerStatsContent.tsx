@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +9,8 @@ import StatsOverview from "../../../components/stats/StatsOverview";
 import StatsDetailView from "../../../components/stats/StatsDetailView";
 import GameStatsView from "../../../components/stats/GameStatsView";
 import { Skeleton } from "@/components/ui/skeleton";
-import StatsProcessingDebug from "../../../components/stats/StatsProcessingDebug";
+import StatsProcessingDebug from "../../../components/stats/debug/StatsProcessingDebug";
+import { PlayerStat } from "@/types";
 
 interface PlayerStatsContentProps {
   playerId: string; // This is the team_member.id, not user.id
