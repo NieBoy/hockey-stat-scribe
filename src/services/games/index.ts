@@ -112,12 +112,26 @@ export async function getGameById(id: string): Promise<Game | null> {
 
 export async function createGame(gameData: any): Promise<{ success: boolean; id?: string; error?: any }> {
   try {
+    // Format the data for the Supabase insert
+    const formattedData = {
+      date: gameData.date.toISOString(),
+      location: gameData.location,
+      home_team_id: gameData.homeTeam,
+      away_team_id: gameData.awayTeam,
+      periods: gameData.periods,
+      current_period: 0,
+      is_active: false
+    };
+    
+    console.log("Creating new game with data:", formattedData);
+    
     const { data, error } = await supabase
       .from('games')
-      .insert(gameData)
+      .insert(formattedData)
       .select();
 
     if (error) {
+      console.error("Error creating game:", error);
       return { 
         success: false, 
         error 
@@ -129,6 +143,7 @@ export async function createGame(gameData: any): Promise<{ success: boolean; id?
       id: data?.[0]?.id 
     };
   } catch (error) {
+    console.error("Unexpected error in createGame:", error);
     return { 
       success: false, 
       error 

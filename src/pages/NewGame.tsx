@@ -23,9 +23,15 @@ export default function NewGame() {
   const handleCreateGame = async (data: GameFormState) => {
     try {
       setLoading(true);
-      await createGame(data);
-      toast.success("Game created successfully!");
-      navigate("/games");
+      console.log("Submitting game data:", data);
+      const result = await createGame(data);
+      
+      if (result.success) {
+        toast.success("Game created successfully!");
+        navigate("/games");
+      } else {
+        toast.error(`Failed to create game: ${result.error?.message || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error("Error creating game:", error);
       toast.error("Failed to create game");
