@@ -11,9 +11,9 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
     // Verify player exists in team_members
     const { data: playerData, error: playerError } = await supabase
       .from('team_members')
-      .select('id, name, team_id, user_id')
+      .select('id, name, team_id')
       .eq('id', playerId)
-      .single();
+      .maybeSingle();
       
     if (playerError) {
       console.error("Error fetching player data:", playerError);
@@ -25,108 +25,67 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       return [];
     }
     
-    // We use team_member.id consistently throughout the application
-    const playerStatsId = playerData.id;
     const playerName = playerData.name || 'Unknown Player';
+    console.log("Found player:", playerName, "with team_member ID:", playerId);
     
-    console.log("Found player:", playerName, "with team_member ID:", playerStatsId);
-    
-    // Fetch game events with proper JSONB queries
-    console.log("Fetching game events for player ID:", playerStatsId);
-    
-    // Query 1: Events where the player is directly mentioned in specific fields
-    // Using proper JSONB path operators
-    const { data: directEvents, error: directError } = await supabase
+    // Use two separate queries for better performance and clarity
+    const { data: goalEvents, error: goalError } = await supabase
       .from('game_events')
       .select('*')
-      .or(`details->>'playerId'.eq.${playerStatsId},details->>'primaryAssistId'.eq.${playerStatsId},details->>'secondaryAssistId'.eq.${playerStatsId}`);
+      .eq('event_type', 'goal')
+      .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
       
-    if (directError) {
-      console.error("Error fetching direct game events:", directError);
-      throw directError;
+    if (goalError) {
+      console.error("Error fetching goal events:", goalError);
+      throw goalError;
     }
     
-    console.log(`Found ${directEvents?.length || 0} direct events for player ${playerStatsId}`);
-    console.log("Sample direct event:", directEvents && directEvents.length > 0 ? directEvents[0] : "No events");
-    
-    // Query 2: Events where player is in playersOnIce array
-    // Using contains operator for JSONB arrays
     const { data: onIceEvents, error: onIceError } = await supabase
       .from('game_events')
       .select('*')
-      .contains('details', { playersOnIce: [playerStatsId] });
+      .contains('details', { playersOnIce: [playerId] });
       
     if (onIceError) {
       console.error("Error fetching on-ice events:", onIceError);
       throw onIceError;
     }
     
-    console.log(`Found ${onIceEvents?.length || 0} on-ice events for player ${playerStatsId}`);
-    console.log("Sample on-ice event:", onIceEvents && onIceEvents.length > 0 ? onIceEvents[0] : "No events");
+    // Combine and deduplicate events
+    const allEvents = [...(goalEvents || []), ...(onIceEvents || [])];
+    const uniqueEvents = Array.from(new Map(allEvents.map(event => [event.id, event])).values());
     
-    // Combine events, removing duplicates
-    const allEvents = [...(directEvents || []), ...(onIceEvents || [])];
-    const uniqueEventIds = new Set();
-    const gameEvents = allEvents.filter(event => {
-      if (uniqueEventIds.has(event.id)) return false;
-      uniqueEventIds.add(event.id);
-      return true;
-    });
+    console.log(`Processing ${uniqueEvents.length} total events for player ${playerId}`);
     
-    console.log(`Total unique game events for player ${playerStatsId}: ${gameEvents.length}`);
-    
-    // Process events into game stats - this is where events become statistics
-    if (gameEvents && gameEvents.length > 0) {
-      console.log(`Processing ${gameEvents.length} events into game stats...`);
-      try {
-        const statsCreated = await createGameStatsFromEvents(playerStatsId, gameEvents);
-        console.log(`Game stats creation result: ${statsCreated ? 'Success' : 'No new stats created'}`);
-      } catch (createStatsError) {
-        console.error("Error creating game stats from events:", createStatsError);
-        // Continue execution to at least try to summarize existing stats
-      }
-    } else {
-      console.log("No events found to process for this player");
+    // Process events into game stats
+    if (uniqueEvents.length > 0) {
+      console.log("Creating game stats from events...");
+      await createGameStatsFromEvents(playerId, uniqueEvents);
     }
     
-    // Get all game stats after processing
-    const { data: gameStats, error: gameStatsError } = await supabase
-      .from('game_stats')
-      .select('*')
-      .eq('player_id', playerStatsId);
+    // Call the database refresh function
+    const { data: refreshResult, error: refreshError } = await supabase
+      .rpc('refresh_player_stats', { player_id: playerId });
       
-    if (gameStatsError) {
-      console.error("Error fetching game stats:", gameStatsError);
-      throw gameStatsError;
+    if (refreshError) {
+      console.error("Error calling refresh_player_stats function:", refreshError);
+      throw refreshError;
     }
     
-    console.log(`Found ${gameStats?.length || 0} game stats for player ${playerStatsId}`);
+    // Fetch the updated stats
+    const { data: playerStats, error: statsError } = await supabase
+      .from('player_stats')
+      .select('*')
+      .eq('player_id', playerId);
+      
+    if (statsError) {
+      console.error("Error fetching updated player stats:", statsError);
+      throw statsError;
+    }
     
-    // Calculate and update player stats
-    const statsSummary = calculateStatsSummary(gameStats || []);
-    const playerStats = createPlayerStatsFromSummary(playerStatsId, playerName, statsSummary);
-    
-    console.log("Generated player stats summary:", playerStats);
-    
-    // Update or insert each stat
-    const results = await Promise.all(
-      playerStats.map(async (stat) => {
-        try {
-          const updated = await updateOrInsertStat(playerStatsId, stat);
-          return updated ? stat : null;
-        } catch (error) {
-          console.error(`Error updating stat ${stat.statType}:`, error);
-          return null;
-        }
-      })
-    );
-    
-    const validResults = results.filter((stat): stat is PlayerStat => stat !== null);
-    console.log(`Successfully updated ${validResults.length} stats for player ${playerStatsId}`);
-    
-    return validResults;
+    return playerStats || [];
   } catch (error) {
-    console.error("Error refreshing player stats:", error);
-    return [];
+    console.error("Error in refreshPlayerStats:", error);
+    throw error;
   }
 };
+

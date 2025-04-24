@@ -491,6 +491,10 @@ export type Database = {
         }
         Returns: Json
       }
+      refresh_player_stats: {
+        Args: { player_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

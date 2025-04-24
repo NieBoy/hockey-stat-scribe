@@ -20,16 +20,21 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
     const players = teamMembers || [];
     console.log(`Found ${players.length} players to refresh stats for`);
     
-    // Refresh stats for each player - using team_member.id
-    for (const player of players) {
-      console.log(`Refreshing stats for player: ${player.name} (${player.id})`);
-      try {
-        await refreshPlayerStats(player.id);
-        console.log(`Completed stats refresh for ${player.name}`);
-      } catch (error) {
-        console.error(`Error refreshing stats for ${player.name}:`, error);
-        // Continue with next player rather than breaking the entire process
-      }
+    // Process players in batches to avoid overwhelming the database
+    const batchSize = 5;
+    for (let i = 0; i < players.length; i += batchSize) {
+      const batch = players.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (player) => {
+          try {
+            console.log(`Refreshing stats for player: ${player.name} (${player.id})`);
+            await refreshPlayerStats(player.id);
+            console.log(`Completed stats refresh for ${player.name}`);
+          } catch (error) {
+            console.error(`Error refreshing stats for ${player.name}:`, error);
+          }
+        })
+      );
     }
     
     console.log("Successfully refreshed stats for all players");
@@ -39,34 +44,27 @@ export const refreshAllPlayerStats = async (): Promise<void> => {
   }
 };
 
-// Function to call the database function to reprocess all stats from events
 export const reprocessAllStats = async (): Promise<boolean> => {
   try {
-    console.log("Calling database function to reprocess all stats");
+    console.log("Starting complete stats reprocessing");
     
-    // First, clear existing player stats
+    // Clear existing player stats
     const { error: clearError } = await supabase
       .from('player_stats')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // This is a safe way to clear all rows
+      .neq('id', '00000000-0000-0000-0000-000000000000');
       
     if (clearError) {
       console.error("Error clearing player stats:", clearError);
       return false;
     }
     
-    console.log("Existing player stats cleared. Rebuilding from game stats...");
+    console.log("Existing player stats cleared. Starting refresh process...");
     
-    // Refresh stats for each player
-    return await refreshAllPlayerStats()
-      .then(() => {
-        console.log("Successfully reprocessed all stats");
-        return true;
-      })
-      .catch(error => {
-        console.error("Error in refreshAllPlayerStats during reprocessAll:", error);
-        return false;
-      });
+    // Refresh all player stats
+    await refreshAllPlayerStats();
+    console.log("Successfully reprocessed all player stats");
+    return true;
   } catch (error) {
     console.error("Error in reprocessAllStats:", error);
     return false;
