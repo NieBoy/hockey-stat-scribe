@@ -16,6 +16,7 @@ import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import StatsSystemDebug from "@/components/stats/debug/StatsSystemDebug";
+import StatsProcessingStatus from "@/components/stats/debug/StatsProcessingStatus";
 
 interface PlayerStatsContentProps {
   playerId: string; // This is the team_member.id, not user.id
@@ -125,10 +126,16 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
           
           {showDebug && (
             <>
+              <StatsProcessingStatus 
+                playerId={playerId} 
+                onRefresh={handleRefresh} 
+              />
+              
               <StatsProcessingDebug 
                 playerId={playerId}
                 onStatsRefreshed={handleStatsRefreshed}
               />
+              
               <StatsSystemDebug
                 playerId={playerId}
                 onProcessingComplete={handleRefresh}
@@ -188,10 +195,17 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
           
           {showDebug && (
             <>
+              <StatsProcessingStatus 
+                playerId={playerId} 
+                onRefresh={handleRefresh} 
+                className="mt-6"
+              />
+              
               <StatsProcessingDebug 
                 playerId={playerId}
                 onStatsRefreshed={handleStatsRefreshed}
               />
+              
               <StatsSystemDebug
                 playerId={playerId}
                 onProcessingComplete={handleRefresh}

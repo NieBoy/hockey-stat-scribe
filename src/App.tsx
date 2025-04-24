@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Teams from "./pages/Teams";
@@ -41,7 +42,8 @@ function App() {
             <Route path="/teams/:id/lineup" element={<TeamLineup />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/games" element={<Games />} />
-            <Route path="/games/create" element={<NewGame />} />
+            <Route path="/games/new" element={<NewGame />} />
+            <Route path="/games/create" element={<NewGame />} /> {/* Keep both routes for backward compatibility */}
             <Route path="/games/:id" element={<GameDetail />} />
             <Route path="/games/:id/track" element={<GameTracking />} />
             <Route path="/games/:id/track/:statType" element={<TrackStats />} />

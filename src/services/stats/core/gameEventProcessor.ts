@@ -5,6 +5,7 @@ import { processPenaltyEvent } from './processors/penaltyProcessor';
 import { processFaceoffEvent } from './processors/faceoffProcessor';
 import { supabase } from "@/lib/supabase";
 import { refreshPlayerStats } from './statsRefresh';
+import { toast } from "sonner";
 
 /**
  * Creates game stats from events for a player
@@ -27,29 +28,27 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     
     // Process each event
     for (const event of events) {
-      console.log(`Processing event ID: ${event.id}, type: ${event.event_type}`);
-      
-      // Convert details to proper format if needed
-      let details;
       try {
-        details = typeof event.details === 'string' 
-          ? JSON.parse(event.details) 
-          : event.details;
-          
-        console.log(`Event details: ${JSON.stringify(details)}`);
-      } catch (parseError) {
-        console.error(`Error parsing event details:`, parseError);
-        console.log(`Raw details value:`, event.details);
-        continue; // Skip this event if details can't be parsed
-      }
-      
-      if (!details) {
-        console.log(`No details found for event ${event.id}, skipping`);
-        continue;
-      }
-      
-      try {
-        let result = false;
+        console.log(`Processing event ID: ${event.id}, type: ${event.event_type}`);
+        
+        // Convert details to proper format if needed
+        let details;
+        try {
+          details = typeof event.details === 'string' 
+            ? JSON.parse(event.details) 
+            : event.details;
+            
+          console.log(`Event details: ${JSON.stringify(details)}`);
+        } catch (parseError) {
+          console.error(`Error parsing event details:`, parseError);
+          console.log(`Raw details value:`, event.details);
+          continue; // Skip this event if details can't be parsed
+        }
+        
+        if (!details) {
+          console.log(`No details found for event ${event.id}, skipping`);
+          continue;
+        }
         
         // Extract player IDs for validation
         const playerIds = [
@@ -68,6 +67,8 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
           }
         }
         
+        let result = false;
+        
         // Process different event types
         switch (event.event_type) {
           case 'goal':
@@ -82,10 +83,11 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
             result = await processFaceoffEvent(event, playerId, details);
             console.log(`Faceoff event processing result: ${result ? 'Stats created' : 'No stats created'}`);
             break;
+          default:
+            console.log(`Unhandled event type: ${event.event_type}`);
         }
         
         statsCreated = result || statsCreated;
-        
       } catch (eventProcessError) {
         console.error(`Error processing event ${event.id} of type ${event.event_type}:`, eventProcessError);
         // Continue with next event rather than breaking the entire process
@@ -144,6 +146,7 @@ export const processEventsToStats = async (playerId: string, events: any[]): Pro
           ? JSON.parse(event.details) 
           : event.details;
       } catch (error) {
+        console.error(`Error parsing event details for event ${event.id}:`, error);
         return false;
       }
       
