@@ -1,8 +1,9 @@
+
 import { supabase } from "@/lib/supabase";
 import { getGameTeams } from "@/services/games";
 import { getPlayerTeam } from "@/services/teams";
 import { GameEvent, GameStat } from "@/types";
-import { recordGameStat } from "../statsDbUtils";
+import { createGameStat } from "../utils/statsDbUtils";
 
 export const processGoalEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
   let statsCreated = false;
@@ -13,20 +14,20 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
     // Check if player is scorer
     if (details && details.playerId === playerId) {
       console.log(`Player ${playerId} is the goal scorer`);
-      const goalStat = await recordGameStat(event.game_id, playerId, 'goals', event.period);
+      const goalStat = await createGameStat(event.game_id, playerId, 'goals', event.period);
       statsCreated = goalStat || statsCreated;
     }
     
     // Check for assists
     if (details && details.primaryAssistId === playerId) {
       console.log(`Player ${playerId} has primary assist`);
-      const assistStat = await recordGameStat(event.game_id, playerId, 'assists', event.period, 'primary');
+      const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'primary');
       statsCreated = assistStat || statsCreated;
     }
     
     if (details && details.secondaryAssistId === playerId) {
       console.log(`Player ${playerId} has secondary assist`);
-      const assistStat = await recordGameStat(event.game_id, playerId, 'assists', event.period, 'secondary');
+      const assistStat = await createGameStat(event.game_id, playerId, 'assists', event.period, 'secondary');
       statsCreated = assistStat || statsCreated;
     }
     
@@ -63,7 +64,7 @@ const createPlusMinus = async (event: any, playerId: string): Promise<boolean> =
     
     console.log(`Player ${playerId} ${isPlus ? '+1' : '-1'} for this goal`);
     
-    return await recordGameStat(
+    return await createGameStat(
       event.game_id,
       playerId,
       'plusMinus',
