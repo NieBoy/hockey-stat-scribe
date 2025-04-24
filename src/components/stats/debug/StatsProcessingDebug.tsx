@@ -27,7 +27,7 @@ const StatsProcessingDebug = ({ playerId, onStatsRefreshed }: StatsProcessingDeb
     try {
       const result = await refreshPlayerStats(playerId);
       setDebugLog(prev => [...prev, `Stats refresh completed with result: ${result ? 'Success' : 'Failed'}`]);
-      setSuccess(result);
+      setSuccess(Boolean(result)); // Ensure we're setting a boolean value
       
       if (result && onStatsRefreshed) {
         // If successful and handler provided, call it
