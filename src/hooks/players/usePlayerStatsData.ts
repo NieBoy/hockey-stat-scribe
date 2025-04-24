@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPlayerStats } from "@/services/stats/core/statsQueries";
-import { fetchGameStats } from "@/services/stats/game-stats/queries";
+import { fetchPlayerRawGameStats } from "@/services/stats/game-stats/queries";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -36,7 +36,7 @@ export function usePlayerStatsData(playerId: string) {
     queryKey: ['rawGameStats', playerId],
     queryFn: async () => {
       try {
-        const stats = await fetchGameStats(undefined, playerId);
+        const stats = await fetchPlayerRawGameStats(playerId);
         return stats;
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
