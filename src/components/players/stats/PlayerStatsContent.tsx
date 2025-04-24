@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,7 +36,6 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     refetchEvents
   } = usePlayerStatsData(playerId);
 
-  // Get detailed debug data
   const { debugData, refetchAll: refetchDebugData } = useStatsDebugData(playerId);
 
   const handleRefresh = async () => {
