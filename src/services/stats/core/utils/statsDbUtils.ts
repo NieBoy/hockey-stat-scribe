@@ -37,6 +37,13 @@ export const createGameStat = async (
       return true;
     }
     
+    // Determine value based on the stat type and details
+    let value = 1; // Default value
+    if (statType === 'plusMinus') {
+      // For plus/minus, set value based on plus or minus
+      value = details === 'plus' ? 1 : -1;
+    }
+    
     // Create new stat using RPC function for maximum compatibility
     try {
       const { data, error } = await supabase.rpc('record_game_stat', {
@@ -44,7 +51,7 @@ export const createGameStat = async (
         p_player_id: playerId,
         p_stat_type: statType,
         p_period: period,
-        p_value: 1,
+        p_value: value,
         p_details: details
       });
       
@@ -66,7 +73,7 @@ export const createGameStat = async (
           player_id: playerId,
           stat_type: statType,
           period: period,
-          value: 1,
+          value: value,
           details: details,
           timestamp: new Date().toISOString()
         });

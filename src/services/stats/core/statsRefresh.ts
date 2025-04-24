@@ -1,160 +1,122 @@
 
 import { supabase } from "@/lib/supabase";
-import { refreshPlayerStats } from "./statsUpdates";
 import { createGameStatsFromEvents } from "./gameEventProcessor";
-import { PlayerStat } from "@/types";
 
 /**
- * Refreshes stats for all players
+ * Reprocess all player stats from game events
  * @returns Promise<boolean> Success status
  */
-export const refreshAllPlayerStats = async (): Promise<boolean> => {
+export const reprocessAllStats = async (): Promise<boolean> => {
   try {
-    console.log("Refreshing all player stats");
+    console.log("Starting reprocessing of all player stats from game events");
     
-    // Get all team members
-    const { data: players, error: playersError } = await supabase
+    // Get all team members who have played in games
+    const { data: playerIds, error: playerError } = await supabase
       .from('team_members')
-      .select('id, name')
-      .eq('role', 'player');
-      
-    if (playersError) {
-      console.error("Error fetching players:", playersError);
+      .select('id')
+      .not('position', 'is', null); // Only include players with positions
+    
+    if (playerError) {
+      console.error("Error fetching players for stat reprocessing:", playerError);
       return false;
     }
     
-    console.log(`Found ${players?.length || 0} players for stats refresh`);
-    
-    if (!players || players.length === 0) {
-      console.log("No players found to refresh stats");
+    if (!playerIds || playerIds.length === 0) {
+      console.log("No players found for stat reprocessing");
       return false;
     }
     
-    // Process each player in batches to avoid overwhelming the database
-    const batchSize = 5;
-    const results: boolean[] = [];
+    console.log(`Found ${playerIds.length} players to reprocess stats for`);
     
-    for (let i = 0; i < players.length; i += batchSize) {
-      const batch = players.slice(i, i + batchSize);
-      console.log(`Processing batch ${i / batchSize + 1} with ${batch.length} players`);
-      
-      // Process players in parallel within each batch
-      const batchResults = await Promise.allSettled(
-        batch.map(async (player) => {
-          try {
-            console.log(`Refreshing stats for player ${player.name} (${player.id})`);
-            await refreshPlayerStats(player.id);
-            return true;
-          } catch (error) {
-            console.error(`Error refreshing stats for player ${player.name}:`, error);
-            return false;
-          }
-        })
-      );
-      
-      // Collect results
-      results.push(...batchResults.map(result => 
-        result.status === 'fulfilled' ? result.value : false
-      ));
+    // Get all game events
+    const { data: gameEvents, error: eventsError } = await supabase
+      .from('game_events')
+      .select('*');
+    
+    if (eventsError) {
+      console.error("Error fetching game events for stat reprocessing:", eventsError);
+      return false;
     }
     
-    // Count successful refreshes
-    const successCount = results.filter(Boolean).length;
-    console.log(`Successfully refreshed stats for ${successCount} out of ${players.length} players`);
+    if (!gameEvents || gameEvents.length === 0) {
+      console.log("No game events found for stat reprocessing");
+      return false;
+    }
     
-    return successCount > 0;
+    console.log(`Found ${gameEvents.length} game events to process`);
+    
+    // Process stats for each player
+    const results = await Promise.allSettled(
+      playerIds.map(async (player) => {
+        try {
+          console.log(`Processing stats for player ${player.id}`);
+          const result = await createGameStatsFromEvents(player.id, gameEvents);
+          return { playerId: player.id, success: result };
+        } catch (error) {
+          console.error(`Error processing stats for player ${player.id}:`, error);
+          return { playerId: player.id, success: false, error };
+        }
+      })
+    );
+    
+    // Count successful and failed operations
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    const failed = results.length - successful;
+    
+    console.log(`Stats reprocessing complete: ${successful} players successful, ${failed} players failed`);
+    
+    // Refresh player_stats aggregated table
+    for (const player of playerIds) {
+      try {
+        const { error } = await supabase.rpc('refresh_player_stats', { player_id: player.id });
+        if (error) {
+          console.error(`Error refreshing aggregated stats for player ${player.id}:`, error);
+        }
+      } catch (refreshError) {
+        console.error(`Exception refreshing aggregated stats for player ${player.id}:`, refreshError);
+      }
+    }
+    
+    return successful > 0;
   } catch (error) {
-    console.error("Error in refreshAllPlayerStats:", error);
+    console.error("Error in reprocessAllStats:", error);
     return false;
   }
 };
 
 /**
- * Reprocesses all stats from game events for all players
+ * Reprocess stats for a specific player from game events
+ * @param playerId The team_member.id of the player
  * @returns Promise<boolean> Success status
  */
-export const reprocessAllStats = async (): Promise<boolean> => {
+export const refreshPlayerStats = async (playerId: string): Promise<boolean> => {
   try {
-    console.log("Reprocessing all stats from game events");
+    console.log(`Refreshing stats for player ${playerId}`);
     
-    // Get all team members who are players
-    const { data: players, error: playersError } = await supabase
-      .from('team_members')
-      .select('id, name')
-      .eq('role', 'player');
-      
-    if (playersError) {
-      console.error("Error fetching players:", playersError);
+    // Get all game events
+    const { data: gameEvents, error: eventsError } = await supabase
+      .from('game_events')
+      .select('*');
+    
+    if (eventsError) {
+      console.error(`Error fetching game events for player ${playerId}:`, eventsError);
       return false;
     }
     
-    if (!players || players.length === 0) {
-      console.log("No players found");
-      return false;
+    // Process stats for this player
+    const result = await createGameStatsFromEvents(playerId, gameEvents || []);
+    
+    if (result) {
+      // Refresh aggregated stats
+      const { error } = await supabase.rpc('refresh_player_stats', { player_id: playerId });
+      if (error) {
+        console.error(`Error refreshing aggregated stats for player ${playerId}:`, error);
+      }
     }
     
-    console.log(`Found ${players.length} players for reprocessing`);
-    
-    let successCount = 0;
-    let totalPlayerCount = players.length;
-    
-    // Process each player in batches
-    const batchSize = 3; // Smaller batch size for more intensive processing
-    
-    for (let i = 0; i < players.length; i += batchSize) {
-      const batch = players.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(players.length / batchSize)}`);
-      
-      await Promise.all(batch.map(async (player) => {
-        try {
-          console.log(`Reprocessing stats for player ${player.name} (${player.id})`);
-          
-          // Fetch all events where this player appears
-          const { data: events, error: eventsError } = await supabase
-            .from('game_events')
-            .select('*');
-          
-          if (eventsError) {
-            console.error(`Error fetching events for player ${player.id}:`, eventsError);
-            return;
-          }
-          
-          if (!events || events.length === 0) {
-            console.log(`No events found for player ${player.id}`);
-            return;
-          }
-          
-          // Clear existing game_stats for this player
-          const { error: deleteError } = await supabase
-            .from('game_stats')
-            .delete()
-            .eq('player_id', player.id);
-            
-          if (deleteError) {
-            console.error(`Error clearing existing stats for player ${player.id}:`, deleteError);
-            return;
-          }
-          
-          console.log(`Processing ${events.length} events for player ${player.id}`);
-          
-          // Process all events for this player
-          const success = await createGameStatsFromEvents(player.id, events);
-          
-          // Call the refresh function to update aggregated stats
-          if (success) {
-            await refreshPlayerStats(player.id);
-            successCount++;
-          }
-        } catch (error) {
-          console.error(`Error reprocessing stats for player ${player.id}:`, error);
-        }
-      }));
-    }
-    
-    console.log(`Successfully reprocessed stats for ${successCount} out of ${totalPlayerCount} players`);
-    return successCount > 0;
+    return result;
   } catch (error) {
-    console.error("Error in reprocessAllStats:", error);
+    console.error(`Error refreshing stats for player ${playerId}:`, error);
     return false;
   }
 };
