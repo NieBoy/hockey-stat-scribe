@@ -1,185 +1,105 @@
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { RefreshCw, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 interface StatsProcessingStatusProps {
   playerId?: string;
-  gameId?: string;
   onRefresh?: () => void;
   className?: string;
 }
 
-export default function StatsProcessingStatus({ 
-  playerId, 
-  gameId,
-  onRefresh,
-  className
-}: StatsProcessingStatusProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState({
-    eventCount: 0,
-    gameStatsCount: 0,
-    playerStatsCount: 0,
-    lastChecked: new Date()
+const StatsProcessingStatus = ({ playerId, onRefresh, className = "" }: StatsProcessingStatusProps) => {
+  const { data: rawStats, isLoading: rawStatsLoading } = useQuery({
+    queryKey: ['rawStatsCount', playerId],
+    queryFn: async () => {
+      if (!playerId) return { count: 0 };
+      
+      // Get count of raw game stats
+      const { count, error } = await supabase
+        .from('game_stats')
+        .select('*', { count: 'exact', head: true })
+        .eq('player_id', playerId);
+        
+      if (error) throw error;
+      
+      return { count: count || 0 };
+    },
+    enabled: !!playerId
   });
 
-  const fetchStatus = async () => {
-    try {
-      setIsLoading(true);
+  const { data: playerStats, isLoading: playerStatsLoading } = useQuery({
+    queryKey: ['playerStatsCount', playerId],
+    queryFn: async () => {
+      if (!playerId) return { count: 0 };
       
-      // Count events
-      const eventQuery = supabase
-        .from('game_events')
-        .select('id', { count: 'exact' });
-      
-      if (playerId) {
-        // Cannot directly query JSONB contains with player ID in one query
-        // We'll fetch and then filter on the client side
-      } else if (gameId) {
-        eventQuery.eq('game_id', gameId);
-      }
-      
-      const { count: eventCount, error: eventError } = await eventQuery;
-      
-      if (eventError) {
-        toast.error('Failed to fetch events status');
-        console.error(eventError);
-        return;
-      }
-      
-      // Count game stats
-      const gameStatsQuery = supabase
-        .from('game_stats')
-        .select('id', { count: 'exact' });
-      
-      if (playerId) {
-        gameStatsQuery.eq('player_id', playerId);
-      } else if (gameId) {
-        gameStatsQuery.eq('game_id', gameId);
-      }
-      
-      const { count: gameStatsCount, error: gameStatsError } = await gameStatsQuery;
-      
-      if (gameStatsError) {
-        toast.error('Failed to fetch game stats status');
-        console.error(gameStatsError);
-        return;
-      }
-      
-      // Count player stats
-      const playerStatsQuery = supabase
+      // Get count of processed player stats
+      const { count, error } = await supabase
         .from('player_stats')
-        .select('id', { count: 'exact' });
+        .select('*', { count: 'exact', head: true })
+        .eq('player_id', playerId);
+        
+      if (error) throw error;
       
-      if (playerId) {
-        playerStatsQuery.eq('player_id', playerId);
-      }
-      
-      const { count: playerStatsCount, error: playerStatsError } = await playerStatsQuery;
-      
-      if (playerStatsError) {
-        toast.error('Failed to fetch player stats status');
-        console.error(playerStatsError);
-        return;
-      }
-      
-      setStats({
-        eventCount: eventCount || 0,
-        gameStatsCount: gameStatsCount || 0,
-        playerStatsCount: playerStatsCount || 0,
-        lastChecked: new Date()
-      });
-    } catch (error) {
-      console.error('Error fetching stats status:', error);
-      toast.error('An error occurred while checking stats');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return { count: count || 0 };
+    },
+    enabled: !!playerId
+  });
 
-  useEffect(() => {
-    fetchStatus();
-  }, [playerId, gameId]);
+  const isLoading = rawStatsLoading || playerStatsLoading;
+  const rawCount = rawStats?.count || 0;
+  const statsCount = playerStats?.count || 0;
 
-  const handleRefresh = () => {
-    fetchStatus();
-    if (onRefresh) onRefresh();
-  };
+  // Determine status message and style
+  let statusMessage = "No stats yet";
+  let statusClass = "text-muted-foreground";
 
-  const getConversionRate = () => {
-    if (stats.eventCount === 0) return 0;
-    return Math.round((stats.gameStatsCount / stats.eventCount) * 100);
-  };
+  if (rawCount > 0 && statsCount === 0) {
+    statusMessage = "Raw stats found, but no processed stats";
+    statusClass = "text-amber-500";
+  } else if (rawCount > 0 && statsCount > 0) {
+    statusMessage = "Stats processing complete";
+    statusClass = "text-green-600";
+  }
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-base">
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm font-medium flex items-center justify-between">
           Stats Processing Status
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            onClick={handleRefresh}
+            className="h-7 w-7 p-0"
+            onClick={onRefresh}
             disabled={isLoading}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh stats</span>
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-muted p-3 rounded text-center">
-            <p className="text-xs text-muted-foreground">Events</p>
-            <p className="text-lg font-medium">{stats.eventCount}</p>
+      <CardContent className="py-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-muted rounded-md p-2 text-center">
+            <div className="text-xs text-muted-foreground">Raw Game Stats</div>
+            <div className="font-semibold">{isLoading ? '...' : rawCount}</div>
           </div>
-          <div className="bg-muted p-3 rounded text-center">
-            <p className="text-xs text-muted-foreground">Raw Stats</p>
-            <p className="text-lg font-medium">{stats.gameStatsCount}</p>
-          </div>
-          <div className="bg-muted p-3 rounded text-center">
-            <p className="text-xs text-muted-foreground">Player Stats</p>
-            <p className="text-lg font-medium">{stats.playerStatsCount}</p>
+          <div className="bg-muted rounded-md p-2 text-center">
+            <div className="text-xs text-muted-foreground">Processed Stats</div>
+            <div className="font-semibold">{isLoading ? '...' : statsCount}</div>
           </div>
         </div>
-
-        {stats.eventCount > 0 && stats.gameStatsCount === 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Processing Issue Detected</AlertTitle>
-            <AlertDescription>
-              You have {stats.eventCount} events but 0 game stats. This indicates events are not being processed correctly.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {stats.gameStatsCount > 0 && stats.playerStatsCount === 0 && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Aggregation Issue</AlertTitle>
-            <AlertDescription>
-              Raw stats are not being aggregated into player stats. Try refreshing the player stats.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {stats.eventCount > 0 && getConversionRate() < 50 && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Low Conversion Rate</AlertTitle>
-            <AlertDescription>
-              Only {getConversionRate()}% of events have converted to stats. Some events might not be processed correctly.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <p className="text-xs text-muted-foreground text-right">
-          Last checked: {stats.lastChecked.toLocaleTimeString()}
-        </p>
+        
+        <div className="mt-2 text-center">
+          <p className={`text-sm ${statusClass}`}>{statusMessage}</p>
+        </div>
       </CardContent>
     </Card>
   );
-}
+};
+
+export default StatsProcessingStatus;

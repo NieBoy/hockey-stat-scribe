@@ -23,8 +23,7 @@ export function useStatsDebugData(playerId?: string) {
           .select(`
             id, 
             name,
-            team_id,
-            teams(name)
+            team_id
           `)
           .eq('id', playerId)
           .single();

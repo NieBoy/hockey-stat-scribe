@@ -14,7 +14,7 @@ export const processEventsToStats = async (playerId: string, events: any[]): Pro
     // Validate player exists in team_members table
     const isPlayerValid = await validatePlayerId(playerId);
     if (!isPlayerValid) {
-      console.error(`Cannot process events: Invalid player ID ${playerId}`);
+      console.error(`Cannot process events: Invalid player ID ${playerId} not found in team_members table`);
       return false;
     }
     

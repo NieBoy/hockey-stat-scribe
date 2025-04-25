@@ -1,104 +1,76 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { refreshPlayerStats } from "@/services/stats/playerStatsService";
-import { PlayerStat } from "@/types";
-import { RefreshCw, Terminal } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { refreshPlayerStats } from "@/services/stats";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoCircle } from "lucide-react";
 
 interface StatsProcessingDebugProps {
   playerId: string;
-  onStatsRefreshed?: (stats: PlayerStat[]) => void;
+  onStatsRefreshed?: (stats: any) => void;
 }
 
 const StatsProcessingDebug = ({ playerId, onStatsRefreshed }: StatsProcessingDebugProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const [success, setSuccess] = useState<boolean | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<any>(null);
 
-  const handleRefreshStats = async () => {
+  const handleRefresh = async () => {
+    if (!playerId) return;
+
     setIsRefreshing(true);
-    setDebugLog(["Starting stats refresh process..."]);
-    setSuccess(null);
-    
     try {
-      // Note: refreshPlayerStats returns a Record<string, string> but we need a boolean success indicator
+      // Call the refresh player stats function 
       const result = await refreshPlayerStats(playerId);
-      const isSuccess = Object.values(result).some(status => status === "Success");
+      setRefreshResult(result);
+      toast.success("Player stats refresh completed");
       
-      setDebugLog(prev => [...prev, `Stats refresh completed with result: ${isSuccess ? 'Success' : 'Failed'}`]);
-      setSuccess(isSuccess); // Set boolean value for success state
-      
-      if (isSuccess && onStatsRefreshed) {
-        // If successful and handler provided, call it
-        onStatsRefreshed([]);
+      // Notify parent component
+      if (onStatsRefreshed) {
+        onStatsRefreshed(result);
       }
     } catch (error) {
-      console.error("Error refreshing stats:", error);
-      setDebugLog(prev => [...prev, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`]);
-      setSuccess(false);
+      console.error("Error refreshing player stats:", error);
+      toast.error("Failed to refresh player stats");
+      setRefreshResult({ error: 'Failed to process stats' });
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  // Only show in development mode or if explicitly enabled
-  if (import.meta.env.DEV || showDebug) {
-    return (
-      <Card className="mt-8">
-        <CardHeader className="py-4">
-          <CardTitle className="flex items-center text-base">
-            <Terminal className="h-4 w-4 mr-2" />
-            Stats Processing Debug
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleRefreshStats} 
-              disabled={isRefreshing}
-              size="sm"
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh Player Stats
-            </Button>
+  return (
+    <Card className="mt-4">
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm font-medium">Stats Processing Debug</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Alert variant="outline">
+          <InfoCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            The button below will manually refresh stats for this player by aggregating all raw game stats into player stats.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex justify-between items-center">
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            size="sm"
+            className="w-full"
+          >
+            {isRefreshing ? "Processing..." : "Manually Refresh Player Stats"}
+          </Button>
+        </div>
+
+        {refreshResult && (
+          <div className="mt-2 bg-muted p-2 rounded text-xs overflow-auto max-h-20">
+            <pre>{JSON.stringify(refreshResult, null, 2)}</pre>
           </div>
-          
-          {success !== null && (
-            <Alert variant={success ? "default" : "destructive"}>
-              <AlertDescription>
-                {success 
-                  ? "Stats successfully refreshed! Reload the page to see changes." 
-                  : "Failed to refresh stats. See console for details."}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {debugLog.length > 0 && (
-            <Accordion type="single" collapsible>
-              <AccordionItem value="logs">
-                <AccordionTrigger>Debug Logs</AccordionTrigger>
-                <AccordionContent>
-                  <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded text-xs overflow-auto max-h-60">
-                    {debugLog.map((log, i) => (
-                      <div key={i}>{log}</div>
-                    ))}
-                  </pre>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  return null;
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 export default StatsProcessingDebug;
