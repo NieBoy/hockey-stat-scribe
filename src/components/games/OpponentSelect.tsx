@@ -31,7 +31,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const [newOpponent, setNewOpponent] = useState('');
   
   // Fetch unique opponent names from existing games
-  const { data, refetch } = useQuery({
+  const { data = [], refetch } = useQuery({
     queryKey: ['opponents'],
     queryFn: async () => {
       try {
