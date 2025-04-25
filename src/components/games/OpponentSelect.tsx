@@ -30,8 +30,8 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const [open, setOpen] = useState(false);
   const [newOpponent, setNewOpponent] = useState('');
   
-  // Fetch opponents from the new opponents table
-  const { data = [], refetch } = useQuery({
+  // Fetch opponents from the opponents table with error handling
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['opponents'],
     queryFn: async () => {
       try {
@@ -42,6 +42,11 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
         
         if (error) {
           console.error('Error fetching opponents:', error);
+          return [];
+        }
+
+        if (!opponents || !Array.isArray(opponents)) {
+          console.warn('No opponents data returned or data is not an array');
           return [];
         }
 
@@ -61,7 +66,9 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const handleAddNewOpponent = async () => {
     if (!newOpponent.trim()) return;
     
-    const opponentExists = Array.isArray(data) && data.some(
+    // Safely check if opponent exists
+    const opponents = Array.isArray(data) ? data : [];
+    const opponentExists = opponents.some(
       opponent => opponent.value.toLowerCase() === newOpponent.trim().toLowerCase()
     );
     
@@ -92,7 +99,24 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
     }
   };
 
+  // Safely get the opponents array
   const opponents = Array.isArray(data) ? data : [];
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Label>Opponent Team</Label>
+        <Button variant="outline" className="w-full justify-between" disabled>
+          <span className="opacity-50">Loading opponents...</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </div>
+    );
+  }
+  
+  if (error) {
+    console.error('Error in opponents query:', error);
+  }
 
   return (
     <div className="space-y-2">
