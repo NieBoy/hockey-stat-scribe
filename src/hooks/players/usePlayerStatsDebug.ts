@@ -8,6 +8,7 @@ export function usePlayerStatsDebug(playerId: string) {
   const [showDebug, setShowDebug] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [refreshStatus, setRefreshStatus] = useState<string>('');
   
   const { 
     stats, 
@@ -29,10 +30,22 @@ export function usePlayerStatsDebug(playerId: string) {
     }
     
     setIsRefreshing(true);
+    setRefreshStatus('Starting refresh...');
     console.log(`Starting stats refresh for player ${playerId}`);
     
     try {
-      // First call refresh_player_stats to ensure aggregated stats are up to date
+      // First fetch the events to ensure we have latest data
+      setRefreshStatus('Fetching latest events...');
+      console.log("Fetching latest events...");
+      await refetchEvents();
+      
+      // Then fetch raw game stats
+      setRefreshStatus('Fetching raw game stats...');
+      console.log("Fetching raw game stats...");
+      await refetchRawStats();
+      
+      // Then call refresh_player_stats to ensure aggregated stats are up to date
+      setRefreshStatus('Processing aggregated stats...');
       console.log("Calling refresh_player_stats database function...");
       const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
         player_id: playerId
@@ -43,26 +56,20 @@ export function usePlayerStatsDebug(playerId: string) {
         throw refreshError;
       }
       
-      console.log("Database function completed, now refetching data...");
-      
-      // Then fetch the events to ensure we have latest data
-      console.log("Fetching latest events...");
-      await refetchEvents();
-      
-      // Then fetch raw game stats
-      console.log("Fetching raw game stats...");
-      await refetchRawStats();
-      
       // Finally refresh aggregated stats
+      setRefreshStatus('Fetching updated stats...');
       console.log("Refreshing aggregated stats from database...");
       await refetchStats();
       
       setLastRefreshed(new Date());
+      setRefreshStatus('Refresh completed successfully');
       toast.success("Stats refreshed successfully");
       console.log("Stats refresh completed successfully");
     } catch (error: any) {
+      const errorMessage = error.message || "Unknown error";
+      setRefreshStatus(`Error: ${errorMessage}`);
       console.error("Error during stats refresh:", error);
-      toast.error(`Failed to refresh stats: ${error.message || "Unknown error"}`);
+      toast.error(`Failed to refresh stats: ${errorMessage}`);
     } finally {
       setIsRefreshing(false);
     }
@@ -85,6 +92,7 @@ export function usePlayerStatsDebug(playerId: string) {
     toggleDebug,
     handleRefresh,
     lastRefreshed,
-    isRefreshing
+    isRefreshing,
+    refreshStatus
   };
 }

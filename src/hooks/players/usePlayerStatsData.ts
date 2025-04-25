@@ -6,15 +6,11 @@ import { fetchPlayerRawGameStats } from "@/services/stats/game-stats/queries";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-/**
- * Hook to provide player stats data
- * @param playerId The team_member.id (not user.id) of the player
- */
 export function usePlayerStatsData(playerId: string) {
   const [playerTeam, setPlayerTeam] = useState<any>(null);
   const [teamGames, setTeamGames] = useState<any[]>([]);
 
-  // Fetch player stats using team_member.id
+  // Fetch basic player stats
   const {
     data: stats,
     isLoading: statsLoading,
@@ -26,7 +22,7 @@ export function usePlayerStatsData(playerId: string) {
     enabled: !!playerId
   });
 
-  // Fetch raw game stats using team_member.id
+  // Fetch raw game stats
   const {
     data: rawGameStats,
     isLoading: rawStatsLoading,
@@ -37,6 +33,7 @@ export function usePlayerStatsData(playerId: string) {
     queryFn: async () => {
       try {
         const stats = await fetchPlayerRawGameStats(playerId);
+        console.log('Raw game stats fetched:', stats);
         return stats;
       } catch (error) {
         console.error("Error fetching raw game stats:", error);
@@ -56,48 +53,72 @@ export function usePlayerStatsData(playerId: string) {
   } = useQuery({
     queryKey: ['playerGameEvents', playerId],
     queryFn: async () => {
+      console.log('Fetching events for player:', playerId);
       try {
         // First get player team info
-        const { data: playerData } = await supabase
+        const { data: playerData, error: playerError } = await supabase
           .from('team_members')
           .select('team_id, name')
           .eq('id', playerId)
           .single();
 
+        if (playerError) {
+          console.error('Error fetching player data:', playerError);
+          throw playerError;
+        }
+
         if (!playerData) {
+          console.error('No player data found for ID:', playerId);
           throw new Error("Player not found");
         }
 
+        console.log('Found player team data:', playerData);
         setPlayerTeam(playerData);
 
         // Get team games
-        const { data: games } = await supabase
+        const { data: games, error: gamesError } = await supabase
           .from('games')
           .select('*')
           .or(`home_team_id.eq.${playerData.team_id},away_team_id.eq.${playerData.team_id}`)
           .order('date', { ascending: false });
 
+        if (gamesError) {
+          console.error('Error fetching games:', gamesError);
+          throw gamesError;
+        }
+
+        console.log(`Found ${games?.length || 0} team games`);
         setTeamGames(games || []);
 
-        if (!games || games.length === 0) return [];
+        if (!games || games.length === 0) {
+          console.log('No games found for team');
+          return [];
+        }
 
         // Get game IDs
         const gameIds = games.map(game => game.id);
 
-        // Get events where this player is mentioned in the details
-        // Note: We need to search in the JSONB for player mentions
-        const { data: events, error } = await supabase
+        // Fix: Use proper JSONB containment operator for checking player involvement
+        const { data: events, error: eventsError } = await supabase
           .from('game_events')
           .select('*')
           .in('game_id', gameIds)
-          .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`)
-          .order('timestamp', { ascending: false });
+          .or(
+            `details->>'playerId'.eq.${playerId},` +
+            `details->>'primaryAssistId'.eq.${playerId},` +
+            `details->>'secondaryAssistId'.eq.${playerId},` +
+            `details->'playersOnIce' ?? '[]' @> '[${playerId}]'`
+          );
 
-        if (error) throw error;
+        if (eventsError) {
+          console.error('Error fetching events:', eventsError);
+          throw eventsError;
+        }
 
+        console.log(`Found ${events?.length || 0} game events for player`);
         return events || [];
       } catch (error) {
-        console.error("Error fetching player game events:", error);
+        console.error("Error in playerGameEvents query:", error);
         return [];
       }
     },
