@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,7 +34,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
     queryKey: ['opponents'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data: gameData, error } = await supabase
           .from('games')
           .select('opponent_name')
           .not('opponent_name', 'is', null)
@@ -46,33 +45,29 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
           return [];
         }
 
-        if (!data || !Array.isArray(data)) {
-          console.log('No opponent data returned or invalid format');
-          return [];
-        }
-
-        // Extract unique opponent names, ensuring we handle potential nulls/undefined
-        const opponentNames = data
-          .map(game => game.opponent_name)
-          .filter(name => name !== null && name !== undefined);
+        // Extract unique opponent names
+        const opponentNames = Array.from(
+          new Set(
+            gameData
+              .map(game => game.opponent_name)
+              .filter(name => name !== null && name !== undefined)
+          )
+        );
           
-        const uniqueOpponents = [...new Set(opponentNames)];
-          
-        return uniqueOpponents.map(name => ({ label: name, value: name }));
+        return opponentNames.map(name => ({ label: name, value: name }));
       } catch (err) {
         console.error('Unexpected error fetching opponents:', err);
         return [];
       }
-    }
+    },
+    // Ensure data is always an array
+    placeholderData: []
   });
   
-  // Ensure we always have an array even if data is undefined
-  const opponents = Array.isArray(data) ? data : [];
-
   const handleAddNewOpponent = () => {
     if (!newOpponent.trim()) return;
     
-    const opponentExists = opponents.some(
+    const opponentExists = data.some(
       opponent => opponent.value.toLowerCase() === newOpponent.trim().toLowerCase()
     );
     
@@ -127,9 +122,9 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
                 </div>
               </div>
             </CommandEmpty>
-            {opponents.length > 0 && (
+            {data.length > 0 && (
               <CommandGroup>
-                {opponents.map((opponent) => (
+                {data.map((opponent) => (
                   <CommandItem
                     key={opponent.value}
                     value={opponent.value}
