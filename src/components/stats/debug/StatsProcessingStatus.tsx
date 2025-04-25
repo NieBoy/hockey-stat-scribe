@@ -1,105 +1,63 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Clock, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 
 interface StatsProcessingStatusProps {
-  playerId?: string;
-  onRefresh?: () => void;
-  className?: string;
+  statusMessages: string[];
+  error: string | null;
+  isProcessing: boolean;
+  finishedProcessing: boolean;
 }
 
-const StatsProcessingStatus = ({ playerId, onRefresh, className = "" }: StatsProcessingStatusProps) => {
-  const { data: rawStats, isLoading: rawStatsLoading } = useQuery({
-    queryKey: ['rawStatsCount', playerId],
-    queryFn: async () => {
-      if (!playerId) return { count: 0 };
-      
-      // Get count of raw game stats
-      const { count, error } = await supabase
-        .from('game_stats')
-        .select('*', { count: 'exact', head: true })
-        .eq('player_id', playerId);
-        
-      if (error) throw error;
-      
-      return { count: count || 0 };
-    },
-    enabled: !!playerId
-  });
-
-  const { data: playerStats, isLoading: playerStatsLoading } = useQuery({
-    queryKey: ['playerStatsCount', playerId],
-    queryFn: async () => {
-      if (!playerId) return { count: 0 };
-      
-      // Get count of processed player stats
-      const { count, error } = await supabase
-        .from('player_stats')
-        .select('*', { count: 'exact', head: true })
-        .eq('player_id', playerId);
-        
-      if (error) throw error;
-      
-      return { count: count || 0 };
-    },
-    enabled: !!playerId
-  });
-
-  const isLoading = rawStatsLoading || playerStatsLoading;
-  const rawCount = rawStats?.count || 0;
-  const statsCount = playerStats?.count || 0;
-
-  // Determine status message and style
-  let statusMessage = "No stats yet";
-  let statusClass = "text-muted-foreground";
-
-  if (rawCount > 0 && statsCount === 0) {
-    statusMessage = "Raw stats found, but no processed stats";
-    statusClass = "text-amber-500";
-  } else if (rawCount > 0 && statsCount > 0) {
-    statusMessage = "Stats processing complete";
-    statusClass = "text-green-600";
-  }
+export const StatsProcessingStatus = ({
+  statusMessages,
+  error,
+  isProcessing,
+  finishedProcessing
+}: StatsProcessingStatusProps) => {
+  if (statusMessages.length === 0) return null;
 
   return (
-    <Card className={className}>
-      <CardHeader className="py-3">
-        <CardTitle className="text-sm font-medium flex items-center justify-between">
-          Stats Processing Status
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-7 w-7 p-0"
-            onClick={onRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="sr-only">Refresh stats</span>
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="py-2">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-muted rounded-md p-2 text-center">
-            <div className="text-xs text-muted-foreground">Raw Game Stats</div>
-            <div className="font-semibold">{isLoading ? '...' : rawCount}</div>
-          </div>
-          <div className="bg-muted rounded-md p-2 text-center">
-            <div className="text-xs text-muted-foreground">Processed Stats</div>
-            <div className="font-semibold">{isLoading ? '...' : statsCount}</div>
-          </div>
-        </div>
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Processing Log
+        </span>
         
-        <div className="mt-2 text-center">
-          <p className={`text-sm ${statusClass}`}>{statusMessage}</p>
-        </div>
-      </CardContent>
-    </Card>
+        {finishedProcessing ? (
+          <span className="text-xs text-green-500 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Complete
+          </span>
+        ) : isProcessing ? (
+          <span className="text-xs text-amber-500 flex items-center gap-1">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            In Progress
+          </span>
+        ) : statusMessages.length > 0 && error ? (
+          <span className="text-xs text-red-500 flex items-center gap-1">
+            <XCircle className="h-3 w-3" />
+            Failed
+          </span>
+        ) : null}
+      </div>
+      
+      {error && (
+        <Alert variant="default" className="mb-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs text-red-500">{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="bg-muted p-2 rounded text-xs overflow-auto max-h-40 font-mono">
+        {statusMessages.map((msg, i) => (
+          <div key={i} className="pb-0.5">
+            {msg}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
-
-export default StatsProcessingStatus;
