@@ -3,9 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsOverview from "@/components/stats/StatsOverview";
 import StatsDetailView from "@/components/stats/StatsDetailView";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, BadgeInfo } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 
 interface StatsContentProps {
   stats: any[];
@@ -46,8 +45,8 @@ export default function StatsContent({
       </div>
 
       {refreshStatus && (
-        <Alert variant="info" className="mb-4">
-          <Info className="h-4 w-4" />
+        <Alert variant="default" className="mb-4">
+          <BadgeInfo className="h-4 w-4" />
           <AlertDescription>{refreshStatus}</AlertDescription>
         </Alert>
       )}
@@ -76,3 +75,4 @@ export default function StatsContent({
     </div>
   );
 }
+
