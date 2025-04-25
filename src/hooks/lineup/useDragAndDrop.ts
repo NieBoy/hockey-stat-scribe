@@ -1,6 +1,6 @@
 
 import { DropResult } from '@hello-pangea/dnd';
-import { Lines, User } from '@/types';
+import { Lines, User, Position } from '@/types';
 
 interface UseDragAndDropProps {
   lines: Lines;
@@ -109,20 +109,35 @@ export function useDragAndDrop({ lines, availablePlayers, handlePlayerMove }: Us
       return;
     }
     
+    // Ensure we have valid line types
     const getValidLineType = (type: LineType): 'forwards' | 'defense' | 'goalies' => {
       if (type === 'available') return 'forwards';
       if (type === 'forwards' || type === 'defense' || type === 'goalies') return type;
       return 'forwards';
     };
     
+    // Convert position strings to valid Position type or use a default
+    const getValidPosition = (posStr: string): Position => {
+      const validPositions: Position[] = ['LW', 'C', 'RW', 'LD', 'RD', 'G'];
+      if (validPositions.includes(posStr as Position)) {
+        return posStr as Position;
+      }
+      
+      // Default fallback based on line type
+      const sourceLineType = getValidLineType(sourceInfo.lineType);
+      if (sourceLineType === 'forwards') return 'LW';
+      if (sourceLineType === 'defense') return 'LD';
+      return 'G';
+    };
+    
     handlePlayerMove(
       player,
       getValidLineType(sourceInfo.lineType),
       sourceInfo.lineIndex,
-      sourceInfo.position,
+      getValidPosition(sourceInfo.position),
       getValidLineType(destInfo.lineType),
       destInfo.lineIndex,
-      destInfo.position
+      getValidPosition(destInfo.position)
     );
   };
 

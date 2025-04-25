@@ -3,7 +3,6 @@ import { DragDropContext } from '@hello-pangea/dnd';
 import { Team, Lines } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDragAndDrop } from '@/hooks/lineup/useDragAndDrop';
-import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { AvailablePlayersSection } from './AvailablePlayersSection';
 import { EvenStrengthLines } from './EvenStrengthLines';
 import { SpecialTeamsUnit } from './SpecialTeamsUnit';
