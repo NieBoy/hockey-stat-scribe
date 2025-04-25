@@ -8,7 +8,6 @@ export const updateTeamLineup = async (
   lines: Lines
 ): Promise<boolean> => {
   console.log("Updating team lineup", { teamId });
-  console.log("Lineup data structure:", JSON.stringify(lines, null, 2));
   
   if (!teamId) {
     console.error("No team ID provided for lineup update");
@@ -16,7 +15,7 @@ export const updateTeamLineup = async (
   }
   
   try {
-    // Get existing team members first
+    // Get existing team members first to validate
     const { data: teamPlayers, error: fetchError } = await supabase
       .from('team_members')
       .select('id, user_id, position, line_number')
@@ -28,13 +27,16 @@ export const updateTeamLineup = async (
       return false;
     }
 
-    console.log("Current team players:", teamPlayers);
-    
-    // Prepare batch updates using utility function
+    // Prepare batch updates
     const updates = prepareUpdates(teamId, lines);
     console.log("Updates to apply:", updates);
     
-    // First reset all positions to ensure clean slate
+    if (updates.length === 0) {
+      console.log("No updates needed");
+      return true;
+    }
+    
+    // Reset positions in a single update
     const { error: resetError } = await supabase
       .from('team_members')
       .update({
@@ -49,35 +51,14 @@ export const updateTeamLineup = async (
       return false;
     }
     
-    console.log("Successfully reset all positions");
-    
-    // Apply all updates
-    let successCount = 0;
-    let errorCount = 0;
-    
-    if (updates.length > 0) {
-      for (const update of updates) {
-        console.log(`Updating player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
-        
+    // Apply all updates in batches of 10
+    const batchSize = 10;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const batch = updates.slice(i, i + batchSize);
+      
+      for (const update of batch) {
         if (!update.user_id) {
           console.error("Invalid user_id in update:", update);
-          errorCount++;
-          continue;
-        }
-        
-        // Verify team member record exists
-        const { data: teamMember, error: checkError } = await supabase
-          .from('team_members')
-          .select('id')
-          .eq('team_id', update.team_id)
-          .eq('user_id', update.user_id)
-          .eq('role', 'player')
-          .single();
-          
-        if (checkError || !teamMember) {
-          console.error("Player not found in team_members:", update.user_id);
-          console.error("Error:", checkError);
-          errorCount++;
           continue;
         }
         
@@ -93,26 +74,13 @@ export const updateTeamLineup = async (
         if (error) {
           console.error("Error updating player position:", error);
           console.error("Failed update data:", update);
-          errorCount++;
-        } else {
-          console.log("Successfully updated player position");
-          successCount++;
+          return false;
         }
       }
     }
     
-    console.log(`Lineup update complete: ${successCount} successful, ${errorCount} failed`);
-    
-    if (successCount > 0) {
-      console.log(`Saved lineup structure for ${teamId}:`, {
-        forwards: lines.forwards.length,
-        defense: lines.defense.length,
-        goalies: lines.goalies.length,
-        totalUpdatedPositions: successCount
-      });
-    }
-    
-    return errorCount === 0;
+    console.log("Successfully updated all positions");
+    return true;
   } catch (error) {
     console.error("Error updating team lineup:", error);
     return false;
