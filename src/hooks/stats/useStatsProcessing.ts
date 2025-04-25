@@ -27,6 +27,12 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
       return;
     }
     
+    // Prevent multiple concurrent processing
+    if (isProcessing) {
+      addStatusMessage("Processing already in progress");
+      return;
+    }
+    
     setIsProcessing(true);
     setError(null);
     setStatusMessages([]);
@@ -101,12 +107,14 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
       
       if (!events || events.length === 0) {
         addStatusMessage("No game events found for this player.");
+        setFinishedProcessing(true);
         return;
       }
 
       setGameEvents(events);
       addStatusMessage(`Found ${events.length} events for processing`);
 
+      // Log events for debugging
       events.forEach((event, index) => {
         console.log(`Event ${index + 1}:`, {
           id: event.id,
@@ -119,30 +127,12 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
         });
       });
 
-      addStatusMessage("Processing events to game stats...");
-      const { error: processError } = await supabase.rpc(
-        'refresh_player_stats',
-        { p_player_id: playerId }
-      );
+      addStatusMessage("Refreshing player stats...");
       
-      if (processError) {
-        throw new Error(`Error processing events: ${processError.message}`);
-      }
-
-      const { error: statsError } = await supabase
-        .from('game_stats')
-        .select('*')
-        .eq('player_id', playerId)
-        .order('created_at', { ascending: false });
-
-      if (statsError) {
-        addStatusMessage(`Error verifying game stats: ${statsError.message}`);
-      }
-
-      addStatusMessage("Performing final stats refresh...");
-      const refreshResult = await refreshPlayerStats(playerId);
+      // Use refreshPlayerStats directly to avoid duplicate processing
+      const result = await refreshPlayerStats(playerId);
       
-      if (refreshResult?.success) {
+      if (result && Object.values(result).includes("Success")) {
         addStatusMessage("Stats processing complete");
         setFinishedProcessing(true);
         
@@ -152,7 +142,7 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
         
         toast.success("Player stats processing completed");
       } else {
-        addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(refreshResult)}`);
+        addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(result)}`);
       }
     } catch (error) {
       throw error;

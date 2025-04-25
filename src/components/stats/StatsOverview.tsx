@@ -8,13 +8,27 @@ interface StatsOverviewProps {
 }
 
 const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
-  // Calculate key statistics
-  const goals = stats.find(s => s.statType === 'goals')?.value || 0;
-  const assists = stats.find(s => s.statType === 'assists')?.value || 0;
+  console.log("Rendering StatsOverview with stats:", stats);
+  
+  // Calculate key statistics with safe defaults
+  const goals = stats?.find(s => s.statType === 'goals')?.value || 0;
+  const assists = stats?.find(s => s.statType === 'assists')?.value || 0;
   const points = goals + assists;
   
-  const plusMinus = stats.find(s => s.statType === 'plusMinus')?.value || 0;
-  const games = stats.find(s => s.statType)?.gamesPlayed || 0;
+  const plusMinus = stats?.find(s => s.statType === 'plusMinus')?.value || 0;
+  const games = stats && stats.length > 0 ? stats[0]?.gamesPlayed || 0 : 0;
+  
+  // If there are no stats at all, show a message
+  if (!stats || stats.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No statistics available for this player.</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Statistics will appear after this player participates in games.
+        </p>
+      </div>
+    );
+  }
   
   const statsCards = [
     { label: "Games", value: games },
