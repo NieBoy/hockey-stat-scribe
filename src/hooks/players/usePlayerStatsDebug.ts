@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { usePlayerStatsData } from "./usePlayerStatsData";
 import { toast } from "sonner";
@@ -34,7 +33,17 @@ export function usePlayerStatsDebug(playerId: string) {
     console.log(`Starting stats refresh for player ${playerId}`);
     
     try {
-      // First fetch the events to ensure we have latest data
+      // First call refresh_player_stats to ensure aggregated stats are up to date
+      console.log("Refreshing aggregated stats...");
+      const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
+        player_id: playerId
+      });
+      
+      if (refreshError) {
+        throw refreshError;
+      }
+      
+      // Then fetch the events to ensure we have latest data
       console.log("Fetching latest events...");
       await refetchEvents();
       
