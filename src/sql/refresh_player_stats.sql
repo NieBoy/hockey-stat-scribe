@@ -17,29 +17,29 @@ BEGIN
 
   -- Loop through distinct stat types for this player
   FOR stat_type IN (
-    SELECT DISTINCT stat_type 
-    FROM game_stats 
-    WHERE player_id = refresh_player_stats.player_id
+    SELECT DISTINCT gs.stat_type 
+    FROM game_stats gs
+    WHERE gs.player_id = refresh_player_stats.player_id
   ) LOOP
     -- Count total value for this stat type and count distinct games
     SELECT 
-      COALESCE(SUM(value), 0) as total_value,
-      COUNT(DISTINCT game_id) as games_count
+      COALESCE(SUM(gs.value), 0) as total_value,
+      COUNT(DISTINCT gs.game_id) as games_count
     INTO stat_count, games_count
-    FROM game_stats
+    FROM game_stats gs
     WHERE 
-      player_id = refresh_player_stats.player_id AND
-      stat_type = stat_type;
+      gs.player_id = refresh_player_stats.player_id AND
+      gs.stat_type = stat_type;
       
     RAISE NOTICE 'Found stat type % with total value % across % games', 
       stat_type, stat_count, games_count;
       
     -- Check if stat already exists in player_stats
     SELECT * INTO stat_record
-    FROM player_stats
+    FROM player_stats ps
     WHERE 
-      player_id = refresh_player_stats.player_id AND
-      stat_type = stat_type;
+      ps.player_id = refresh_player_stats.player_id AND
+      ps.stat_type = stat_type;
       
     IF FOUND THEN
       -- Update existing stat
@@ -48,7 +48,8 @@ BEGIN
       UPDATE player_stats
       SET 
         value = stat_count,
-        games_played = games_count
+        games_played = games_count,
+        updated_at = now()
       WHERE id = stat_record.id;
     ELSE
       -- Insert new stat
@@ -58,12 +59,16 @@ BEGIN
         player_id,
         stat_type,
         value,
-        games_played
+        games_played,
+        created_at,
+        updated_at
       ) VALUES (
         refresh_player_stats.player_id,
         stat_type,
         stat_count,
-        games_count
+        games_count,
+        now(),
+        now()
       );
     END IF;
   END LOOP;

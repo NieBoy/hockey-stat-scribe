@@ -23,10 +23,12 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     playerTeam,
     showDebug,
     toggleDebug,
-    handleRefresh
+    handleRefresh,
+    isRefreshing,
+    refreshStatus
   } = usePlayerStatsDebug(playerId);
 
-  if (statsLoading) {
+  if (statsLoading && !isRefreshing) {
     return (
       <Card>
         <CardContent>
@@ -56,7 +58,7 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
         <PlayerStatsHeader 
           playerName={playerTeam?.name}
           onRefresh={handleRefresh}
-          isRefreshing={statsLoading}
+          isRefreshing={isRefreshing}
           onToggleDebug={toggleDebug}
           showDebugInfo={showDebug}
         />
@@ -68,6 +70,9 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
           teamGames={teamGames || []}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          refreshStatus={refreshStatus}
         />
 
         {showDebug && (

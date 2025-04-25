@@ -37,32 +37,39 @@ export function usePlayerStatsDebug(playerId: string) {
       // First fetch the events to ensure we have latest data
       setRefreshStatus('Fetching latest events...');
       console.log("Fetching latest events...");
-      const eventsResult = await refetchEvents();
-      console.log("Events fetched:", eventsResult);
-
+      await refetchEvents();
+      
       // Then fetch raw game stats
       setRefreshStatus('Fetching raw game stats...');
       console.log("Fetching raw game stats...");
-      const rawStatsResult = await refetchRawStats();
-      console.log("Raw stats fetched:", rawStatsResult);
+      await refetchRawStats();
+      
+      // Check if we have any raw stats to process
+      if (!rawGameStats || rawGameStats.length === 0) {
+        console.log("No raw game stats found for player, attempting to find some...");
+      }
       
       // Then call refresh_player_stats to ensure aggregated stats are up to date
       setRefreshStatus('Processing aggregated stats...');
-      console.log("Calling refresh_player_stats database function...");
-      const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
-        player_id: playerId
-      });
+      console.log(`Calling refresh_player_stats with player_id: ${playerId}`);
+      
+      const { data: refreshData, error: refreshError } = await supabase.rpc(
+        'refresh_player_stats', 
+        { player_id: playerId }
+      );
       
       if (refreshError) {
         console.error("Error refreshing stats:", refreshError);
+        setRefreshStatus(`Error: ${refreshError.message}`);
         throw refreshError;
       }
+      
+      console.log("RPC refresh_player_stats result:", refreshData);
       
       // Finally refresh aggregated stats
       setRefreshStatus('Fetching updated stats...');
       console.log("Refreshing aggregated stats from database...");
-      const statsResult = await refetchStats();
-      console.log("Stats refreshed:", statsResult);
+      await refetchStats();
       
       setLastRefreshed(new Date());
       setRefreshStatus('Refresh completed successfully');

@@ -66,18 +66,19 @@ export const fetchPlayerRawGameStats = async (playerId: string) => {
   try {
     console.log('Fetching raw game stats for player:', playerId);
     
+    // Fixed query - using proper table aliasing to avoid ambiguous column references
     const { data, error } = await supabase
       .from('game_stats')
       .select(`
-        game_stats.id,
-        game_stats.game_id,
-        game_stats.player_id,
-        game_stats.period,
-        game_stats.value,
-        game_stats.stat_type,
-        game_stats.details,
-        game_stats.timestamp,
-        games!game_stats_game_id_fkey(
+        id,
+        game_id,
+        player_id,
+        period,
+        value,
+        stat_type,
+        details,
+        timestamp,
+        games:game_id(
           id,
           home_team_id,
           away_team_id,

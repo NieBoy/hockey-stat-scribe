@@ -99,16 +99,13 @@ export function usePlayerStatsData(playerId: string) {
         // Get game IDs
         const gameIds = games.map(game => game.id);
 
-        // Get game events with corrected JSONB query syntax
+        // Fixed JSONB query syntax for event players
         const { data: events, error: eventsError } = await supabase
           .from('game_events')
           .select('*')
           .in('game_id', gameIds)
-          .or(
-            `details->>'playerId'.eq.${playerId},` +
-            `details->>'primaryAssistId'.eq.${playerId},` +
-            `details->>'secondaryAssistId'.eq.${playerId}`
-          );
+          .or(`details->'playerId'.eq."${playerId}",details->'primaryAssistId'.eq."${playerId}",details->'secondaryAssistId'.eq."${playerId}"`)
+          .order('timestamp', { ascending: false });
 
         if (eventsError) {
           console.error('Error fetching events:', eventsError);
