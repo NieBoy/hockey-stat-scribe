@@ -1,4 +1,3 @@
-
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { StatType } from "@/types";
@@ -18,22 +17,21 @@ interface TeamStatsTableProps {
 }
 
 export function TeamStatsTable({ stats, statTypes }: TeamStatsTableProps) {
-  // Define sortable columns
   const columns: ColumnDef<any>[] = [
     {
       accessorKey: "playerName",
-      header: ({ column }) => {
-        return (
+      header: ({ column }) => (
+        <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
+            className="flex items-center gap-2 px-2 hover:bg-transparent"
           >
-            Player
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <span>Player</span>
+            <ArrowUpDown className="h-4 w-4" />
           </Button>
-        )
-      },
+        </div>
+      ),
       cell: ({ row }) => (
         <Link 
           to={`/players/${row.original.playerId}/stats`}
@@ -45,34 +43,34 @@ export function TeamStatsTable({ stats, statTypes }: TeamStatsTableProps) {
     },
     ...statTypes.map((type) => ({
       accessorKey: `stats.${type}`,
-      header: ({ column }) => {
-        return (
+      header: ({ column }) => (
+        <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
+            className="flex items-center gap-2 px-2 hover:bg-transparent"
           >
-            {formatStatType(type)}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <span>{formatStatType(type)}</span>
+            <ArrowUpDown className="h-4 w-4" />
           </Button>
-        )
-      },
+        </div>
+      ),
       cell: ({ row }) => row.original.stats[type],
     })),
     {
       accessorKey: "gamesPlayed",
-      header: ({ column }) => {
-        return (
+      header: ({ column }) => (
+        <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
+            className="flex items-center gap-2 px-2 hover:bg-transparent"
           >
-            Games
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <span>Games</span>
+            <ArrowUpDown className="h-4 w-4" />
           </Button>
-        )
-      },
+        </div>
+      ),
     },
   ];
 
