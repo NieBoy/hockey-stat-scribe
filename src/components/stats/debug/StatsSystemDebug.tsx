@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { refreshPlayerStats, fetchGameStats } from "@/services/stats";
+import { refreshPlayerStats } from "@/services/stats";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -17,11 +17,12 @@ import {
 } from "lucide-react";
 
 interface StatsSystemDebugProps {
-  playerId: string;
+  playerId?: string;
+  teamId?: string;
   onProcessingComplete?: () => void;
 }
 
-const StatsSystemDebug = ({ playerId, onProcessingComplete }: StatsSystemDebugProps) => {
+const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSystemDebugProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,10 @@ const StatsSystemDebug = ({ playerId, onProcessingComplete }: StatsSystemDebugPr
   };
 
   const processPlayerStats = async () => {
-    if (!playerId) return;
+    if (!playerId && !teamId) {
+      setError("Either player ID or team ID must be provided");
+      return;
+    }
     
     setIsProcessing(true);
     setError(null);
@@ -41,84 +45,126 @@ const StatsSystemDebug = ({ playerId, onProcessingComplete }: StatsSystemDebugPr
     setFinishedProcessing(false);
 
     try {
-      // Step 1: Get events for this player
-      addStatusMessage("Fetching game events...");
-      const { data: events, error: eventsError } = await supabase
-        .from('game_events')
-        .select('*')
-        .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId}`)
-        .order('timestamp', { ascending: true });
-
-      if (eventsError) throw new Error(`Error fetching events: ${eventsError.message}`);
-      
-      if (!events || events.length === 0) {
-        addStatusMessage("No game events found for this player.");
-        setGameEvents([]);
-        return;
-      }
-
-      setGameEvents(events);
-      addStatusMessage(`Found ${events.length} events for processing`);
-
-      // Step 2: Process events for player
-      addStatusMessage("Processing events to stats...");
-      const { data: gameEventsResult, error: processError } = await supabase.rpc(
-        'refresh_player_stats',
-        { p_player_id: playerId }
-      );
-      
-      if (processError) throw new Error(`Error processing events: ${processError.message}`);
-      
-      addStatusMessage(`Stats processing completed: ${JSON.stringify(gameEventsResult)}`);
-      
-      // Step 3: Verify the stats were created
-      const { data: gameStats, error: statsError } = await supabase
-        .from('game_stats')
-        .select('*')
-        .eq('player_id', playerId)
-        .order('created_at', { ascending: false });
-
-      if (statsError) {
-        addStatusMessage(`Error verifying game stats: ${statsError.message}`);
-      } else {
-        addStatusMessage(`Found ${gameStats?.length || 0} game stats for verification`);
+      // Handle team-based processing
+      if (teamId) {
+        addStatusMessage(`Processing stats for team ID: ${teamId}`);
         
-        // Step 4: Get player stats
-        const { data: playerStats, error: playerStatsError } = await supabase
-          .from('player_stats')
-          .select('*')
-          .eq('player_id', playerId);
+        // Fetch team members first
+        const { data: members, error: membersError } = await supabase
+          .from('team_members')
+          .select('id, name')
+          .eq('team_id', teamId);
+          
+        if (membersError) throw new Error(`Error fetching team members: ${membersError.message}`);
         
-        if (playerStatsError) {
-          addStatusMessage(`Error fetching player stats: ${playerStatsError.message}`);
-        } else {
-          addStatusMessage(`Found ${playerStats?.length || 0} aggregated player stats`);
+        if (!members || members.length === 0) {
+          addStatusMessage("No team members found for this team.");
+          setIsProcessing(false);
+          return;
         }
-      }
-
-      // Step 5: Final refresh
-      addStatusMessage("Final stats refresh...");
-      const refreshResult = await refreshPlayerStats(playerId);
-      
-      if (refreshResult?.success) {
-        addStatusMessage("Stats processing complete");
+        
+        addStatusMessage(`Found ${members.length} team members to process`);
+        
+        // Process each player in the team
+        for (const member of members) {
+          addStatusMessage(`Processing player: ${member.name} (${member.id})`);
+          await processPlayerInternal(member.id);
+        }
+        
+        addStatusMessage("Team stats processing complete");
         setFinishedProcessing(true);
         
         if (onProcessingComplete) {
           onProcessingComplete();
         }
-      } else {
-        addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(refreshResult)}`);
+        
+        toast.success("Team stats processing completed");
+        
+      } else if (playerId) {
+        // Individual player processing
+        await processPlayerInternal(playerId);
+        
+        if (onProcessingComplete) {
+          onProcessingComplete();
+        }
+        
+        toast.success("Player stats processing completed");
       }
-      
-      toast.success("Player stats processing completed");
     } catch (error: any) {
       console.error("Error in stats processing:", error);
       setError(error.message);
       addStatusMessage(`Error: ${error.message}`);
-      toast.error("Failed to process player stats");
+      toast.error("Failed to process stats");
     } finally {
       setIsProcessing(false);
+    }
+  };
+  
+  // Helper function to process an individual player's stats
+  const processPlayerInternal = async (playerId: string) => {
+    // Step 1: Get events for this player
+    addStatusMessage(`Fetching game events for player ${playerId}...`);
+    const { data: events, error: eventsError } = await supabase
+      .from('game_events')
+      .select('*')
+      .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId}`)
+      .order('timestamp', { ascending: true });
+
+    if (eventsError) throw new Error(`Error fetching events: ${eventsError.message}`);
+    
+    if (!events || events.length === 0) {
+      addStatusMessage("No game events found for this player.");
+      return;
+    }
+
+    setGameEvents(events);
+    addStatusMessage(`Found ${events.length} events for processing`);
+
+    // Step 2: Process events for player
+    addStatusMessage("Processing events to stats...");
+    const { data: gameEventsResult, error: processError } = await supabase.rpc(
+      'refresh_player_stats',
+      { p_player_id: playerId }
+    );
+    
+    if (processError) throw new Error(`Error processing events: ${processError.message}`);
+    
+    addStatusMessage(`Stats processing completed: ${JSON.stringify(gameEventsResult)}`);
+    
+    // Step 3: Verify the stats were created
+    const { data: gameStats, error: statsError } = await supabase
+      .from('game_stats')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+
+    if (statsError) {
+      addStatusMessage(`Error verifying game stats: ${statsError.message}`);
+    } else {
+      addStatusMessage(`Found ${gameStats?.length || 0} game stats for verification`);
+      
+      // Step 4: Get player stats
+      const { data: playerStats, error: playerStatsError } = await supabase
+        .from('player_stats')
+        .select('*')
+        .eq('player_id', playerId);
+      
+      if (playerStatsError) {
+        addStatusMessage(`Error fetching player stats: ${playerStatsError.message}`);
+      } else {
+        addStatusMessage(`Found ${playerStats?.length || 0} aggregated player stats`);
+      }
+    }
+
+    // Step 5: Final refresh
+    addStatusMessage("Final stats refresh...");
+    const refreshResult = await refreshPlayerStats(playerId);
+    
+    if (refreshResult?.success) {
+      addStatusMessage("Stats processing complete");
+      setFinishedProcessing(true);
+    } else {
+      addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(refreshResult)}`);
     }
   };
 
