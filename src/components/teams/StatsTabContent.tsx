@@ -2,8 +2,8 @@
 import React from "react";
 import { Team } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import TeamStatsHeader from "./stats/TeamStatsHeader";
 import TeamStatsDebug from "./stats/TeamStatsDebug";
@@ -24,16 +24,9 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     isLoading,
     error,
     isRefreshing,
-    refreshStats,
   } = useTeamStats(team.id);
 
   const { transformedStats, statTypes } = useTransformedTeamStats(stats || [], team.players);
-
-  // Function to handle the refresh button click
-  // Make sure it returns a Promise to match expected type
-  const handleRefresh = async (): Promise<void> => {
-    await refreshStats();
-  };
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -45,7 +38,6 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />
         <h3 className="font-semibold mb-1">Error loading team stats</h3>
         <p>{error.message}</p>
-        <Button onClick={handleRefresh} className="mt-4">Retry</Button>
       </div>
     );
   }
@@ -53,10 +45,9 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
   return (
     <div className="space-y-6">
       <TeamStatsHeader 
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
         onToggleDebug={() => setDebugMode(!debugMode)}
         debugMode={debugMode}
+        isRefreshing={isRefreshing}
       />
 
       <Card>

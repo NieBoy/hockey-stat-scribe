@@ -73,3 +73,21 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
     throw error;
   }
 };
+
+/**
+ * Validates player stats using the database function
+ * @param playerId The team_member.id of the player
+ * @returns Promise<any> Validation result
+ */
+export const validatePlayerStats = async (playerId: string): Promise<any> => {
+  try {
+    const { data, error } = await supabase
+      .rpc('validate_player_stats', { player_id: playerId });
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Error validating player stats:`, error);
+    throw error;
+  }
+};

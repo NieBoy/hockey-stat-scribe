@@ -49,6 +49,48 @@ export const processEventsToStats = async (playerId: string, events: any[]): Pro
           processedCount++;
         }
       }
+      else if (event.event_type === 'shot') {
+        const details = event.details || {};
+        
+        // Process shooter
+        if (details.playerId === playerId) {
+          await recordStat(event.game_id, playerId, 'shots', event.period, 1);
+          processedCount++;
+        }
+        
+        // Process goalie save
+        if (details.goalieId === playerId) {
+          await recordStat(event.game_id, playerId, 'saves', event.period, 1);
+          processedCount++;
+        }
+      }
+      else if (event.event_type === 'hit') {
+        const details = event.details || {};
+        
+        // Process player delivering the hit
+        if (details.hittingPlayerId === playerId) {
+          await recordStat(event.game_id, playerId, 'hits', event.period, 1);
+          processedCount++;
+        }
+      }
+      else if (event.event_type === 'faceoff') {
+        const details = event.details || {};
+        
+        // Process faceoff win
+        if (details.winnerId === playerId) {
+          await recordStat(event.game_id, playerId, 'faceoffs', event.period, 1, 'win');
+          processedCount++;
+        }
+      }
+      else if (event.event_type === 'penalty') {
+        const details = event.details || {};
+        
+        // Process player who took the penalty
+        if (details.playerId === playerId) {
+          await recordStat(event.game_id, playerId, 'penalties', event.period, 1);
+          processedCount++;
+        }
+      }
     }
     
     console.log(`Successfully processed ${processedCount} stats for player ${playerId}`);

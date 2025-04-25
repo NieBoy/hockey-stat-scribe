@@ -1,10 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { PlayerStat, StatType } from "@/types";
-import { refreshPlayerStats } from "@/services/stats/playerStatsService";
 
 export function useTeamStats(teamId: string) {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -70,31 +68,11 @@ export function useTeamStats(teamId: string) {
     enabled: teamMembers !== undefined && teamMembers.length > 0,
   });
 
-  const refreshStats = async (): Promise<void> => {
-    if (!teamMembers || teamMembers.length === 0) return;
-    
-    setIsRefreshing(true);
-    try {
-      // Refresh stats for each team member
-      for (const member of teamMembers) {
-        await refreshPlayerStats(member.id);
-      }
-      
-      await refetch();
-      toast.success("Team statistics have been refreshed");
-    } catch (error) {
-      toast.error("Failed to refresh team statistics");
-      console.error("Error refreshing team stats:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   return {
     stats,
     isLoading: isLoading || isLoadingMembers,
     error,
-    refreshStats,
-    isRefreshing
+    isRefreshing,
+    refetch
   };
 }

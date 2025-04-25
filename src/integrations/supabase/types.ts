@@ -547,6 +547,10 @@ export type Database = {
         Args: { player_id: string }
         Returns: boolean
       }
+      validate_player_stats: {
+        Args: { player_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
