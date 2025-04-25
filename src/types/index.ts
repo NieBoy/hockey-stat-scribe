@@ -1,3 +1,4 @@
+
 export type TeamBasic = {
   id: string;
   name: string;

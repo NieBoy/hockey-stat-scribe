@@ -31,3 +31,13 @@ export function transformSingle(game: any): any {
     })
   };
 }
+
+// Add the missing transformTeamForCreate function
+export const transformTeamForCreate = (team: any) => {
+  if (!team) return null;
+  
+  return {
+    id: team.id,
+    name: team.name
+  };
+};

@@ -21,9 +21,9 @@ export default function Games() {
 
   // Filter games based on selection
   const filteredGames = filter === "active" 
-    ? games.filter(game => game.isActive) 
+    ? games.filter(game => game.is_active) 
     : filter === "upcoming"
-    ? games.filter(game => !game.isActive)
+    ? games.filter(game => !game.is_active)
     : games;
 
   return (

@@ -1,7 +1,6 @@
 
 import { supabase } from '@/lib/supabase';
 import { queries } from './queries';
-import { transformTeamForCreate } from './teamTransforms';
 
 export interface GameCreateParams {
   date: Date;
@@ -82,6 +81,7 @@ export const getGames = async () => {
       periods: game.periods,
       current_period: game.current_period,
       is_active: game.is_active,
+      isActive: game.is_active, // Add isActive alias for compatibility
       homeTeam: {
         id: game.home_team?.id || '',
         name: game.home_team?.name || 'Unknown Team',
@@ -92,6 +92,53 @@ export const getGames = async () => {
   } catch (error) {
     console.error('Error in getGames service:', error);
     return [];
+  }
+};
+
+// Get game by ID
+export const getGameById = async (gameId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        id, 
+        date, 
+        location, 
+        periods, 
+        current_period, 
+        is_active,
+        opponent_name,
+        home_team:teams!home_team_id (id, name)
+      `)
+      .eq('id', gameId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching game:', error);
+      return null;
+    }
+
+    // Map the database response to the Game type format
+    return {
+      id: data.id,
+      date: data.date,
+      location: data.location,
+      periods: data.periods,
+      current_period: data.current_period,
+      is_active: data.is_active,
+      isActive: data.is_active, // Add isActive alias for compatibility
+      opponent_name: data.opponent_name,
+      homeTeam: {
+        id: data.home_team?.id || '',
+        name: data.home_team?.name || 'Unknown Team',
+        players: []
+      },
+      awayTeam: data.opponent_name ? { id: 'opponent', name: data.opponent_name, players: [] } : null,
+      statTrackers: []
+    };
+  } catch (error) {
+    console.error('Error in getGameById service:', error);
+    return null;
   }
 };
 
