@@ -40,6 +40,25 @@ export const fetchGameStats = async (gameId: string): Promise<GameStat[]> => {
 };
 
 /**
+ * Deletes a game stat by ID
+ * @param statId ID of the stat to delete
+ */
+export const deleteGameStat = async (statId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('game_stats')
+      .delete()
+      .eq('id', statId);
+      
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error(`Error deleting game stat ${statId}:`, error);
+    return false;
+  }
+};
+
+/**
  * Fetches raw game stats for a specific player
  * @param playerId The team_member.id of the player
  */
