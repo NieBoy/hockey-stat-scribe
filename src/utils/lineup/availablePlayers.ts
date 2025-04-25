@@ -1,14 +1,29 @@
 
 import { Team, Lines, User } from "@/types";
+import { ValidationResult } from "./types";
 
-export function getAvailablePlayers(team: Team, lines: Lines): User[] {
+/**
+ * Validates input parameters for getting available players
+ */
+const validateInput = (team: Team, lines: Lines): ValidationResult => {
   if (!team) {
-    console.error("No team provided to getAvailablePlayers");
-    return [];
+    return { isValid: false, error: "No team provided to getAvailablePlayers" };
   }
 
   if (!team.players) {
-    console.warn("No team players found");
+    return { isValid: false, error: "No team players found" };
+  }
+
+  return { isValid: true };
+};
+
+/**
+ * Gets list of players available for lineup assignment
+ */
+export function getAvailablePlayers(team: Team, lines: Lines): User[] {
+  const validation = validateInput(team, lines);
+  if (!validation.isValid) {
+    console.error(validation.error);
     return [];
   }
 

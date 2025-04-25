@@ -1,12 +1,27 @@
 
 import { Lines } from "@/types";
+import { PlayerPositionUpdate, ValidationResult } from "./types";
+
+/**
+ * Validates player removal parameters
+ */
+const validateRemovalParams = (playerId: string, lines: Lines): ValidationResult => {
+  if (!playerId || !lines) {
+    return { 
+      isValid: false, 
+      error: "Invalid parameters provided to removePlayerFromCurrentPosition" 
+    };
+  }
+  return { isValid: true };
+};
 
 /**
  * Removes a player from their current position in the lineup
  */
-export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines) => {
-  if (!playerId || !lines) {
-    console.error("Invalid parameters provided to removePlayerFromCurrentPosition:", { playerId, hasLines: !!lines });
+export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines): void => {
+  const validation = validateRemovalParams(playerId, lines);
+  if (!validation.isValid) {
+    console.error(validation.error);
     return;
   }
 
@@ -59,6 +74,10 @@ export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines) 
     }
   } catch (error) {
     console.error("Error in removePlayerFromCurrentPosition:", error);
-    throw new Error(`Failed to remove player ${playerId} from lineup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to remove player ${playerId} from lineup: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`
+    );
   }
 };

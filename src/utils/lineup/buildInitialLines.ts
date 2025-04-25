@@ -1,14 +1,45 @@
-
-import { Team, Lines, User, ForwardLine, DefenseLine } from "@/types";
+import { Team, Lines, ForwardLine, DefenseLine, User } from "@/types";
+import { LineupBuildOptions, LineupValidationResult } from "./types";
 
 /**
- * Builds initial lines structure from team data
+ * Validates the structure of team data before building lines
  */
-export function buildInitialLines(team: Team): Lines {
+const validateTeamData = (team: Team): ValidationResult => {
+  if (!team) {
+    return { isValid: false, error: "No team provided to buildInitialLines" };
+  }
+  
+  if (!team.players) {
+    return { isValid: false, error: "Team has no players array" };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Creates an empty lines structure with default values
+ */
+function createEmptyLines(): Lines {
+  return {
+    forwards: [{ lineNumber: 1, leftWing: null, center: null, rightWing: null }],
+    defense: [{ lineNumber: 1, leftDefense: null, rightDefense: null }],
+    goalies: [],
+    specialTeams: {
+      powerPlay: {},
+      penaltyKill: {}
+    }
+  };
+}
+
+/**
+ * Builds initial lines structure from team data with proper validation
+ */
+export function buildInitialLines(team: Team, options: LineupBuildOptions = {}): Lines {
   console.log("Building lines from team data", team);
   
-  if (!team) {
-    console.error("No team provided to buildInitialLines");
+  const validation = validateTeamData(team);
+  if (!validation.isValid) {
+    console.error(validation.error);
     return createEmptyLines();
   }
   
@@ -95,19 +126,4 @@ export function buildInitialLines(team: Team): Lines {
     console.error("Error building initial lines:", error);
     return createEmptyLines();
   }
-}
-
-/**
- * Creates an empty lines structure with default values
- */
-function createEmptyLines(): Lines {
-  return {
-    forwards: [{ lineNumber: 1, leftWing: null, center: null, rightWing: null }],
-    defense: [{ lineNumber: 1, leftDefense: null, rightDefense: null }],
-    goalies: [],
-    specialTeams: {
-      powerPlay: {},
-      penaltyKill: {}
-    }
-  };
 }
