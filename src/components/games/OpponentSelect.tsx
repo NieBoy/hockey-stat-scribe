@@ -30,50 +30,38 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const [open, setOpen] = useState(false);
   const [newOpponent, setNewOpponent] = useState('');
   
-  // Fetch unique opponent names from existing games
+  // Fetch opponents from the new opponents table
   const { data = [], refetch } = useQuery({
     queryKey: ['opponents'],
     queryFn: async () => {
       try {
-        const { data: gameData, error } = await supabase
-          .from('games')
-          .select('opponent_name')
-          .not('opponent_name', 'is', null)
-          .order('opponent_name');
+        const { data: opponents, error } = await supabase
+          .from('opponents')
+          .select('id, name')
+          .order('name');
         
         if (error) {
           console.error('Error fetching opponents:', error);
           return [];
         }
 
-        // Safely extract unique opponent names
-        if (!gameData || !Array.isArray(gameData)) {
-          return [];
-        }
-
-        // Extract unique opponent names using Set
-        const uniqueNames = new Set<string>();
-        gameData.forEach(game => {
-          if (game && game.opponent_name) {
-            uniqueNames.add(game.opponent_name);
-          }
-        });
-          
-        return Array.from(uniqueNames).map(name => ({ label: name, value: name }));
+        return opponents.map(opponent => ({
+          label: opponent.name,
+          value: opponent.name,
+          id: opponent.id
+        }));
       } catch (err) {
         console.error('Unexpected error fetching opponents:', err);
         return [];
       }
     },
-    // Ensure data is always an array
     placeholderData: []
   });
   
-  const handleAddNewOpponent = () => {
+  const handleAddNewOpponent = async () => {
     if (!newOpponent.trim()) return;
     
-    // Safely check if opponent exists
-    const opponentExists = Array.isArray(data) && data.some(
+    const opponentExists = data.some(
       opponent => opponent.value.toLowerCase() === newOpponent.trim().toLowerCase()
     );
     
@@ -81,14 +69,29 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
       toast.error('This opponent already exists');
       return;
     }
-    
-    onChange(newOpponent.trim());
-    setNewOpponent('');
-    setOpen(false);
-    refetch();
+
+    try {
+      const { data: newOpponentData, error } = await supabase
+        .from('opponents')
+        .insert([{ name: newOpponent.trim() }])
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Failed to add opponent');
+        return;
+      }
+
+      onChange(newOpponentData.name);
+      setNewOpponent('');
+      setOpen(false);
+      refetch();
+    } catch (err) {
+      console.error('Error adding opponent:', err);
+      toast.error('Failed to add opponent');
+    }
   };
 
-  // Ensure we have a valid array for rendering
   const opponents = Array.isArray(data) ? data : [];
 
   return (
@@ -135,7 +138,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
               <CommandGroup>
                 {opponents.map((opponent) => (
                   <CommandItem
-                    key={opponent.value}
+                    key={opponent.id}
                     value={opponent.value}
                     onSelect={(currentValue) => {
                       onChange(currentValue);

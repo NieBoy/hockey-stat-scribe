@@ -15,14 +15,44 @@ export const createGame = async (params: GameCreateParams) => {
   try {
     const { date, location, homeTeam, opponentName, periods = 3 } = params;
 
-    // Create the game with the home team and opponent name
+    // If there's an opponent name, first ensure it exists in the opponents table
+    let opponentId = null;
+    if (opponentName) {
+      // Check if opponent exists
+      const { data: existingOpponent } = await supabase
+        .from('opponents')
+        .select('id')
+        .eq('name', opponentName)
+        .single();
+
+      if (existingOpponent) {
+        opponentId = existingOpponent.id;
+      } else {
+        // Create new opponent
+        const { data: newOpponent, error: opponentError } = await supabase
+          .from('opponents')
+          .insert({ name: opponentName })
+          .select()
+          .single();
+
+        if (opponentError) {
+          console.error('Error creating opponent:', opponentError);
+          return { success: false, error: opponentError };
+        }
+
+        opponentId = newOpponent.id;
+      }
+    }
+
+    // Create the game with the opponent id
     const { data, error } = await supabase
       .from('games')
       .insert({
         date: date.toISOString(),
         location,
         home_team_id: homeTeam,
-        opponent_name: opponentName || null,
+        opponent_id: opponentId,
+        opponent_name: opponentName, // Keep this for backward compatibility during migration
         periods,
         current_period: 0,
         is_active: false,

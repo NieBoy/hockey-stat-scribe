@@ -148,6 +148,7 @@ export type Database = {
           id: string
           is_active: boolean
           location: string
+          opponent_id: string | null
           opponent_name: string | null
           periods: number
         }
@@ -160,6 +161,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           location: string
+          opponent_id?: string | null
           opponent_name?: string | null
           periods?: number
         }
@@ -172,6 +174,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           location?: string
+          opponent_id?: string | null
           opponent_name?: string | null
           periods?: number
         }
@@ -190,7 +193,38 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "games_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "opponents"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      opponents: {
+        Row: {
+          contact_info: string | null
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+        }
+        Relationships: []
       }
       player_parents: {
         Row: {
