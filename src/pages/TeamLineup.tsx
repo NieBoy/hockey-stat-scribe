@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,11 @@ import { useTeams } from "@/hooks/useTeams";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AddPlayerDialog from "@/components/teams/AddPlayerDialog";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { SimpleLineupEditor } from "@/components/teams/lineup/SimpleLineupEditor";
 import { Lines } from "@/types";
 import { updateTeamLineup } from "@/services/teams/lineup";
 import { toast } from "sonner";
 import { cloneDeep } from "lodash";
+import { ImprovedLineupEditor } from "@/components/teams/lineup/ImprovedLineupEditor";
 
 export default function TeamLineup() {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +26,6 @@ export default function TeamLineup() {
     selectedTeam,
     newPlayer,
     setNewPlayer,
-    handleAddPlayer,
     submitNewPlayer
   } = useTeams(id);
   
@@ -50,7 +49,7 @@ export default function TeamLineup() {
     }
   }, [id, queryClient, refetch]);
   
-  const handleSaveLineup = useCallback(async (lines: Lines) => {
+  const handleSaveLineup = async (lines: Lines) => {
     if (!team?.id) {
       toast.error("Unable to save lineup: team ID not available");
       return false;
@@ -58,7 +57,6 @@ export default function TeamLineup() {
     
     try {
       console.log("TeamLineup - Saving lineup for team:", team.id);
-      console.log("TeamLineup - Lineup data being saved:", JSON.stringify(lines, null, 2));
       
       // Create a deep copy of the lines to prevent any mutation issues
       const linesToSave = cloneDeep(lines);
@@ -74,7 +72,6 @@ export default function TeamLineup() {
       
       if (success) {
         console.log("TeamLineup - Lineup saved successfully");
-        toast.success("Lineup saved successfully");
         
         // Invalidate all team data to ensure it gets refreshed everywhere
         queryClient.invalidateQueries({ queryKey: ['team'] });
@@ -83,9 +80,6 @@ export default function TeamLineup() {
         // Specific invalidation for this team
         queryClient.invalidateQueries({ queryKey: ['team', team.id] });
         
-        // Force refetch to make sure we have the latest data
-        refetch();
-        
         return true;
       } else {
         console.error("TeamLineup - Failed to update lineup");
@@ -93,12 +87,9 @@ export default function TeamLineup() {
       }
     } catch (error) {
       console.error("TeamLineup - Error saving lineup:", error);
-      toast.error("Failed to save lineup", {
-        description: error instanceof Error ? error.message : "Unknown error"
-      });
       return false;
     }
-  }, [team?.id, queryClient, refetch]);
+  };
   
   if (isLoading) {
     return (
@@ -135,7 +126,8 @@ export default function TeamLineup() {
           </Button>
         </div>
         
-        <SimpleLineupEditor team={team} onSaveLineup={handleSaveLineup} />
+        {/* Use our new ImprovedLineupEditor instead of SimpleLineupEditor */}
+        <ImprovedLineupEditor team={team} onSaveLineup={handleSaveLineup} />
 
         <AddPlayerDialog
           isOpen={addPlayerDialogOpen}

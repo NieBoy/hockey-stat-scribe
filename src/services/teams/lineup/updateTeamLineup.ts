@@ -27,7 +27,7 @@ export const updateTeamLineup = async (
       return false;
     }
 
-    // Prepare batch updates
+    // Prepare batch updates for all players in the lineup
     const updates = prepareUpdates(teamId, lines);
     console.log("Updates to apply:", updates);
     
@@ -36,12 +36,12 @@ export const updateTeamLineup = async (
       return true;
     }
     
-    // IMPORTANT CHANGE: Instead of resetting all positions first, we'll update them directly
-    // This avoids the issue of clearing positions and then failing to apply new ones
+    // Track all user IDs that should have positions
+    const updatedUserIds = updates.map(update => update.user_id);
     
-    // Apply all updates in batches of 10
-    const batchSize = 10;
+    // Process all updates in batches to avoid overloading the DB
     let allUpdatesSuccessful = true;
+    const batchSize = 10;
     
     for (let i = 0; i < updates.length; i += batchSize) {
       const batch = updates.slice(i, i + batchSize);
@@ -65,32 +65,32 @@ export const updateTeamLineup = async (
           console.error("Error updating player position:", error);
           console.error("Failed update data:", update);
           allUpdatesSuccessful = false;
-          // Continue with other updates even if one fails
+        } else {
+          console.log(`Successfully updated player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
         }
       }
     }
     
-    // For players not in the lineup, clear their positions
-    // First identify all player IDs that are part of the update
-    const updatedPlayerIds = updates.map(update => update.user_id);
-    
-    // Then clear positions for all players not in the updates
-    const { error: clearError } = await supabase
-      .from('team_members')
-      .update({
-        position: null,
-        line_number: null
-      })
-      .eq('team_id', teamId)
-      .eq('role', 'player')
-      .not('user_id', 'in', updatedPlayerIds);
-      
-    if (clearError) {
-      console.error("Error clearing unused player positions:", clearError);
-      allUpdatesSuccessful = false;
+    // Only clear positions for players not in the lineup (but don't clear all positions first)
+    if (updatedUserIds.length > 0) {
+      const { error: clearError } = await supabase
+        .from('team_members')
+        .update({
+          position: null,
+          line_number: null
+        })
+        .eq('team_id', teamId)
+        .eq('role', 'player')
+        .not('user_id', 'in', updatedUserIds);
+        
+      if (clearError) {
+        console.error("Error clearing unused player positions:", clearError);
+        allUpdatesSuccessful = false;
+      } else {
+        console.log("Successfully cleared positions for players not in the lineup");
+      }
     }
     
-    console.log("Successfully updated all positions");
     return allUpdatesSuccessful;
   } catch (error) {
     console.error("Error updating team lineup:", error);
