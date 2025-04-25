@@ -1,6 +1,8 @@
+
 import { useState } from "react";
 import { usePlayerStatsData } from "./usePlayerStatsData";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Custom hook to manage player stats debug functionality
