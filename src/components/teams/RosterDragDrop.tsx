@@ -64,14 +64,92 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       playerId = parts.slice(3).join('-');
     }
     
-    handlePlayerMove({
-      playerId,
-      sourceId: source.droppableId,
-      destinationId: destination.droppableId
-    });
+    // Extract the necessary source and destination information
+    const sourceInfo = parseDroppableId(source.droppableId);
+    const destInfo = parseDroppableId(destination.droppableId);
     
-    toast.success('Player position updated');
+    if (sourceInfo && destInfo) {
+      // Find the player object from availablePlayers or lines
+      let player: User | null = findPlayerById(playerId, availablePlayers, lines);
+      
+      if (player) {
+        handlePlayerMove(
+          player,
+          sourceInfo.lineType,
+          sourceInfo.lineIndex,
+          sourceInfo.position,
+          destInfo.lineType,
+          destInfo.lineIndex,
+          destInfo.position
+        );
+        
+        toast.success('Player position updated');
+      } else {
+        console.error(`Player with ID ${playerId} not found`);
+      }
+    } else {
+      console.error('Invalid droppable ID format');
+    }
   };
+  
+  // Helper function to parse the droppable ID format
+  function parseDroppableId(droppableId: string) {
+    // Example format: "forward-line-0-LW" or "defense-line-1-RD" or "available-players"
+    const parts = droppableId.split('-');
+    
+    // Handle available players section
+    if (droppableId === 'available-players') {
+      return {
+        lineType: 'available',
+        lineIndex: 0,
+        position: 'available'
+      };
+    }
+    
+    // Handle lineup positions
+    if (parts.length >= 4) {
+      const lineType = parts[0] === 'forward' ? 'forwards' : 
+                      parts[0] === 'defense' ? 'defense' : 
+                      parts[0] === 'goalie' ? 'goalies' : null;
+      
+      if (!lineType) return null;
+      
+      return {
+        lineType: lineType as 'forwards' | 'defense' | 'goalies',
+        lineIndex: parseInt(parts[2], 10),
+        position: parts[3] as any
+      };
+    }
+    
+    return null;
+  }
+  
+  // Helper function to find a player by ID from available players or lines
+  function findPlayerById(playerId: string, availablePlayers: User[], lines: Lines): User | null {
+    // Check available players first
+    const availablePlayer = availablePlayers.find(p => p.id === playerId);
+    if (availablePlayer) return availablePlayer;
+    
+    // Check forwards
+    for (const line of lines.forwards) {
+      if (line.leftWing?.id === playerId) return line.leftWing;
+      if (line.center?.id === playerId) return line.center;
+      if (line.rightWing?.id === playerId) return line.rightWing;
+    }
+    
+    // Check defense
+    for (const line of lines.defense) {
+      if (line.leftDefense?.id === playerId) return line.leftDefense;
+      if (line.rightDefense?.id === playerId) return line.rightDefense;
+    }
+    
+    // Check goalies
+    for (const goalie of lines.goalies) {
+      if (goalie?.id === playerId) return goalie;
+    }
+    
+    return null;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
