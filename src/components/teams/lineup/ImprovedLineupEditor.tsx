@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lines, Team, Position, User } from "@/types";
@@ -69,6 +68,12 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
     }
   };
 
+  // Create a proper click handler that calls refreshLineupData
+  const handleRefreshClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    refreshLineupData();
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -88,7 +93,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
             <Button 
               variant="outline" 
               size="sm"
-              onClick={refreshLineupData}
+              onClick={handleRefreshClick}
               className="gap-1"
             >
               <RefreshCw className="h-4 w-4" />
