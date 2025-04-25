@@ -9,7 +9,16 @@ import { PlayerStat } from "@/types";
  */
 export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> => {
   try {
-    console.log(`Fetching stats for player_id: ${playerId}`);
+    console.log(`Fetching stats for player_id (team_member.id): ${playerId}`);
+    const { data: playerData, error: playerError } = await supabase
+      .from('team_members')
+      .select('id, name')
+      .eq('id', playerId)
+      .maybeSingle();
+      
+    if (playerError) throw playerError;
+    if (!playerData) throw new Error(`Player not found: ${playerId}`);
+    
     const { data, error } = await supabase
       .from('player_stats')
       .select('*')
@@ -20,6 +29,7 @@ export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> 
     return (data || []).map(stat => ({
       id: stat.id,
       playerId: stat.player_id,
+      playerName: playerData.name,
       statType: stat.stat_type,
       value: stat.value,
       gamesPlayed: stat.games_played
