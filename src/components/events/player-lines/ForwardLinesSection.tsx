@@ -17,6 +17,7 @@ interface ForwardLinesSectionProps {
   onPlayerClick?: (player: User) => void;
   isDraggable?: boolean;
   title?: string;
+  onPositionClick?: (lineIndex: number, position: string, player: User | null) => void;
 }
 
 export function ForwardLinesSection({ 
@@ -24,7 +25,8 @@ export function ForwardLinesSection({
   selectedIds = new Set(), 
   onPlayerClick,
   isDraggable = false,
-  title = "Forward Lines"
+  title = "Forward Lines",
+  onPositionClick
 }: ForwardLinesSectionProps) {
   return (
     <div className="mt-4">
@@ -48,7 +50,7 @@ export function ForwardLinesSection({
                     player={line.leftWing}
                     position="LW"
                     isSelected={line.leftWing ? selectedIds.has(line.leftWing.id) : false}
-                    onClick={onPlayerClick}
+                    onClick={onPositionClick ? () => onPositionClick(line.lineNumber - 1, "LW", line.leftWing) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                     isDraggable={isDraggable && !!line.leftWing}
                     index={0}
                     dragId={isDraggable && line.leftWing ? `forward-${line.lineNumber}-LW-${line.leftWing.id}` : undefined}
@@ -73,7 +75,7 @@ export function ForwardLinesSection({
                     player={line.center}
                     position="C"
                     isSelected={line.center ? selectedIds.has(line.center.id) : false}
-                    onClick={onPlayerClick}
+                    onClick={onPositionClick ? () => onPositionClick(line.lineNumber - 1, "C", line.center) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                     isDraggable={isDraggable && !!line.center}
                     index={0}
                     dragId={isDraggable && line.center ? `forward-${line.lineNumber}-C-${line.center.id}` : undefined}
@@ -98,7 +100,7 @@ export function ForwardLinesSection({
                     player={line.rightWing}
                     position="RW"
                     isSelected={line.rightWing ? selectedIds.has(line.rightWing.id) : false}
-                    onClick={onPlayerClick}
+                    onClick={onPositionClick ? () => onPositionClick(line.lineNumber - 1, "RW", line.rightWing) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                     isDraggable={isDraggable && !!line.rightWing}
                     index={0}
                     dragId={isDraggable && line.rightWing ? `forward-${line.lineNumber}-RW-${line.rightWing.id}` : undefined}

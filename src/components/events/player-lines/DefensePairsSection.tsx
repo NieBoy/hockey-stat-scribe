@@ -16,6 +16,7 @@ interface DefensePairsSectionProps {
   onPlayerClick?: (player: User) => void;
   isDraggable?: boolean;
   title?: string;
+  onPositionClick?: (lineIndex: number, position: string, player: User | null) => void;
 }
 
 export function DefensePairsSection({ 
@@ -23,7 +24,8 @@ export function DefensePairsSection({
   selectedIds = new Set(), 
   onPlayerClick,
   isDraggable = false,
-  title = "Defense Pairs"
+  title = "Defense Pairs",
+  onPositionClick
 }: DefensePairsSectionProps) {
   return (
     <div className="mt-4">
@@ -47,7 +49,7 @@ export function DefensePairsSection({
                     player={pair.leftDefense}
                     position="LD"
                     isSelected={pair.leftDefense ? selectedIds.has(pair.leftDefense.id) : false}
-                    onClick={onPlayerClick}
+                    onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "LD", pair.leftDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                     isDraggable={isDraggable && !!pair.leftDefense}
                     index={0}
                     dragId={isDraggable && pair.leftDefense ? `defense-${pair.lineNumber}-LD-${pair.leftDefense.id}` : undefined}
@@ -72,7 +74,7 @@ export function DefensePairsSection({
                     player={pair.rightDefense}
                     position="RD"
                     isSelected={pair.rightDefense ? selectedIds.has(pair.rightDefense.id) : false}
-                    onClick={onPlayerClick}
+                    onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "RD", pair.rightDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                     isDraggable={isDraggable && !!pair.rightDefense}
                     index={0}
                     dragId={isDraggable && pair.rightDefense ? `defense-${pair.lineNumber}-RD-${pair.rightDefense.id}` : undefined}

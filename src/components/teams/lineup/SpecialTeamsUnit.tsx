@@ -11,9 +11,17 @@ interface SpecialTeamsUnitProps {
   positions: string[];
   type: 'pp' | 'pk';
   players?: Record<string, User | null>;
+  onPositionClick?: (lineIndex: number, position: string, player: User | null) => void;
 }
 
-export function SpecialTeamsUnit({ title, units, positions, type, players = {} }: SpecialTeamsUnitProps) {
+export function SpecialTeamsUnit({ 
+  title, 
+  units, 
+  positions, 
+  type, 
+  players = {},
+  onPositionClick
+}: SpecialTeamsUnitProps) {
   return (
     <Card>
       <CardHeader>
@@ -46,6 +54,7 @@ export function SpecialTeamsUnit({ title, units, positions, type, players = {} }
                           player={player}
                           position={pos}
                           isSelected={false}
+                          onClick={onPositionClick ? () => onPositionClick(unitNumber - 1, pos, player) : undefined}
                           isDraggable={!!player}
                           index={0}
                           dragId={player ? `${type}-${unitNumber}-${pos}-${player.id}` : undefined}

@@ -9,13 +9,15 @@ interface GoaliesSectionProps {
   selectedIds?: Set<string>;
   onPlayerClick?: (player: User) => void;
   isDraggable?: boolean;
+  onPositionClick?: (index: number, player: User | null) => void;
 }
 
 export function GoaliesSection({ 
   goalies, 
   selectedIds = new Set(), 
   onPlayerClick,
-  isDraggable = false 
+  isDraggable = false,
+  onPositionClick
 }: GoaliesSectionProps) {
   return (
     <div className="mt-4">
@@ -35,7 +37,7 @@ export function GoaliesSection({
                 player={goalies[0] || null}
                 position="G"
                 isSelected={goalies[0] ? selectedIds.has(goalies[0].id) : false}
-                onClick={onPlayerClick}
+                onClick={onPositionClick ? () => onPositionClick(0, goalies[0] || null) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                 isDraggable={isDraggable && !!goalies[0]}
                 index={0}
                 dragId={isDraggable && goalies[0] ? `goalie-G-${goalies[0].id}` : undefined}
@@ -59,7 +61,7 @@ export function GoaliesSection({
                 player={goalies[1] || null}
                 position="G"
                 isSelected={goalies[1] ? selectedIds.has(goalies[1].id) : false}
-                onClick={onPlayerClick}
+                onClick={onPositionClick ? () => onPositionClick(1, goalies[1] || null) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
                 isDraggable={isDraggable && !!goalies[1]}
                 index={0}
                 dragId={isDraggable && goalies[1] ? `goalie-G2-${goalies[1].id}` : undefined}

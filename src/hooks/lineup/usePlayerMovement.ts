@@ -34,6 +34,8 @@ export function usePlayerMovement(
     
     if (targetLineType === 'forwards') {
       const line = newLines.forwards[targetLineIndex];
+      if (!line) return; // Safety check
+      
       if (targetPosition === 'LW') {
         displacedPlayer = line.leftWing;
         line.leftWing = null;
@@ -46,6 +48,8 @@ export function usePlayerMovement(
       }
     } else if (targetLineType === 'defense') {
       const line = newLines.defense[targetLineIndex];
+      if (!line) return; // Safety check
+      
       if (targetPosition === 'LD') {
         displacedPlayer = line.leftDefense;
         line.leftDefense = null;
@@ -61,36 +65,32 @@ export function usePlayerMovement(
     }
     
     // Remove the player from their current position
-    const sourceLine = sourceLineType === 'forwards' 
-      ? newLines.forwards[sourceLineIndex]
-      : sourceLineType === 'defense'
-        ? newLines.defense[sourceLineIndex]
-        : null;
-      
-    if (sourceLineType === 'forwards' && sourceLine) {
-      if (sourcePosition === 'LW') sourceLine.leftWing = null;
-      else if (sourcePosition === 'C') sourceLine.center = null;
-      else if (sourcePosition === 'RW') sourceLine.rightWing = null;
-    } else if (sourceLineType === 'defense' && sourceLine) {
-      if (sourcePosition === 'LD') sourceLine.leftDefense = null;
-      else if (sourcePosition === 'RD') sourceLine.rightDefense = null;
+    if (sourceLineType === 'forwards' && sourceLineIndex >= 0 && sourceLineIndex < newLines.forwards.length) {
+      const line = newLines.forwards[sourceLineIndex];
+      if (sourcePosition === 'LW' && line.leftWing?.id === player.id) line.leftWing = null;
+      else if (sourcePosition === 'C' && line.center?.id === player.id) line.center = null;
+      else if (sourcePosition === 'RW' && line.rightWing?.id === player.id) line.rightWing = null;
+    } else if (sourceLineType === 'defense' && sourceLineIndex >= 0 && sourceLineIndex < newLines.defense.length) {
+      const line = newLines.defense[sourceLineIndex];
+      if (sourcePosition === 'LD' && line.leftDefense?.id === player.id) line.leftDefense = null;
+      else if (sourcePosition === 'RD' && line.rightDefense?.id === player.id) line.rightDefense = null;
     } else if (sourceLineType === 'goalies') {
       newLines.goalies = newLines.goalies.filter(g => g.id !== player.id);
     }
     
     // Place the player in their new position
-    if (targetLineType === 'forwards') {
+    if (targetLineType === 'forwards' && targetLineIndex >= 0 && targetLineIndex < newLines.forwards.length) {
       const line = newLines.forwards[targetLineIndex];
-      if (targetPosition === 'LW') line.leftWing = cloneDeep(player);
-      else if (targetPosition === 'C') line.center = cloneDeep(player);
-      else if (targetPosition === 'RW') line.rightWing = cloneDeep(player);
-    } else if (targetLineType === 'defense') {
+      if (targetPosition === 'LW') line.leftWing = cloneDeep({...player, position: 'LW', lineNumber: targetLineIndex + 1});
+      else if (targetPosition === 'C') line.center = cloneDeep({...player, position: 'C', lineNumber: targetLineIndex + 1});
+      else if (targetPosition === 'RW') line.rightWing = cloneDeep({...player, position: 'RW', lineNumber: targetLineIndex + 1});
+    } else if (targetLineType === 'defense' && targetLineIndex >= 0 && targetLineIndex < newLines.defense.length) {
       const line = newLines.defense[targetLineIndex];
-      if (targetPosition === 'LD') line.leftDefense = cloneDeep(player);
-      else if (targetPosition === 'RD') line.rightDefense = cloneDeep(player);
+      if (targetPosition === 'LD') line.leftDefense = cloneDeep({...player, position: 'LD', lineNumber: targetLineIndex + 1});
+      else if (targetPosition === 'RD') line.rightDefense = cloneDeep({...player, position: 'RD', lineNumber: targetLineIndex + 1});
     } else if (targetLineType === 'goalies') {
       if (targetPosition === 'G') {
-        const updatedPlayer = { ...player, position: 'G' };
+        const updatedPlayer = cloneDeep({...player, position: 'G'});
         
         if (targetLineIndex >= newLines.goalies.length) {
           newLines.goalies.push(updatedPlayer);
@@ -100,13 +100,16 @@ export function usePlayerMovement(
       }
     }
     
+    // Update available players - remove the player that was moved
+    const updatedAvailablePlayers = newAvailablePlayers.filter(p => p.id !== player.id);
+    
     // If there was a displaced player, add them back to available players
     if (displacedPlayer) {
-      newAvailablePlayers.push(displacedPlayer);
+      updatedAvailablePlayers.push(displacedPlayer);
     }
     
     setLines(newLines);
-    setAvailablePlayers(newAvailablePlayers);
+    setAvailablePlayers(updatedAvailablePlayers);
   };
 
   return {
