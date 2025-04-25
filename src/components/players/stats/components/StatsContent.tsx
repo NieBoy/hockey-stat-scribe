@@ -2,10 +2,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsOverview from "@/components/stats/StatsOverview";
 import StatsDetailView from "@/components/stats/StatsDetailView";
-import GameStatsView from "@/components/stats/GameStatsView";
+import { PlayerStat } from "@/types";
 
 interface StatsContentProps {
-  stats: any[];
+  stats: PlayerStat[];
   rawGameStats: any[];
   playerGameEvents: any[];
   teamGames: any[];
@@ -21,25 +21,27 @@ export default function StatsContent({
   activeTab,
   onTabChange
 }: StatsContentProps) {
+  // Always render tabs, even if no stats
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-3">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="mt-6">
+      <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="games">Game Stats</TabsTrigger>
+        <TabsTrigger value="history">Game History</TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="mt-4">
-        <StatsOverview stats={stats} />
+
+      <TabsContent value="overview" className="mt-6">
+        <StatsOverview stats={stats || []} />
       </TabsContent>
-      <TabsContent value="details" className="mt-4">
-        <StatsDetailView stats={stats} />
+
+      <TabsContent value="details" className="mt-6">
+        <StatsDetailView stats={stats || []} />
       </TabsContent>
-      <TabsContent value="games" className="mt-4">
-        <GameStatsView 
-          gameStats={rawGameStats} 
-          gameEvents={playerGameEvents}
-          games={teamGames} 
-        />
+
+      <TabsContent value="history" className="mt-6">
+        <p className="text-muted-foreground">
+          Game history coming soon...
+        </p>
       </TabsContent>
     </Tabs>
   );
