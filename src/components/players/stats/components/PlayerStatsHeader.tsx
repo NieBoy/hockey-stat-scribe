@@ -36,7 +36,10 @@ export default function PlayerStatsHeader({
             checked={showDebugInfo}
             onCheckedChange={onToggleDebug}
           />
-          <Label htmlFor="show-debug">Debug Mode</Label>
+          <Label htmlFor="show-debug" className="flex items-center gap-1">
+            <Bug className="h-4 w-4" />
+            Debug
+          </Label>
         </div>
         <Button 
           onClick={onRefresh} 
@@ -46,7 +49,7 @@ export default function PlayerStatsHeader({
           className="gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> 
-          {isRefreshing ? "Refreshing..." : "Refresh"}
+          {isRefreshing ? "Refreshing Stats..." : "Refresh Stats"}
         </Button>
       </div>
     </div>

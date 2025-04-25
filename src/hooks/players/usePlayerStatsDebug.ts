@@ -25,20 +25,31 @@ export function usePlayerStatsDebug(playerId: string) {
   } = usePlayerStatsData(playerId);
 
   const handleRefresh = async () => {
-    if (isRefreshing) return;
+    if (isRefreshing) {
+      console.log("Refresh already in progress, skipping...");
+      return;
+    }
     
     setIsRefreshing(true);
+    console.log(`Starting stats refresh for player ${playerId}`);
+    
     try {
-      console.log("Starting player stats refresh");
-      await Promise.all([
-        refetchStats(),
-        refetchRawStats(),
-        refetchEvents()
-      ]);
+      // First fetch the events to ensure we have latest data
+      console.log("Fetching latest events...");
+      await refetchEvents();
+      
+      // Then fetch raw game stats
+      console.log("Fetching raw game stats...");
+      await refetchRawStats();
+      
+      // Finally refresh aggregated stats
+      console.log("Refreshing aggregated stats...");
+      await refetchStats();
+      
       toast.success("Stats refreshed successfully");
-      console.log("Player stats refresh completed");
+      console.log("Stats refresh completed successfully");
     } catch (error) {
-      console.error("Error refreshing stats:", error);
+      console.error("Error during stats refresh:", error);
       toast.error("Failed to refresh stats");
     } finally {
       setIsRefreshing(false);
@@ -47,6 +58,7 @@ export function usePlayerStatsDebug(playerId: string) {
 
   const toggleDebug = () => {
     setShowDebug(!showDebug);
+    console.log(`Debug mode ${!showDebug ? 'enabled' : 'disabled'}`);
   };
 
   return {

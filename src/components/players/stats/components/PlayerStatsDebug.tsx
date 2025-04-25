@@ -4,6 +4,7 @@ import StatsProcessingStatus from "@/components/stats/debug/StatsProcessingStatu
 import StatsDebugPanel from "@/components/stats/debug/StatsDebugPanel";
 import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface PlayerStatsDebugProps {
   playerId: string;
@@ -16,18 +17,25 @@ export default function PlayerStatsDebug({ playerId, stats, onRefresh }: PlayerS
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
 
-  const handleProcessingComplete = () => {
+  const handleProcessingComplete = async () => {
     console.log("Stats processing complete, refreshing data");
-    onRefresh();
-    refetchDebugData();
+    try {
+      await onRefresh();
+      await refetchDebugData();
+      toast.success("Stats processing and refresh completed");
+    } catch (error) {
+      console.error("Error during refresh:", error);
+      toast.error("Error refreshing stats after processing");
+    }
   };
 
   const addStatusMessage = (message: string) => {
+    console.log("Debug status:", message);
     setStatusMessages(prev => [...prev, message]);
   };
 
   return (
-    <div className="space-y-6 mt-8">
+    <div className="space-y-6 mt-8 border-t pt-6">
       <StatsProcessingStatus 
         playerId={playerId} 
         onRefresh={onRefresh}
