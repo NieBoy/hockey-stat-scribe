@@ -1,11 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
 
-/**
- * Gets complete lineup data for a team
- * @param teamId The team ID to fetch lineup for
- * @returns Array of team members with names, positions, and other details
- */
 export const getTeamLineup = async (teamId: string): Promise<any[]> => {
   try {
     if (!teamId) {
@@ -15,7 +10,7 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     console.log("Fetching team lineup for team:", teamId);
 
-    // Get ALL team members with their positions
+    // Get ALL team members with their positions, ensuring we get the correct IDs
     const { data, error } = await supabase
       .from('team_members')
       .select(`
@@ -32,12 +27,17 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     if (error) {
       console.error("Error fetching team lineup:", error);
-      return [];
+      throw error;
     }
 
-    console.log("Retrieved team lineup data:", data);
+    console.log("Retrieved team lineup data:", data?.length || 0, "players");
+    console.log("Player data:", data?.map(p => ({
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      line: p.line_number
+    })));
     
-    // Return the full player data array - each player has both id (team_member.id) and user_id
     return data || [];
   } catch (error) {
     console.error("Error in getTeamLineup:", error);

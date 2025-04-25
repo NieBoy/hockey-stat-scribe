@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 
 interface PlayerPositionSelectorProps {
   position: Position;
@@ -57,8 +56,10 @@ export function PlayerPositionSelector({
 
   const debugInfo = () => {
     console.log(`Position ${position} - Current player:`, player);
-    console.log(`Available players (${availablePlayers.length}):`, availablePlayers);
-    console.log(`Selectable players (${selectablePlayers.length}):`, selectablePlayers);
+    console.log(`Available players count: ${availablePlayers.length}`);
+    console.log("Available players:", availablePlayers.map(p => ({ id: p.id, name: p.name })));
+    console.log(`Selectable players count: ${selectablePlayers.length}`);
+    console.log("Selectable players:", selectablePlayers.map(p => ({ id: p.id, name: p.name })));
   };
 
   return (
