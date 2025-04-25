@@ -73,12 +73,16 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       let player: User | null = findPlayerById(playerId, availablePlayers, lines);
       
       if (player) {
+        // Handle the case where source is "available-players"
+        const sourceLineType = sourceInfo.lineType === 'available' ? 'forwards' : sourceInfo.lineType;
+        const destLineType = destInfo.lineType === 'available' ? 'forwards' : destInfo.lineType;
+        
         handlePlayerMove(
           player,
-          sourceInfo.lineType,
+          sourceLineType,
           sourceInfo.lineIndex,
           sourceInfo.position,
-          destInfo.lineType,
+          destLineType,
           destInfo.lineIndex,
           destInfo.position
         );
