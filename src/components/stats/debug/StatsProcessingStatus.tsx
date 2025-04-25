@@ -8,13 +8,17 @@ interface StatsProcessingStatusProps {
   error: string | null;
   isProcessing: boolean;
   finishedProcessing: boolean;
+  playerId?: string;
+  onRefresh?: () => void;
 }
 
 export const StatsProcessingStatus = ({
   statusMessages,
   error,
   isProcessing,
-  finishedProcessing
+  finishedProcessing,
+  playerId,
+  onRefresh
 }: StatsProcessingStatusProps) => {
   if (statusMessages.length === 0) return null;
 
@@ -61,3 +65,8 @@ export const StatsProcessingStatus = ({
     </div>
   );
 };
+
+// Add default export
+const DefaultStatsProcessingStatus = StatsProcessingStatus;
+export default DefaultStatsProcessingStatus;
+
