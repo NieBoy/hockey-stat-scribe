@@ -4,6 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { StatType } from "@/types";
 import { Link } from "react-router-dom";
 import { formatStatType } from "@/utils/statsFormatting";
+import { ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TeamStatsTableProps {
   stats: {
@@ -20,7 +22,18 @@ export function TeamStatsTable({ stats, statTypes }: TeamStatsTableProps) {
   const columns: ColumnDef<any>[] = [
     {
       accessorKey: "playerName",
-      header: "Player",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            Player
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <Link 
           to={`/players/${row.original.playerId}/stats`}
@@ -32,12 +45,34 @@ export function TeamStatsTable({ stats, statTypes }: TeamStatsTableProps) {
     },
     ...statTypes.map((type) => ({
       accessorKey: `stats.${type}`,
-      header: formatStatType(type),
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            {formatStatType(type)}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
       cell: ({ row }) => row.original.stats[type],
     })),
     {
       accessorKey: "gamesPlayed",
-      header: "Games",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            Games
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
     },
   ];
 
