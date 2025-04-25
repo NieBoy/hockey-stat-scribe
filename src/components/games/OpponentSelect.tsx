@@ -60,6 +60,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
         return [];
       }
     },
+    // Important: Provide an initial empty array as placeholder
     placeholderData: []
   });
   
@@ -158,7 +159,8 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
                 </div>
               </div>
             </CommandEmpty>
-            {opponents.length > 0 && (
+            {/* Only render CommandGroup if opponents array exists and has items */}
+            {opponents && opponents.length > 0 && (
               <CommandGroup>
                 {opponents.map((opponent) => (
                   <CommandItem
