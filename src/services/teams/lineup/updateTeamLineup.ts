@@ -57,6 +57,7 @@ export const updateTeamLineup = async (
     
     // Clear positions for players not in the lineup
     if (updatedMemberIds.length > 0) {
+      // Use 'in' operator properly with an array of values
       const { error: clearError } = await supabase
         .from('team_members')
         .update({
@@ -65,7 +66,7 @@ export const updateTeamLineup = async (
         })
         .eq('team_id', teamId)
         .eq('role', 'player')
-        .not('id', 'in', updatedMemberIds);
+        .not('id', 'in', `(${updatedMemberIds.map(id => `'${id}'`).join(',')})`);
         
       if (clearError) {
         console.error("Error clearing unused player positions:", clearError);

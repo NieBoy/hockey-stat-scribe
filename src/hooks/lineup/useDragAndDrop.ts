@@ -1,145 +1,50 @@
 
-import { DropResult } from '@hello-pangea/dnd';
-import { Lines, User, Position } from '@/types';
+import { Lines } from "@/types";
+import { DraggableLocation } from "@hello-pangea/dnd";
+import { removePlayerFromCurrentPosition } from "@/utils/lineupUtils";
 
 interface UseDragAndDropProps {
   lines: Lines;
-  availablePlayers: User[];
-  handlePlayerMove: (
-    player: User,
-    sourceLineType: 'forwards' | 'defense' | 'goalies',
-    sourceLineIndex: number,
-    sourcePosition: string,
-    targetLineType: 'forwards' | 'defense' | 'goalies',
-    targetLineIndex: number,
-    targetPosition: string
-  ) => void;
+  availablePlayers: any[];
+  handlePlayerMove: (sourceId: string, destId: string, playerId: string) => void;
 }
 
-type LineType = 'forwards' | 'defense' | 'goalies' | 'available';
-
-interface PositionInfo {
-  lineType: LineType;
-  lineIndex: number;
-  position: string;
-}
-
-export function useDragAndDrop({ lines, availablePlayers, handlePlayerMove }: UseDragAndDropProps) {
-  const parseDroppableId = (droppableId: string): PositionInfo | null => {
-    if (droppableId === 'available-players') {
-      return {
-        lineType: 'available',
-        lineIndex: 0,
-        position: 'available'
-      };
-    }
+export function useDragAndDrop({ 
+  lines, 
+  availablePlayers, 
+  handlePlayerMove 
+}: UseDragAndDropProps) {
+  
+  const onDragEnd = (result: any) => {
+    const { destination, source, draggableId } = result;
     
-    const parts = droppableId.split('-');
-    
-    if (parts.length >= 4) {
-      const lineTypeStr = parts[0];
-      let lineType: LineType;
-      
-      if (lineTypeStr === 'forward') {
-        lineType = 'forwards';
-      } else if (lineTypeStr === 'defense') {
-        lineType = 'defense';
-      } else if (lineTypeStr === 'goalie') {
-        lineType = 'goalies';
-      } else {
-        return null;
-      }
-      
-      return {
-        lineType,
-        lineIndex: parseInt(parts[2], 10),
-        position: parts[3]
-      };
-    }
-    
-    return null;
-  };
-
-  const findPlayerById = (playerId: string): User | null => {
-    // Check available players first
-    const availablePlayer = availablePlayers.find(p => p.id === playerId);
-    if (availablePlayer) return availablePlayer;
-    
-    // Check forwards
-    for (const line of lines.forwards) {
-      if (line.leftWing?.id === playerId) return line.leftWing;
-      if (line.center?.id === playerId) return line.center;
-      if (line.rightWing?.id === playerId) return line.rightWing;
-    }
-    
-    // Check defense
-    for (const line of lines.defense) {
-      if (line.leftDefense?.id === playerId) return line.leftDefense;
-      if (line.rightDefense?.id === playerId) return line.rightDefense;
-    }
-    
-    // Check goalies
-    for (const goalie of lines.goalies) {
-      if (goalie?.id === playerId) return goalie;
-    }
-    
-    return null;
-  };
-
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result;
-    
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId) return;
-    
-    const parts = draggableId.split('-');
-    const playerId = parts[0] === 'roster' ? parts.slice(1).join('-') : parts.slice(3).join('-');
-    
-    const sourceInfo = parseDroppableId(source.droppableId);
-    const destInfo = parseDroppableId(destination.droppableId);
-    
-    if (!sourceInfo || !destInfo) {
-      console.error('Invalid droppable ID format');
+    // If there's no destination, the player was dropped outside a valid drop area
+    if (!destination) {
       return;
     }
     
-    const player = findPlayerById(playerId);
-    if (!player) {
-      console.error(`Player with ID ${playerId} not found`);
+    // If source and destination are the same exact spot, nothing changed
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
       return;
     }
     
-    // Ensure we have valid line types
-    const getValidLineType = (type: LineType): 'forwards' | 'defense' | 'goalies' => {
-      if (type === 'available') return 'forwards';
-      if (type === 'forwards' || type === 'defense' || type === 'goalies') return type;
-      return 'forwards';
-    };
+    console.log(`Player ${draggableId} moved from ${source.droppableId} to ${destination.droppableId}`);
     
-    // Convert position strings to valid Position type or use a default
-    const getValidPosition = (posStr: string): Position => {
-      const validPositions: Position[] = ['LW', 'C', 'RW', 'LD', 'RD', 'G'];
-      if (validPositions.includes(posStr as Position)) {
-        return posStr as Position;
-      }
-      
-      // Default fallback based on line type
-      const sourceLineType = getValidLineType(sourceInfo.lineType);
-      if (sourceLineType === 'forwards') return 'LW';
-      if (sourceLineType === 'defense') return 'LD';
-      return 'G';
-    };
+    // Extract the player ID from the draggableId
+    // The draggableId follows the format: `${playerId}-${playerName}`
+    const playerId = draggableId.split('-')[0];
     
-    handlePlayerMove(
-      player,
-      getValidLineType(sourceInfo.lineType),
-      sourceInfo.lineIndex,
-      getValidPosition(sourceInfo.position),
-      getValidLineType(destInfo.lineType),
-      destInfo.lineIndex,
-      getValidPosition(destInfo.position)
-    );
+    // First, remove the player from their current position if they're already in the lineup
+    removePlayerFromCurrentPosition(playerId, lines);
+    
+    // Then move the player to their new position
+    handlePlayerMove(source.droppableId, destination.droppableId, playerId);
   };
-
-  return { onDragEnd };
+  
+  return {
+    onDragEnd
+  };
 }
