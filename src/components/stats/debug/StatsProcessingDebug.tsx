@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { refreshPlayerStats } from "@/services/stats";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoCircle } from "lucide-react";
+import { Info } from "lucide-react";
 
 interface StatsProcessingDebugProps {
   playerId: string;
@@ -45,8 +45,8 @@ const StatsProcessingDebug = ({ playerId, onStatsRefreshed }: StatsProcessingDeb
         <CardTitle className="text-sm font-medium">Stats Processing Debug</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert variant="outline">
-          <InfoCircle className="h-4 w-4" />
+        <Alert variant="default">
+          <Info className="h-4 w-4" />
           <AlertDescription className="text-xs">
             The button below will manually refresh stats for this player by aggregating all raw game stats into player stats.
           </AlertDescription>
