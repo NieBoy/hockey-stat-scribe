@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { usePlayerStatsData } from "@/hooks/players/usePlayerStatsData";
+import { usePlayerStatsDebug } from "@/hooks/players/usePlayerStatsDebug";
 import PlayerStatsHeader from "./components/PlayerStatsHeader";
 import StatsContent from "./components/StatsContent";
 import PlayerStatsDebug from "./components/PlayerStatsDebug";
@@ -12,7 +12,6 @@ interface PlayerStatsContentProps {
 
 const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [showDebug, setShowDebug] = useState(false);
   
   const { 
     stats, 
@@ -21,18 +20,11 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     rawGameStats,
     playerGameEvents,
     teamGames,
-    refetchStats,
-    refetchRawStats,
-    refetchEvents
-  } = usePlayerStatsData(playerId);
-
-  const handleRefresh = async () => {
-    await Promise.all([
-      refetchStats(),
-      refetchRawStats(),
-      refetchEvents()
-    ]);
-  };
+    playerTeam,
+    showDebug,
+    toggleDebug,
+    handleRefresh
+  } = usePlayerStatsDebug(playerId);
 
   if (statsLoading) {
     return (
@@ -62,9 +54,10 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     <Card>
       <CardContent>
         <PlayerStatsHeader 
+          playerName={playerTeam?.name}
           onRefresh={handleRefresh}
           isRefreshing={statsLoading}
-          onToggleDebug={() => setShowDebug(!showDebug)}
+          onToggleDebug={toggleDebug}
           showDebugInfo={showDebug}
         />
 
