@@ -70,7 +70,7 @@ export function useTeamStats(teamId: string) {
     enabled: teamMembers !== undefined && teamMembers.length > 0,
   });
 
-  const refreshStats = async () => {
+  const refreshStats = async (): Promise<void> => {
     if (!teamMembers || teamMembers.length === 0) return;
     
     setIsRefreshing(true);

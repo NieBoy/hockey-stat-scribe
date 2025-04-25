@@ -29,6 +29,12 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
 
   const { transformedStats, statTypes } = useTransformedTeamStats(stats || []);
 
+  // Function to handle the refresh button click
+  // Make sure it returns a Promise to match expected type
+  const handleRefresh = async () => {
+    await refreshStats();
+  };
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -39,7 +45,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />
         <h3 className="font-semibold mb-1">Error loading team stats</h3>
         <p>{error.message}</p>
-        <Button onClick={refreshStats} className="mt-4">Retry</Button>
+        <Button onClick={handleRefresh} className="mt-4">Retry</Button>
       </div>
     );
   }
@@ -47,7 +53,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
   return (
     <div className="space-y-6">
       <TeamStatsHeader 
-        onRefresh={refreshStats}
+        onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
         onToggleDebug={() => setDebugMode(!debugMode)}
         debugMode={debugMode}
@@ -68,7 +74,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
               <p>No statistics available for this team.</p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
                 <Button 
-                  onClick={refreshStats} 
+                  onClick={handleRefresh} 
                   variant="outline" 
                   className="gap-2"
                   disabled={isRefreshing}

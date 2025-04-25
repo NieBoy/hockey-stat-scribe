@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Bug, RefreshCw } from "lucide-react";
 
 interface TeamStatsHeaderProps {
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
   isRefreshing: boolean;
   onToggleDebug: () => void;
   debugMode: boolean;
@@ -30,7 +30,7 @@ export default function TeamStatsHeader({
         </Button>
         
         <Button 
-          onClick={onRefresh} 
+          onClick={() => onRefresh()} 
           disabled={isRefreshing}
           variant="outline"
           className="gap-2"

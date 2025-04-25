@@ -1,7 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatType } from "@/types";
-import { formatStatType } from "@/components/stats/StatsContent";
+import { formatStatType } from "@/utils/statsFormatting";
 import { Link } from "react-router-dom";
 
 interface TeamStatsTableProps {
