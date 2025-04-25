@@ -51,6 +51,7 @@ export default function TeamLineup() {
   
   const handleSaveLineup = async (lines: Lines) => {
     if (!team?.id) {
+      console.error("Unable to save lineup: team ID not available");
       toast.error("Unable to save lineup: team ID not available");
       return false;
     }
@@ -67,6 +68,21 @@ export default function TeamLineup() {
         toast.error("Invalid lineup structure");
         return false;
       }
+      
+      // Check if we have any valid data to save
+      const hasPlayers = (
+        linesToSave.forwards.some(line => line.leftWing || line.center || line.rightWing) ||
+        linesToSave.defense.some(line => line.leftDefense || line.rightDefense) ||
+        linesToSave.goalies.length > 0
+      );
+      
+      if (!hasPlayers) {
+        console.log("No players in lineup to save");
+        toast.info("No players in lineup to save");
+        return true; // Not an error, just nothing to save
+      }
+      
+      console.log("Saving lineup:", JSON.stringify(linesToSave, null, 2));
       
       const success = await updateTeamLineup(team.id, linesToSave);
       
@@ -87,6 +103,9 @@ export default function TeamLineup() {
       }
     } catch (error) {
       console.error("TeamLineup - Error saving lineup:", error);
+      toast.error("Error saving lineup", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
       return false;
     }
   };
@@ -126,7 +145,6 @@ export default function TeamLineup() {
           </Button>
         </div>
         
-        {/* Use our new ImprovedLineupEditor instead of SimpleLineupEditor */}
         <ImprovedLineupEditor team={team} onSaveLineup={handleSaveLineup} />
 
         <AddPlayerDialog

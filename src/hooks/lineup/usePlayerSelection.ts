@@ -20,11 +20,46 @@ export function usePlayerSelection(
     console.log(`handlePlayerSelect called with: ${lineType}, ${lineIndex}, ${position}, ${playerId}`);
     
     try {
-      const player = playerId === 'none' ? null : availablePlayers.find(p => p.id === playerId);
+      // Handle special case for clearing a position
+      if (playerId === 'none') {
+        updatePlayerPosition({
+          lineType,
+          lineIndex,
+          position,
+          player: null
+        });
+        return;
+      }
       
-      // If trying to select a player that doesn't exist (might have been deleted or corrupted data)
-      if (playerId !== 'none' && !player) {
-        console.error(`Player with ID ${playerId} not found in available players list`);
+      // Find player in available players or in the current position
+      let player: User | null = null;
+      
+      // First check available players
+      player = availablePlayers.find(p => p.id === playerId) || null;
+      
+      // If not found in available, check if it's the current player
+      if (!player) {
+        if (lineType === 'forwards') {
+          const line = lines.forwards[lineIndex];
+          if (line) {
+            if (position === 'LW' && line.leftWing?.id === playerId) player = line.leftWing;
+            else if (position === 'C' && line.center?.id === playerId) player = line.center;
+            else if (position === 'RW' && line.rightWing?.id === playerId) player = line.rightWing;
+          }
+        } else if (lineType === 'defense') {
+          const line = lines.defense[lineIndex];
+          if (line) {
+            if (position === 'LD' && line.leftDefense?.id === playerId) player = line.leftDefense;
+            else if (position === 'RD' && line.rightDefense?.id === playerId) player = line.rightDefense;
+          }
+        } else if (lineType === 'goalies' && position === 'G') {
+          player = lines.goalies.find(g => g.id === playerId) || null;
+        }
+      }
+      
+      // If we didn't find the player anywhere, log error and return
+      if (!player) {
+        console.error(`Player with ID ${playerId} not found in available players list or current lineup`);
         return;
       }
       
@@ -32,7 +67,7 @@ export function usePlayerSelection(
         lineType,
         lineIndex,
         position,
-        player: player ? cloneDeep(player) : null
+        player: cloneDeep(player)
       });
     } catch (error) {
       console.error("Error in handlePlayerSelect:", error);

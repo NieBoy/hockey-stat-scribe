@@ -14,6 +14,7 @@ export function useLineupData(team: Team, refreshKey: number = 0) {
   
   const lineupDataRef = useRef<any[]>([]);
   const previousTeamIdRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef<boolean>(false);
 
   const fetchLineup = useCallback(async (forceRefresh = false) => {
     try {
@@ -30,26 +31,18 @@ export function useLineupData(team: Team, refreshKey: number = 0) {
       
       if (positionData.length === 0) {
         console.log("useLineupData - No position data found in lineup data");
-        if (!forceRefresh) {
-          toast.info("No lineup data found. Please set up your lineup.", {
+        if (!forceRefresh && !hasInitializedRef.current) {
+          toast.info("Starting with an empty lineup. Add players to positions to create your lineup.", {
             id: 'no-lineup-data',
-            duration: 3000,
+            duration: 5000,
           });
         }
-      }
-      
-      if (!lineupData || lineupData.length === 0) {
-        console.log("useLineupData - No lineup data found, using initial lines");
-        setLines(buildInitialLines(team));
-        setLoadingState('success');
-        setLastRefreshed(new Date());
-        setError(null);
-        return;
       }
       
       const updatedTeam = {
         ...team,
         players: team.players.map(player => {
+          // Find lineup player by user_id (important: not by id!)
           const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
           if (lineupPlayer && lineupPlayer.position) {
             return {
@@ -69,8 +62,7 @@ export function useLineupData(team: Team, refreshKey: number = 0) {
       setLoadingState('success');
       setLastRefreshed(new Date());
       setError(null);
-      
-      team.lines = refreshedLines;
+      hasInitializedRef.current = true;
       
       return refreshedLines;
     } catch (error) {

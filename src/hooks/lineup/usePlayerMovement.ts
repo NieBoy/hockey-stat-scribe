@@ -1,12 +1,8 @@
 
-import { Lines, User, Position } from "@/types";
-import { removePlayerFromCurrentPosition } from "@/utils/lineupUtils";
-
-interface PlayerMoveParams {
-  playerId: string;
-  sourceId: string;
-  destinationId: string;
-}
+import { useState } from 'react';
+import { Lines, User, Position } from '@/types';
+import { removePlayerFromCurrentPosition } from '@/utils/lineupUtils';
+import { cloneDeep } from 'lodash';
 
 export function usePlayerMovement(
   lines: Lines,
@@ -14,119 +10,103 @@ export function usePlayerMovement(
   availablePlayers: User[],
   setAvailablePlayers: (players: User[]) => void
 ) {
-  const handlePlayerMove = ({
-    playerId,
-    sourceId,
-    destinationId,
-  }: PlayerMoveParams) => {
-    console.log("Handle player move:", {
-      playerId,
-      sourceId,
-      destinationId
+  const handlePlayerMove = (
+    player: User, 
+    sourceLineType: 'forwards' | 'defense' | 'goalies', 
+    sourceLineIndex: number,
+    sourcePosition: Position, 
+    targetLineType: 'forwards' | 'defense' | 'goalies', 
+    targetLineIndex: number, 
+    targetPosition: Position
+  ) => {
+    console.log("Moving player:", { 
+      player, 
+      from: `${sourceLineType} line ${sourceLineIndex} pos ${sourcePosition}`,
+      to: `${targetLineType} line ${targetLineIndex} pos ${targetPosition}`
     });
     
-    // Find the player
-    let player: User | null = null;
-    let newAvailablePlayers = [...availablePlayers];
+    // Create deep copies to prevent mutation issues
+    const newLines = cloneDeep(lines);
+    const newAvailablePlayers = cloneDeep(availablePlayers);
     
-    // Check if player is in available players
-    if (sourceId === 'roster' || sourceId.startsWith('roster')) {
-      player = availablePlayers.find(p => p.id === playerId) || null;
-      if (player) {
-        newAvailablePlayers = availablePlayers.filter(p => p.id !== playerId);
+    // First, capture the player that's currently in the target position
+    let displacedPlayer: User | null = null;
+    
+    if (targetLineType === 'forwards') {
+      const line = newLines.forwards[targetLineIndex];
+      if (targetPosition === 'LW') {
+        displacedPlayer = line.leftWing;
+        line.leftWing = null;
+      } else if (targetPosition === 'C') {
+        displacedPlayer = line.center;
+        line.center = null;
+      } else if (targetPosition === 'RW') {
+        displacedPlayer = line.rightWing;
+        line.rightWing = null;
       }
-    } else {
-      // Find player in lines
-      const newLines = { ...lines };
-      
-      // Check forwards
-      for (const line of newLines.forwards) {
-        if (line.leftWing?.id === playerId) {
-          player = line.leftWing;
-        } else if (line.center?.id === playerId) {
-          player = line.center;
-        } else if (line.rightWing?.id === playerId) {
-          player = line.rightWing;
-        }
-        if (player) break;
+    } else if (targetLineType === 'defense') {
+      const line = newLines.defense[targetLineIndex];
+      if (targetPosition === 'LD') {
+        displacedPlayer = line.leftDefense;
+        line.leftDefense = null;
+      } else if (targetPosition === 'RD') {
+        displacedPlayer = line.rightDefense;
+        line.rightDefense = null;
       }
-      
-      // Check defense
-      if (!player) {
-        for (const line of newLines.defense) {
-          if (line.leftDefense?.id === playerId) {
-            player = line.leftDefense;
-          } else if (line.rightDefense?.id === playerId) {
-            player = line.rightDefense;
-          }
-          if (player) break;
-        }
-      }
-      
-      // Check goalies
-      if (!player) {
-        player = newLines.goalies.find(g => g.id === playerId) || null;
-      }
-      
-      // Remove player from current position
-      if (player) {
-        removePlayerFromCurrentPosition(playerId, newLines);
-        setLines(newLines);
+    } else if (targetLineType === 'goalies') {
+      if (targetLineIndex < newLines.goalies.length) {
+        displacedPlayer = newLines.goalies[targetLineIndex];
+        newLines.goalies.splice(targetLineIndex, 1);
       }
     }
     
-    if (!player) {
-      console.error("Player not found:", playerId);
-      return;
+    // Remove the player from their current position
+    const sourceLine = sourceLineType === 'forwards' 
+      ? newLines.forwards[sourceLineIndex]
+      : sourceLineType === 'defense'
+        ? newLines.defense[sourceLineIndex]
+        : null;
+      
+    if (sourceLineType === 'forwards' && sourceLine) {
+      if (sourcePosition === 'LW') sourceLine.leftWing = null;
+      else if (sourcePosition === 'C') sourceLine.center = null;
+      else if (sourcePosition === 'RW') sourceLine.rightWing = null;
+    } else if (sourceLineType === 'defense' && sourceLine) {
+      if (sourcePosition === 'LD') sourceLine.leftDefense = null;
+      else if (sourcePosition === 'RD') sourceLine.rightDefense = null;
+    } else if (sourceLineType === 'goalies') {
+      newLines.goalies = newLines.goalies.filter(g => g.id !== player.id);
     }
-
-    // Handle returning player to roster
-    if (destinationId === 'roster') {
-      console.log("Moving player back to roster");
-      setAvailablePlayers([...newAvailablePlayers, player]);
-      return;
-    }
-
-    // Parse destination ID format: type-number-position
-    // Examples: forward-1-LW, defense-2-RD, goalie-G
-    const destParts = destinationId.split('-');
     
-    if (destParts[0] === 'goalie') {
-      const newLines = { ...lines };
-      if (!newLines.goalies.some(g => g.id === player?.id) && player) {
-        newLines.goalies.push({...player, position: 'G'});
-        setLines(newLines);
-      }
-      return;
-    }
-
-    // Handle forward and defense line drops
-    if (destParts[0] === 'forward' || destParts[0] === 'defense') {
-      const lineType = destParts[0];
-      const lineNumber = parseInt(destParts[1], 10);
-      const position = destParts[2] as Position;
-      
-      const newLines = { ...lines };
-      const lineIndex = lineNumber - 1;
-      
-      if (lineType === 'forward') {
-        const line = newLines.forwards[lineIndex];
-        if (line) {
-          if (position === 'LW') line.leftWing = {...player, position: 'LW'};
-          else if (position === 'C') line.center = {...player, position: 'C'};
-          else if (position === 'RW') line.rightWing = {...player, position: 'RW'};
-        }
-      } else if (lineType === 'defense') {
-        const line = newLines.defense[lineIndex];
-        if (line) {
-          if (position === 'LD') line.leftDefense = {...player, position: 'LD'};
-          else if (position === 'RD') line.rightDefense = {...player, position: 'RD'};
+    // Place the player in their new position
+    if (targetLineType === 'forwards') {
+      const line = newLines.forwards[targetLineIndex];
+      if (targetPosition === 'LW') line.leftWing = cloneDeep(player);
+      else if (targetPosition === 'C') line.center = cloneDeep(player);
+      else if (targetPosition === 'RW') line.rightWing = cloneDeep(player);
+    } else if (targetLineType === 'defense') {
+      const line = newLines.defense[targetLineIndex];
+      if (targetPosition === 'LD') line.leftDefense = cloneDeep(player);
+      else if (targetPosition === 'RD') line.rightDefense = cloneDeep(player);
+    } else if (targetLineType === 'goalies') {
+      if (targetPosition === 'G') {
+        const updatedPlayer = { ...player, position: 'G' };
+        
+        if (targetLineIndex >= newLines.goalies.length) {
+          newLines.goalies.push(updatedPlayer);
+        } else {
+          newLines.goalies.splice(targetLineIndex, 0, updatedPlayer);
         }
       }
-      
-      setLines(newLines);
-      setAvailablePlayers(newAvailablePlayers);
     }
+    
+    // If there was a displaced player, add them back to available players
+    if (displacedPlayer) {
+      newAvailablePlayers.push(displacedPlayer);
+    }
+    
+    setLines(newLines);
+    setAvailablePlayers(newAvailablePlayers);
   };
 
   return {

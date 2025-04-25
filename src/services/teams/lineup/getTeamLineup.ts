@@ -15,7 +15,7 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     console.log("Fetching team lineup for team:", teamId);
 
-    // Get ALL team members, including those without positions
+    // Get ALL team members with their positions
     const { data, error } = await supabase
       .from('team_members')
       .select(`
@@ -37,7 +37,7 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
 
     console.log("Retrieved team lineup data:", data);
     
-    // Return the full player data array - each player uses team_member.id as its primary identifier
+    // Return the full player data array - each player has both id (team_member.id) and user_id
     return data || [];
   } catch (error) {
     console.error("Error in getTeamLineup:", error);

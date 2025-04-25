@@ -19,6 +19,7 @@ export function useAutoSaveLineup({
   const previousLinesRef = useRef<Lines>(cloneDeep(lines));
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const saveAttemptRef = useRef<number>(0);
   
   // Detect changes and trigger auto-save
   useEffect(() => {
@@ -30,6 +31,18 @@ export function useAutoSaveLineup({
     const hasChanges = !isEqual(lines, previousLinesRef.current);
     
     if (!hasChanges) {
+      return;
+    }
+    
+    // Verify that we have data to save before triggering
+    const hasData = (
+      lines.forwards.some(line => line.leftWing || line.center || line.rightWing) ||
+      lines.defense.some(line => line.leftDefense || line.rightDefense) ||
+      lines.goalies.length > 0
+    );
+    
+    if (!hasData) {
+      console.log("Not scheduling auto-save - no meaningful data to save");
       return;
     }
     
@@ -72,7 +85,30 @@ export function useAutoSaveLineup({
       
       // Create a deep copy to avoid mutation during save
       const linesToSave = cloneDeep(lines);
+      
+      // Verify we have players to save
+      const hasPlayersToSave = (
+        linesToSave.forwards.some(line => line.leftWing || line.center || line.rightWing) ||
+        linesToSave.defense.some(line => line.leftDefense || line.rightDefense) ||
+        linesToSave.goalies.length > 0
+      );
+      
+      if (!hasPlayersToSave) {
+        throw new Error("No player data to save");
+      }
+      
+      // Increment save attempt counter
+      saveAttemptRef.current++;
+      const currentAttempt = saveAttemptRef.current;
+      
+      // Perform the save
       const result = await onSaveLineup(linesToSave);
+      
+      // Ensure this is still the most recent save attempt
+      if (currentAttempt !== saveAttemptRef.current) {
+        console.log("Ignoring outdated save response");
+        return false;
+      }
       
       // Treat both undefined and true as success
       const saveSuccessful = result === undefined || result === true;
@@ -86,7 +122,9 @@ export function useAutoSaveLineup({
         
         // Reset status after a delay
         setTimeout(() => {
-          setSaveStatus('idle');
+          if (saveStatus === 'success') {
+            setSaveStatus('idle');
+          }
         }, 2000);
         
         return true;
@@ -102,7 +140,9 @@ export function useAutoSaveLineup({
       
       // Reset status after a delay
       setTimeout(() => {
-        setSaveStatus('idle');
+        if (saveStatus === 'error') {
+          setSaveStatus('idle');
+        }
       }, 3000);
       
       return false;

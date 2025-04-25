@@ -70,13 +70,15 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
   
   // Update goalies
   lines.goalies.forEach((goalie, index) => {
-    updates.push({
-      team_id: teamId,
-      user_id: goalie.id,
-      role: 'player',
-      position: 'G',
-      line_number: index + 1
-    });
+    if (goalie) {
+      updates.push({
+        team_id: teamId,
+        user_id: goalie.id,
+        role: 'player',
+        position: 'G',
+        line_number: index + 1
+      });
+    }
   });
   
   return updates;

@@ -15,19 +15,7 @@ export const updateTeamLineup = async (
   }
   
   try {
-    // Get existing team members first to validate
-    const { data: teamPlayers, error: fetchError } = await supabase
-      .from('team_members')
-      .select('id, user_id, position, line_number')
-      .eq('team_id', teamId)
-      .eq('role', 'player');
-      
-    if (fetchError) {
-      console.error("Error fetching team players:", fetchError);
-      return false;
-    }
-
-    // Prepare batch updates for all players in the lineup
+    // Start a transaction for all our updates
     const updates = prepareUpdates(teamId, lines);
     console.log("Updates to apply:", updates);
     
@@ -39,39 +27,35 @@ export const updateTeamLineup = async (
     // Track all user IDs that should have positions
     const updatedUserIds = updates.map(update => update.user_id);
     
-    // Process all updates in batches to avoid overloading the DB
+    // Apply all player position updates
     let allUpdatesSuccessful = true;
-    const batchSize = 10;
     
-    for (let i = 0; i < updates.length; i += batchSize) {
-      const batch = updates.slice(i, i + batchSize);
+    for (const update of updates) {
+      if (!update.user_id) {
+        console.error("Invalid user_id in update:", update);
+        continue;
+      }
       
-      for (const update of batch) {
-        if (!update.user_id) {
-          console.error("Invalid user_id in update:", update);
-          continue;
-        }
+      // Important: We're updating the team_members table using user_id field, not id field
+      const { error } = await supabase
+        .from('team_members')
+        .update({
+          position: update.position,
+          line_number: update.line_number
+        })
+        .eq('team_id', update.team_id)
+        .eq('user_id', update.user_id);
         
-        const { error } = await supabase
-          .from('team_members')
-          .update({
-            position: update.position,
-            line_number: update.line_number
-          })
-          .eq('team_id', update.team_id)
-          .eq('user_id', update.user_id);
-          
-        if (error) {
-          console.error("Error updating player position:", error);
-          console.error("Failed update data:", update);
-          allUpdatesSuccessful = false;
-        } else {
-          console.log(`Successfully updated player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
-        }
+      if (error) {
+        console.error("Error updating player position:", error);
+        console.error("Failed update data:", update);
+        allUpdatesSuccessful = false;
+      } else {
+        console.log(`Successfully updated player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
       }
     }
     
-    // Only clear positions for players not in the lineup (but don't clear all positions first)
+    // Clear positions for players not in the lineup
     if (updatedUserIds.length > 0) {
       const { error: clearError } = await supabase
         .from('team_members')
