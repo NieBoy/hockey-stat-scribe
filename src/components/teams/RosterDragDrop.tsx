@@ -1,8 +1,9 @@
 
-import { useEffect } from 'react';
 import { Team, Lines } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { RosterContainer } from './lineup/RosterContainer';
+import { Button } from '../ui/button';
+import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RosterDragDropProps {
@@ -14,7 +15,6 @@ interface RosterDragDropProps {
 export default function RosterDragDrop({ team, onSave, isSaving = false }: RosterDragDropProps) {
   const {
     lines,
-    setLines,
     availablePlayers,
     handlePlayerMove,
     addForwardLine,
@@ -22,41 +22,38 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     isLoading
   } = useLineupEditor(team);
 
-  // Enhanced auto-save with better feedback
-  useEffect(() => {
-    // Don't trigger save during initial loading
-    if (isLoading) {
-      return;
+  const handleSave = async () => {
+    try {
+      console.log("Saving lineup...");
+      await onSave(lines);
+      toast.success("Lineup saved successfully");
+    } catch (error) {
+      console.error("Error saving lineup:", error);
+      toast.error("Failed to save lineup");
     }
-    
-    console.log("Lineup changed, scheduling auto-save", lines);
-
-    const saveLines = async () => {
-      try {
-        console.log("Auto-saving lineup...");
-        await onSave(lines);
-        console.log("Auto-save completed");
-      } catch (error) {
-        console.error("Error auto-saving lineup:", error);
-        toast.error("Failed to save lineup");
-      }
-    };
-    
-    const timeoutId = setTimeout(() => {
-      saveLines();
-    }, 500);
-    
-    return () => clearTimeout(timeoutId);
-  }, [lines, onSave, isLoading]);
+  };
 
   return (
-    <RosterContainer
-      team={team}
-      lines={lines}
-      availablePlayers={availablePlayers}
-      handlePlayerMove={handlePlayerMove}
-      addForwardLine={addForwardLine}
-      addDefenseLine={addDefenseLine}
-    />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="gap-2"
+        >
+          <Save className="h-4 w-4" />
+          {isSaving ? 'Saving...' : 'Save Lineup'}
+        </Button>
+      </div>
+
+      <RosterContainer
+        team={team}
+        lines={lines}
+        availablePlayers={availablePlayers}
+        handlePlayerMove={handlePlayerMove}
+        addForwardLine={addForwardLine}
+        addDefenseLine={addDefenseLine}
+      />
+    </div>
   );
 }

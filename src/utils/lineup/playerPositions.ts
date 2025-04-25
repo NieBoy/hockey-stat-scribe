@@ -2,9 +2,6 @@
 import { Lines } from "@/types";
 import { PlayerPositionUpdate, ValidationResult } from "./types";
 
-/**
- * Validates player removal parameters
- */
 const validateRemovalParams = (playerId: string, lines: Lines): ValidationResult => {
   if (!playerId || !lines) {
     return { 
@@ -17,6 +14,7 @@ const validateRemovalParams = (playerId: string, lines: Lines): ValidationResult
 
 /**
  * Removes a player from their current position in the lineup
+ * Enhanced with better cleanup and logging
  */
 export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines): void => {
   const validation = validateRemovalParams(playerId, lines);
@@ -25,53 +23,72 @@ export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines):
     return;
   }
 
+  console.log(`Removing player ${playerId} from all positions`);
+
   try {
-    // Check forwards
-    for (let i = 0; i < lines.forwards.length; i++) {
-      const line = lines.forwards[i];
-      if (!line) continue;
+    // Check and clean forwards
+    lines.forwards.forEach((line, lineIndex) => {
+      if (!line) return;
       
-      if (line.leftWing?.id === playerId) line.leftWing = null;
-      if (line.center?.id === playerId) line.center = null;
-      if (line.rightWing?.id === playerId) line.rightWing = null;
-    }
+      if (line.leftWing?.id === playerId) {
+        console.log(`Removing player from LW position in forward line ${lineIndex + 1}`);
+        line.leftWing = null;
+      }
+      if (line.center?.id === playerId) {
+        console.log(`Removing player from C position in forward line ${lineIndex + 1}`);
+        line.center = null;
+      }
+      if (line.rightWing?.id === playerId) {
+        console.log(`Removing player from RW position in forward line ${lineIndex + 1}`);
+        line.rightWing = null;
+      }
+    });
     
-    // Check defense
-    for (let i = 0; i < lines.defense.length; i++) {
-      const line = lines.defense[i];
-      if (!line) continue;
+    // Check and clean defense
+    lines.defense.forEach((line, lineIndex) => {
+      if (!line) return;
       
-      if (line.leftDefense?.id === playerId) line.leftDefense = null;
-      if (line.rightDefense?.id === playerId) line.rightDefense = null;
-    }
+      if (line.leftDefense?.id === playerId) {
+        console.log(`Removing player from LD position in defense pair ${lineIndex + 1}`);
+        line.leftDefense = null;
+      }
+      if (line.rightDefense?.id === playerId) {
+        console.log(`Removing player from RD position in defense pair ${lineIndex + 1}`);
+        line.rightDefense = null;
+      }
+    });
     
-    // Check goalies
+    // Clean goalies with proper logging
+    const originalLength = lines.goalies.length;
     lines.goalies = lines.goalies.filter(g => g?.id !== playerId);
+    if (lines.goalies.length < originalLength) {
+      console.log(`Removed player from goalies list`);
+    }
     
-    // Check special teams with proper null checks
+    // Clean special teams
     if (lines.specialTeams) {
-      // Check power play
+      // Clean power play
       if (lines.specialTeams.powerPlay) {
-        Object.keys(lines.specialTeams.powerPlay).forEach(key => {
-          if (lines.specialTeams?.powerPlay?.[key]?.id === playerId) {
-            if (lines.specialTeams?.powerPlay) {
-              lines.specialTeams.powerPlay[key] = null;
-            }
+        Object.entries(lines.specialTeams.powerPlay).forEach(([key, player]) => {
+          if (player?.id === playerId) {
+            console.log(`Removing player from power play position ${key}`);
+            lines.specialTeams!.powerPlay![key] = null;
           }
         });
       }
       
-      // Check penalty kill
+      // Clean penalty kill
       if (lines.specialTeams.penaltyKill) {
-        Object.keys(lines.specialTeams.penaltyKill).forEach(key => {
-          if (lines.specialTeams?.penaltyKill?.[key]?.id === playerId) {
-            if (lines.specialTeams?.penaltyKill) {
-              lines.specialTeams.penaltyKill[key] = null;
-            }
+        Object.entries(lines.specialTeams.penaltyKill).forEach(([key, player]) => {
+          if (player?.id === playerId) {
+            console.log(`Removing player from penalty kill position ${key}`);
+            lines.specialTeams!.penaltyKill![key] = null;
           }
         });
       }
     }
+
+    console.log(`Successfully removed player ${playerId} from all positions`);
   } catch (error) {
     console.error("Error in removePlayerFromCurrentPosition:", error);
     throw new Error(
