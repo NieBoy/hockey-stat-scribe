@@ -32,6 +32,7 @@ export function usePlayerStatsData(playerId: string) {
     queryKey: ['rawGameStats', playerId],
     queryFn: async () => {
       try {
+        console.log('Fetching raw game stats for player:', playerId);
         const stats = await fetchPlayerRawGameStats(playerId);
         console.log('Raw game stats fetched:', stats);
         return stats;
@@ -98,7 +99,7 @@ export function usePlayerStatsData(playerId: string) {
         // Get game IDs
         const gameIds = games.map(game => game.id);
 
-        // Fix: Use proper JSONB containment operator for checking player involvement
+        // Get game events with corrected JSONB query syntax
         const { data: events, error: eventsError } = await supabase
           .from('game_events')
           .select('*')
@@ -106,8 +107,7 @@ export function usePlayerStatsData(playerId: string) {
           .or(
             `details->>'playerId'.eq.${playerId},` +
             `details->>'primaryAssistId'.eq.${playerId},` +
-            `details->>'secondaryAssistId'.eq.${playerId},` +
-            `details->'playersOnIce' ?? '[]' @> '[${playerId}]'`
+            `details->>'secondaryAssistId'.eq.${playerId}`
           );
 
         if (eventsError) {

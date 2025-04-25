@@ -40,39 +40,39 @@ export const fetchGameStats = async (gameId: string): Promise<GameStat[]> => {
 };
 
 /**
- * Deletes a game stat by ID
- * @param statId ID of the stat to delete
- */
-export const deleteGameStat = async (statId: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('game_stats')
-      .delete()
-      .eq('id', statId);
-      
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error(`Error deleting game stat ${statId}:`, error);
-    return false;
-  }
-};
-
-/**
  * Fetches raw game stats for a specific player
  * @param playerId The team_member.id of the player
  */
 export const fetchPlayerRawGameStats = async (playerId: string) => {
   try {
+    console.log('Fetching raw game stats for player:', playerId);
+    
     const { data, error } = await supabase
       .from('game_stats')
       .select(`
-        *,
-        games!game_stats_game_id_fkey(id, home_team_id, away_team_id, date)
+        game_stats.id,
+        game_stats.game_id,
+        game_stats.player_id,
+        game_stats.period,
+        game_stats.value,
+        game_stats.stat_type,
+        game_stats.details,
+        game_stats.timestamp,
+        games!game_stats_game_id_fkey(
+          id,
+          home_team_id,
+          away_team_id,
+          date
+        )
       `)
       .eq('player_id', playerId);
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching raw game stats:', error);
+      throw error;
+    }
+    
+    console.log(`Found ${data?.length || 0} raw game stats for player`);
     return data || [];
   } catch (error) {
     console.error(`Error fetching raw game stats for player ${playerId}:`, error);

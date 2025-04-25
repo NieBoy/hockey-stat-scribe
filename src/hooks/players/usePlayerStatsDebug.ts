@@ -37,12 +37,14 @@ export function usePlayerStatsDebug(playerId: string) {
       // First fetch the events to ensure we have latest data
       setRefreshStatus('Fetching latest events...');
       console.log("Fetching latest events...");
-      await refetchEvents();
-      
+      const eventsResult = await refetchEvents();
+      console.log("Events fetched:", eventsResult);
+
       // Then fetch raw game stats
       setRefreshStatus('Fetching raw game stats...');
       console.log("Fetching raw game stats...");
-      await refetchRawStats();
+      const rawStatsResult = await refetchRawStats();
+      console.log("Raw stats fetched:", rawStatsResult);
       
       // Then call refresh_player_stats to ensure aggregated stats are up to date
       setRefreshStatus('Processing aggregated stats...');
@@ -59,7 +61,8 @@ export function usePlayerStatsDebug(playerId: string) {
       // Finally refresh aggregated stats
       setRefreshStatus('Fetching updated stats...');
       console.log("Refreshing aggregated stats from database...");
-      await refetchStats();
+      const statsResult = await refetchStats();
+      console.log("Stats refreshed:", statsResult);
       
       setLastRefreshed(new Date());
       setRefreshStatus('Refresh completed successfully');
