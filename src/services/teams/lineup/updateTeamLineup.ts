@@ -36,23 +36,13 @@ export const updateTeamLineup = async (
       return true;
     }
     
-    // Reset positions in a single update
-    const { error: resetError } = await supabase
-      .from('team_members')
-      .update({
-        position: null,
-        line_number: null
-      })
-      .eq('team_id', teamId)
-      .eq('role', 'player');
-      
-    if (resetError) {
-      console.error("Error resetting positions:", resetError);
-      return false;
-    }
+    // IMPORTANT CHANGE: Instead of resetting all positions first, we'll update them directly
+    // This avoids the issue of clearing positions and then failing to apply new ones
     
     // Apply all updates in batches of 10
     const batchSize = 10;
+    let allUpdatesSuccessful = true;
+    
     for (let i = 0; i < updates.length; i += batchSize) {
       const batch = updates.slice(i, i + batchSize);
       
@@ -74,13 +64,34 @@ export const updateTeamLineup = async (
         if (error) {
           console.error("Error updating player position:", error);
           console.error("Failed update data:", update);
-          return false;
+          allUpdatesSuccessful = false;
+          // Continue with other updates even if one fails
         }
       }
     }
     
+    // For players not in the lineup, clear their positions
+    // First identify all player IDs that are part of the update
+    const updatedPlayerIds = updates.map(update => update.user_id);
+    
+    // Then clear positions for all players not in the updates
+    const { error: clearError } = await supabase
+      .from('team_members')
+      .update({
+        position: null,
+        line_number: null
+      })
+      .eq('team_id', teamId)
+      .eq('role', 'player')
+      .not('user_id', 'in', updatedPlayerIds);
+      
+    if (clearError) {
+      console.error("Error clearing unused player positions:", clearError);
+      allUpdatesSuccessful = false;
+    }
+    
     console.log("Successfully updated all positions");
-    return true;
+    return allUpdatesSuccessful;
   } catch (error) {
     console.error("Error updating team lineup:", error);
     return false;

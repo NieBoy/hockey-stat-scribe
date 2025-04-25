@@ -13,12 +13,22 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const previousLinesRef = useRef<Lines>(cloneDeep(lines));
+  const initialSaveCompleted = useRef<boolean>(false);
 
   // Detect changes in the lineup
   useEffect(() => {
-    const hasChanges = JSON.stringify(previousLinesRef.current) !== JSON.stringify(lines);
-    setHasUnsavedChanges(hasChanges);
-  }, [lines]);
+    if (initialSaveCompleted.current) {
+      // Only check for changes after initial save or if we have previously saved
+      const currentJson = JSON.stringify(lines);
+      const previousJson = JSON.stringify(previousLinesRef.current);
+      const hasChanges = currentJson !== previousJson;
+      console.log("Lineup change detected:", hasChanges);
+      setHasUnsavedChanges(hasChanges);
+    } else if (!hasUnsavedChanges) {
+      // On first load, mark as having unsaved changes to allow initial save
+      setHasUnsavedChanges(true);
+    }
+  }, [lines, hasUnsavedChanges]);
 
   const handleSave = async () => {
     if (!onSaveLineup || isSaving) return false;
@@ -36,7 +46,9 @@ export function useLineupSave({ onSaveLineup, lines }: UseLineupSaveProps) {
       
       if (saveSuccessful) {
         console.log("Save successful, updating state");
+        // Important: Update the reference with a fresh deep clone
         previousLinesRef.current = cloneDeep(lines);
+        initialSaveCompleted.current = true;
         setHasUnsavedChanges(false);
         toast.success("Lineup saved successfully");
         return true;

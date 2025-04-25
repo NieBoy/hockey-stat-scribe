@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Lines } from "@/types";
 import { toast } from "sonner";
+import { cloneDeep } from "lodash";
 
 export function useSaveLineup({
   onSaveLineup,
@@ -13,6 +14,15 @@ export function useSaveLineup({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [lastSavedLineup, setLastSavedLineup] = useState<string>('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const previousLinesRef = useRef<Lines>(cloneDeep(lines));
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(true);
+
+  useEffect(() => {
+    const currentJson = JSON.stringify(lines);
+    const previousJson = JSON.stringify(previousLinesRef.current);
+    const hasChanges = currentJson !== previousJson && lastSavedLineup !== currentJson;
+    setHasUnsavedChanges(hasChanges);
+  }, [lines, lastSavedLineup]);
 
   const handleSave = async () => {
     if (!onSaveLineup) {
@@ -20,14 +30,25 @@ export function useSaveLineup({
       return false;
     }
 
+    if (!hasUnsavedChanges) {
+      toast.info("No changes to save");
+      return true;
+    }
+
     try {
       setSaveStatus('saving');
-      const result = await onSaveLineup(lines);
+      
+      // Create a deep copy to avoid mutation during save
+      const linesToSave = cloneDeep(lines);
+      const result = await onSaveLineup(linesToSave);
       
       const saveSuccessful = result === undefined || result === true;
       
       if (saveSuccessful) {
-        setLastSavedLineup(JSON.stringify(lines));
+        const currentLineupJson = JSON.stringify(lines);
+        setLastSavedLineup(currentLineupJson);
+        previousLinesRef.current = cloneDeep(lines);
+        setHasUnsavedChanges(false);
         setSaveStatus('success');
         toast.success("Lineup saved successfully");
         setTimeout(() => {
@@ -51,7 +72,7 @@ export function useSaveLineup({
     saveStatus,
     lastSavedLineup,
     isSaving: saveStatus === 'saving',
-    hasUnsavedChanges: saveStatus !== 'success',
+    hasUnsavedChanges,
     isConfirmDialogOpen,
     setIsConfirmDialogOpen,
     handleSave
