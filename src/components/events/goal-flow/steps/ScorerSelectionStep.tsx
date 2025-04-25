@@ -40,10 +40,17 @@ export function ScorerSelectionStep({
       <Card>
         <CardContent className="p-4">
           <SimplePlayerList
-            players={team.players}
+            players={team.players || []}
             onPlayerSelect={onPlayerSelect}
             selectedPlayers={selectedScorer ? [selectedScorer] : []}
           />
+          
+          {(!team.players || team.players.length === 0) && (
+            <div className="py-4 text-center text-muted-foreground">
+              <p>No players found for this team.</p>
+              <p className="text-sm mt-1">Try refreshing the player list or check team settings.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Game, User } from '@/types';
+import { Game } from '@/types';
 import { GoalHeader } from './goal-flow/GoalHeader';
 import { GoalActions } from './goal-flow/GoalActions';
 import { useGoalFlow } from '@/hooks/useGoalFlow';
@@ -27,6 +27,9 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     secondaryAssist,
     playersOnIce,
     isSubmitting,
+    isLoadingLineups,
+    hasLoadedLineups,
+    handleRefreshLineups,
     handleTeamSelect,
     handleScorerSelect,
     handlePrimaryAssistSelect,
@@ -48,8 +51,8 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             team={teamData}
             onPlayerSelect={handleScorerSelect}
             selectedScorer={selectedScorer}
-            isLoadingLineups={false}
-            onRefreshLineups={() => {}}
+            isLoadingLineups={isLoadingLineups}
+            onRefreshLineups={handleRefreshLineups}
           />
         );
       case 'primary-assist':
@@ -59,7 +62,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
             onPlayerSelect={handlePrimaryAssistSelect}
             selectedAssist={primaryAssist}
-            excludedPlayers={[selectedScorer].filter(Boolean) as User[]}
+            excludedPlayers={[selectedScorer].filter(Boolean)}
             isPrimary={true}
             onSkip={() => handlePrimaryAssistSelect(null)}
           />
@@ -71,7 +74,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
             onPlayerSelect={handleSecondaryAssistSelect}
             selectedAssist={secondaryAssist}
-            excludedPlayers={[selectedScorer, primaryAssist].filter(Boolean) as User[]}
+            excludedPlayers={[selectedScorer, primaryAssist].filter(Boolean)}
             isPrimary={false}
             onSkip={() => handleSecondaryAssistSelect(null)}
           />
@@ -82,7 +85,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
           <PlayersOnIceStep
             team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
             onPlayersSelect={handlePlayersOnIceSelect}
-            preSelectedPlayers={[selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[]}
+            preSelectedPlayers={[selectedScorer, primaryAssist, secondaryAssist].filter(Boolean)}
             onComplete={handleNextStep}
           />
         );

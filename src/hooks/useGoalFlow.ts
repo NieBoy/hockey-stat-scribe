@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
 import { User, Game } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { recordGoalEvent } from '@/services/events/goalEventService';
+import { getTeamLineup } from '@/services/teams/lineup';
 
 type FlowStep = 'team-select' | 'scorer-select' | 'primary-assist' | 'secondary-assist' | 'players-on-ice' | 'submit';
 
@@ -14,14 +15,76 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   const [secondaryAssist, setSecondaryAssist] = useState<User | null>(null);
   const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Add state to track lineup data loading
+  const [hasLoadedLineups, setHasLoadedLineups] = useState(false);
+  const [isLoadingLineups, setIsLoadingLineups] = useState(false);
+
+  // Function to load lineup data when a team is selected
+  const loadLineupData = async (teamType: 'home' | 'away') => {
+    if (hasLoadedLineups) return;
+    
+    try {
+      setIsLoadingLineups(true);
+      const teamToLoad = teamType === 'home' ? game.homeTeam : game.awayTeam;
+      
+      if (!teamToLoad || !teamToLoad.id) {
+        console.warn("Cannot load lineup - invalid team data");
+        setIsLoadingLineups(false);
+        return;
+      }
+      
+      console.log("GoalFlow - Loading lineup data for team:", teamToLoad.id);
+      
+      const lineupData = await getTeamLineup(teamToLoad.id);
+      console.log("GoalFlow - Retrieved lineup data:", lineupData);
+      
+      setHasLoadedLineups(true);
+    } catch (error) {
+      console.error("GoalFlow - Error loading lineup data:", error);
+      toast.error("Failed to load team lineup");
+    } finally {
+      setIsLoadingLineups(false);
+    }
+  };
+
+  // Function to refresh lineup data
+  const handleRefreshLineups = async () => {
+    if (!selectedTeam) return;
+    
+    try {
+      setIsLoadingLineups(true);
+      const teamToLoad = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+      
+      if (!teamToLoad || !teamToLoad.id) {
+        console.warn("Cannot refresh lineup - invalid team data");
+        setIsLoadingLineups(false);
+        return;
+      }
+      
+      console.log("GoalFlow - Refreshing lineup data for team:", teamToLoad.id);
+      
+      await getTeamLineup(teamToLoad.id);
+      
+      // Force a re-render by updating state
+      setHasLoadedLineups(false);
+      setTimeout(() => setHasLoadedLineups(true), 0);
+    } catch (error) {
+      console.error("GoalFlow - Error refreshing lineup data:", error);
+      toast.error("Failed to refresh team lineup");
+    } finally {
+      setIsLoadingLineups(false);
+    }
+  };
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
-    if (team === 'home') {
-      setCurrentStep('scorer-select');
-    } else {
-      setCurrentStep('players-on-ice');
-    }
+    
+    // Always go to scorer selection regardless of team type
+    setCurrentStep('scorer-select');
+    
+    // Load lineup data for the selected team
+    loadLineupData(team);
   };
 
   const handleScorerSelect = (player: User) => {
@@ -39,7 +102,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     setCurrentStep('players-on-ice');
   };
   
-  // New function to handle moving to the next step
+  // Function to handle moving to the next step
   const handleNextStep = () => {
     setCurrentStep('submit');
   };
@@ -120,11 +183,9 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       };
 
       // Add optional properties conditionally
-      if (selectedTeam === 'home') {
-        if (selectedScorer) goalData.scorerId = selectedScorer.id;
-        if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
-        if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
-      }
+      if (selectedScorer) goalData.scorerId = selectedScorer.id;
+      if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
+      if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
       
       console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
@@ -154,6 +215,9 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     secondaryAssist,
     playersOnIce,
     isSubmitting,
+    isLoadingLineups,
+    hasLoadedLineups,
+    handleRefreshLineups,
     handleTeamSelect,
     handleScorerSelect,
     handlePrimaryAssistSelect,
