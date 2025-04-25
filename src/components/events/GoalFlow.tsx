@@ -39,13 +39,27 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
     handleSubmit
   } = useGoalFlow(game, period, onComplete);
 
+  // Ensure we have valid team data
   const renderStepContent = () => {
     switch (currentStep) {
       case 'team-select':
         return <TeamSelectionStep game={game} onTeamSelect={handleTeamSelect} />;
       case 'scorer-select':
         if (!selectedTeam) return null;
+        
+        // Get the appropriate team based on the selection
         const teamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        
+        // Ensure teamData exists before passing it
+        if (!teamData) {
+          return (
+            <div className="text-center text-red-500 py-4">
+              <p>Error: Team data not found.</p>
+              <p className="text-sm">Please go back and try again.</p>
+            </div>
+          );
+        }
+        
         return (
           <ScorerSelectionStep
             team={teamData}
@@ -57,9 +71,20 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         );
       case 'primary-assist':
         if (!selectedTeam) return null;
+        const assistTeam = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        
+        if (!assistTeam) {
+          return (
+            <div className="text-center text-red-500 py-4">
+              <p>Error: Team data not found.</p>
+              <p className="text-sm">Please go back and try again.</p>
+            </div>
+          );
+        }
+        
         return (
           <AssistSelectionStep
-            team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
+            team={assistTeam}
             onPlayerSelect={handlePrimaryAssistSelect}
             selectedAssist={primaryAssist}
             excludedPlayers={[selectedScorer].filter(Boolean)}
@@ -69,9 +94,20 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         );
       case 'secondary-assist':
         if (!selectedTeam) return null;
+        const secondaryAssistTeam = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        
+        if (!secondaryAssistTeam) {
+          return (
+            <div className="text-center text-red-500 py-4">
+              <p>Error: Team data not found.</p>
+              <p className="text-sm">Please go back and try again.</p>
+            </div>
+          );
+        }
+        
         return (
           <AssistSelectionStep
-            team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
+            team={secondaryAssistTeam}
             onPlayerSelect={handleSecondaryAssistSelect}
             selectedAssist={secondaryAssist}
             excludedPlayers={[selectedScorer, primaryAssist].filter(Boolean)}
@@ -81,9 +117,20 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         );
       case 'players-on-ice':
         if (!selectedTeam) return null;
+        const playersOnIceTeam = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        
+        if (!playersOnIceTeam) {
+          return (
+            <div className="text-center text-red-500 py-4">
+              <p>Error: Team data not found.</p>
+              <p className="text-sm">Please go back and try again.</p>
+            </div>
+          );
+        }
+        
         return (
           <PlayersOnIceStep
-            team={selectedTeam === 'home' ? game.homeTeam : game.awayTeam}
+            team={playersOnIceTeam}
             onPlayersSelect={handlePlayersOnIceSelect}
             preSelectedPlayers={[selectedScorer, primaryAssist, secondaryAssist].filter(Boolean)}
             onComplete={handleNextStep}

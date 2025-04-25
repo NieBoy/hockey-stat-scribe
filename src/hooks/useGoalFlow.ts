@@ -22,14 +22,15 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
 
   // Function to load lineup data when a team is selected
   const loadLineupData = async (teamType: 'home' | 'away') => {
-    if (hasLoadedLineups) return;
-    
     try {
       setIsLoadingLineups(true);
       const teamToLoad = teamType === 'home' ? game.homeTeam : game.awayTeam;
       
       if (!teamToLoad || !teamToLoad.id) {
-        console.warn("Cannot load lineup - invalid team data");
+        console.error("Cannot load lineup - invalid team data", teamType, game);
+        toast.error("Failed to load team data", {
+          description: "The selected team information is not available."
+        });
         setIsLoadingLineups(false);
         return;
       }
@@ -68,7 +69,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       
       // Force a re-render by updating state
       setHasLoadedLineups(false);
-      setTimeout(() => setHasLoadedLineups(true), 0);
+      setTimeout(() => setHasLoadedLineups(true), 100);
     } catch (error) {
       console.error("GoalFlow - Error refreshing lineup data:", error);
       toast.error("Failed to refresh team lineup");
@@ -107,12 +108,33 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     setCurrentStep('submit');
   };
 
+  // Validation function to check if players are valid
   const validatePlayers = () => {
     if (!game) return false;
     
-    const homeTeamPlayers = game.homeTeam?.players || [];
-    const awayTeamPlayers = game.awayTeam?.players || [];
-    const allValidPlayerIds = [...homeTeamPlayers, ...awayTeamPlayers].map(p => p.id);
+    // With proper team selection, we should be able to validate players more easily
+    if (!selectedTeam) {
+      toast.error("No team selected");
+      return false;
+    }
+    
+    const teamPlayers = selectedTeam === 'home' 
+      ? (game.homeTeam?.players || []) 
+      : (game.awayTeam?.players || []);
+    
+    const allValidPlayerIds = teamPlayers.map(p => p.id);
+    
+    // Check if there's a scorer
+    if (!selectedScorer) {
+      toast.error("No scorer selected");
+      return false;
+    }
+    
+    // Validate all players on ice
+    if (!playersOnIce || playersOnIce.length === 0) {
+      toast.error("No players on ice selected");
+      return false;
+    }
     
     for (const player of playersOnIce) {
       if (!player || !player.id || !allValidPlayerIds.includes(player.id)) {
@@ -190,10 +212,13 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
 
+      // Show success message with appropriate team context
+      const teamName = selectedTeam === 'home' 
+        ? game.homeTeam?.name || 'Home team'
+        : game.awayTeam?.name || 'Away team';
+        
       toast.success("Goal Recorded", {
-        description: selectedTeam === 'home' 
-          ? `Goal by ${selectedScorer?.name || 'Unknown player'}`
-          : `Goal against by ${game.awayTeam?.name || 'Away team'}`
+        description: `Goal by ${selectedScorer?.name || 'Unknown player'} (${teamName})`
       });
 
       onComplete();
