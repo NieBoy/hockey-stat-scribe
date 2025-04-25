@@ -61,7 +61,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const handleAddNewOpponent = async () => {
     if (!newOpponent.trim()) return;
     
-    const opponentExists = data.some(
+    const opponentExists = Array.isArray(data) && data.some(
       opponent => opponent.value.toLowerCase() === newOpponent.trim().toLowerCase()
     );
     
