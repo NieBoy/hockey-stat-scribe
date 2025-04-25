@@ -73,9 +73,14 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       let player: User | null = findPlayerById(playerId, availablePlayers, lines);
       
       if (player) {
-        // Handle the case where source is "available-players"
-        const sourceLineType = sourceInfo.lineType === 'available' ? 'forwards' : sourceInfo.lineType;
-        const destLineType = destInfo.lineType === 'available' ? 'forwards' : destInfo.lineType;
+        // Handle the case where source is "available-players" - ensure we use valid type
+        const sourceLineType = sourceInfo.lineType === 'available' 
+          ? 'forwards' as const
+          : sourceInfo.lineType;
+          
+        const destLineType = destInfo.lineType === 'available' 
+          ? 'forwards' as const 
+          : destInfo.lineType;
         
         handlePlayerMove(
           player,
@@ -112,16 +117,23 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     
     // Handle lineup positions
     if (parts.length >= 4) {
-      const lineType = parts[0] === 'forward' ? 'forwards' : 
-                      parts[0] === 'defense' ? 'defense' : 
-                      parts[0] === 'goalie' ? 'goalies' : null;
+      const lineTypeStr = parts[0];
+      let lineType: 'forwards' | 'defense' | 'goalies' | 'available';
       
-      if (!lineType) return null;
+      if (lineTypeStr === 'forward') {
+        lineType = 'forwards';
+      } else if (lineTypeStr === 'defense') {
+        lineType = 'defense';
+      } else if (lineTypeStr === 'goalie') {
+        lineType = 'goalies';
+      } else {
+        return null; // Invalid line type
+      }
       
       return {
-        lineType: lineType as 'forwards' | 'defense' | 'goalies',
+        lineType,
         lineIndex: parseInt(parts[2], 10),
-        position: parts[3] as any
+        position: parts[3]
       };
     }
     
