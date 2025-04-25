@@ -1,5 +1,6 @@
+
 import { Team, Lines, ForwardLine, DefenseLine, User } from "@/types";
-import { LineupBuildOptions, LineupValidationResult } from "./types";
+import { LineupBuildOptions, LineupValidationResult, ValidationResult } from "./types";
 
 /**
  * Validates the structure of team data before building lines
