@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Team, Lines, User } from '@/types';
@@ -73,14 +72,18 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
       let player: User | null = findPlayerById(playerId, availablePlayers, lines);
       
       if (player) {
-        // Handle the case where source is "available-players" - ensure we use valid type
+        // Default to 'forwards' for available players, otherwise use the specific line type
         const sourceLineType = sourceInfo.lineType === 'available' 
-          ? 'forwards' as const
-          : sourceInfo.lineType;
+          ? 'forwards' 
+          : sourceInfo.lineType === 'forwards' || sourceInfo.lineType === 'defense' || sourceInfo.lineType === 'goalies'
+            ? sourceInfo.lineType
+            : 'forwards';
           
         const destLineType = destInfo.lineType === 'available' 
-          ? 'forwards' as const 
-          : destInfo.lineType;
+          ? 'forwards' 
+          : destInfo.lineType === 'forwards' || destInfo.lineType === 'defense' || destInfo.lineType === 'goalies'
+            ? destInfo.lineType
+            : 'forwards';
         
         handlePlayerMove(
           player,
