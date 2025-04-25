@@ -51,6 +51,29 @@ export const createGame = async (params: GameCreateParams) => {
   }
 };
 
+// Helper function to safely extract team data regardless of format
+const extractTeamData = (teamData: any) => {
+  // If it's an array with at least one element, use the first element
+  if (Array.isArray(teamData) && teamData.length > 0) {
+    return {
+      id: teamData[0]?.id || '',
+      name: teamData[0]?.name || 'Unknown Team'
+    };
+  }
+  // If it's an object, use it directly
+  else if (typeof teamData === 'object' && teamData !== null) {
+    return {
+      id: teamData.id || '',
+      name: teamData.name || 'Unknown Team'
+    };
+  }
+  // Default fallback
+  return {
+    id: '',
+    name: 'Unknown Team'
+  };
+};
+
 // Get all games
 export const getGames = async () => {
   try {
@@ -74,22 +97,25 @@ export const getGames = async () => {
       return [];
     }
 
-    return data.map(game => ({
-      id: game.id,
-      date: game.date,
-      location: game.location,
-      periods: game.periods,
-      current_period: game.current_period,
-      is_active: game.is_active,
-      isActive: game.is_active, // Add isActive alias for compatibility
-      homeTeam: {
-        // Access as object, not array
-        id: typeof game.home_team === 'object' && game.home_team ? game.home_team.id || '' : '',
-        name: typeof game.home_team === 'object' && game.home_team ? game.home_team.name || 'Unknown Team' : 'Unknown Team',
-        players: []
-      },
-      awayTeam: game.opponent_name ? { id: 'opponent', name: game.opponent_name, players: [] } : null
-    }));
+    return data.map(game => {
+      const homeTeamData = extractTeamData(game.home_team);
+      
+      return {
+        id: game.id,
+        date: game.date,
+        location: game.location,
+        periods: game.periods,
+        current_period: game.current_period,
+        is_active: game.is_active,
+        isActive: game.is_active, // Add isActive alias for compatibility
+        homeTeam: {
+          id: homeTeamData.id,
+          name: homeTeamData.name,
+          players: []
+        },
+        awayTeam: game.opponent_name ? { id: 'opponent', name: game.opponent_name, players: [] } : null
+      };
+    });
   } catch (error) {
     console.error('Error in getGames service:', error);
     return [];
@@ -119,6 +145,8 @@ export const getGameById = async (gameId: string) => {
       return null;
     }
 
+    const homeTeamData = extractTeamData(data.home_team);
+
     // Map the database response to the Game type format
     return {
       id: data.id,
@@ -130,9 +158,8 @@ export const getGameById = async (gameId: string) => {
       isActive: data.is_active, // Add isActive alias for compatibility
       opponent_name: data.opponent_name,
       homeTeam: {
-        // Access as object, not array
-        id: typeof data.home_team === 'object' && data.home_team ? data.home_team.id || '' : '',
-        name: typeof data.home_team === 'object' && data.home_team ? data.home_team.name || 'Unknown Team' : 'Unknown Team',
+        id: homeTeamData.id,
+        name: homeTeamData.name,
         players: []
       },
       awayTeam: data.opponent_name ? { id: 'opponent', name: data.opponent_name, players: [] } : null,
