@@ -81,7 +81,6 @@ const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSyste
         toast.success("Team stats processing completed");
         
       } else if (playerId) {
-        // Individual player processing
         await processPlayerInternal(playerId);
         
         if (onProcessingComplete) {
@@ -99,72 +98,96 @@ const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSyste
       setIsProcessing(false);
     }
   };
-  
-  // Helper function to process an individual player's stats
+
   const processPlayerInternal = async (playerId: string) => {
-    // Step 1: Get events for this player
-    addStatusMessage(`Fetching game events for player ${playerId}...`);
-    const { data: events, error: eventsError } = await supabase
-      .from('game_events')
-      .select('*')
-      .or(`details->playerId.eq.${playerId},details->primaryAssistId.eq.${playerId},details->secondaryAssistId.eq.${playerId}`)
-      .order('timestamp', { ascending: true });
-
-    if (eventsError) throw new Error(`Error fetching events: ${eventsError.message}`);
-    
-    if (!events || events.length === 0) {
-      addStatusMessage("No game events found for this player.");
-      return;
-    }
-
-    setGameEvents(events);
-    addStatusMessage(`Found ${events.length} events for processing`);
-
-    // Step 2: Process events for player
-    addStatusMessage("Processing events to stats...");
-    const { data: gameEventsResult, error: processError } = await supabase.rpc(
-      'refresh_player_stats',
-      { p_player_id: playerId }
-    );
-    
-    if (processError) throw new Error(`Error processing events: ${processError.message}`);
-    
-    addStatusMessage(`Stats processing completed: ${JSON.stringify(gameEventsResult)}`);
-    
-    // Step 3: Verify the stats were created
-    const { data: gameStats, error: statsError } = await supabase
-      .from('game_stats')
-      .select('*')
-      .eq('player_id', playerId)
-      .order('created_at', { ascending: false });
-
-    if (statsError) {
-      addStatusMessage(`Error verifying game stats: ${statsError.message}`);
-    } else {
-      addStatusMessage(`Found ${gameStats?.length || 0} game stats for verification`);
+    try {
+      // Step 1: Get events for this player using correct JSONB query syntax
+      addStatusMessage(`Fetching game events for player ${playerId}...`);
       
-      // Step 4: Get player stats
-      const { data: playerStats, error: playerStatsError } = await supabase
-        .from('player_stats')
+      const { data: events, error: eventsError } = await supabase
+        .from('game_events')
         .select('*')
-        .eq('player_id', playerId);
-      
-      if (playerStatsError) {
-        addStatusMessage(`Error fetching player stats: ${playerStatsError.message}`);
-      } else {
-        addStatusMessage(`Found ${playerStats?.length || 0} aggregated player stats`);
-      }
-    }
+        .or(
+          `details->playerId.eq."${playerId}",` +
+          `details->primaryAssistId.eq."${playerId}",` +
+          `details->secondaryAssistId.eq."${playerId}"`
+        )
+        .order('timestamp', { ascending: true });
 
-    // Step 5: Final refresh
-    addStatusMessage("Final stats refresh...");
-    const refreshResult = await refreshPlayerStats(playerId);
-    
-    if (refreshResult?.success) {
-      addStatusMessage("Stats processing complete");
-      setFinishedProcessing(true);
-    } else {
-      addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(refreshResult)}`);
+      if (eventsError) {
+        console.error("Error fetching events:", eventsError);
+        throw new Error(`Error fetching events: ${eventsError.message}`);
+      }
+      
+      if (!events || events.length === 0) {
+        addStatusMessage("No game events found for this player.");
+        return;
+      }
+
+      setGameEvents(events);
+      addStatusMessage(`Found ${events.length} events for processing`);
+
+      // Log event details for debugging
+      events.forEach((event, index) => {
+        console.log(`Event ${index + 1}:`, {
+          id: event.id,
+          type: event.event_type,
+          details: event.details
+        });
+      });
+
+      // Step 2: Process events for player
+      addStatusMessage("Processing events to stats...");
+      const { data: gameEventsResult, error: processError } = await supabase.rpc(
+        'refresh_player_stats',
+        { p_player_id: playerId }
+      );
+      
+      if (processError) {
+        console.error("Error processing events:", processError);
+        throw new Error(`Error processing events: ${processError.message}`);
+      }
+      
+      addStatusMessage(`Stats processing completed: ${JSON.stringify(gameEventsResult)}`);
+      
+      // Step 3: Verify the stats were created
+      const { data: gameStats, error: statsError } = await supabase
+        .from('game_stats')
+        .select('*')
+        .eq('player_id', playerId)
+        .order('created_at', { ascending: false });
+
+      if (statsError) {
+        addStatusMessage(`Error verifying game stats: ${statsError.message}`);
+      } else {
+        addStatusMessage(`Found ${gameStats?.length || 0} game stats for verification`);
+        
+        // Step 4: Get player stats
+        const { data: playerStats, error: playerStatsError } = await supabase
+          .from('player_stats')
+          .select('*')
+          .eq('player_id', playerId);
+        
+        if (playerStatsError) {
+          addStatusMessage(`Error fetching player stats: ${playerStatsError.message}`);
+        } else {
+          addStatusMessage(`Found ${playerStats?.length || 0} aggregated player stats`);
+        }
+      }
+
+      // Step 5: Final refresh
+      addStatusMessage("Final stats refresh...");
+      const refreshResult = await refreshPlayerStats(playerId);
+      
+      if (refreshResult?.success) {
+        addStatusMessage("Stats processing complete");
+        setFinishedProcessing(true);
+      } else {
+        addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(refreshResult)}`);
+      }
+    } catch (error: any) {
+      console.error("Error in processPlayerInternal:", error);
+      throw error;
     }
   };
 
