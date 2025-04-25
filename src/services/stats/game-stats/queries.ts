@@ -66,7 +66,6 @@ export const fetchPlayerRawGameStats = async (playerId: string) => {
   try {
     console.log('Fetching raw game stats for player:', playerId);
     
-    // Using explicit table alias 'gs' and fully qualified column names to avoid ambiguity
     const { data, error } = await supabase
       .from('game_stats')
       .select(`
@@ -78,14 +77,15 @@ export const fetchPlayerRawGameStats = async (playerId: string) => {
         stat_type,
         details,
         timestamp,
-        games:game_id(
+        games:game_id (
           id,
           home_team_id,
           away_team_id,
           date
         )
       `)
-      .eq('player_id', playerId);
+      .eq('player_id', playerId)
+      .order('timestamp', { ascending: false });
       
     if (error) {
       console.error('Error fetching raw game stats:', error);

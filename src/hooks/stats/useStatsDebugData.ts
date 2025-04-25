@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { PlayerStat } from "@/types";
@@ -47,22 +46,19 @@ export function useStatsDebugData(playerId?: string) {
     queryKey: ['debugPlayerStats', playerId],
     queryFn: async () => {
       try {
-        let query = supabase.from('player_stats').select('*');
-        
-        if (playerId) {
-          query = query.eq('player_id', playerId);
-        }
-        
-        const { data, error } = await query;
+        const { data, error } = await supabase
+          .from('player_stats')
+          .select('*')
+          .eq('player_id', playerId);
         
         if (error) throw error;
         return data as PlayerStat[];
       } catch (error) {
         console.error("Error fetching debug player stats:", error);
-        throw error; // Let the error propagate for handling in the UI
+        throw error;
       }
     },
-    enabled: true
+    enabled: !!playerId
   });
 
   // Debug plus/minus stats
@@ -113,20 +109,12 @@ export function useStatsDebugData(playerId?: string) {
     queryFn: async () => {
       try {
         console.log('Fetching debug raw game stats for player:', playerId);
-        let query = supabase
-          .from('game_stats') // Use gs as the alias to avoid ambiguity
-          .select('*');
+        const { data, error } = await supabase
+          .from('game_stats')
+          .select('*')
+          .eq('player_id', playerId);
         
-        if (playerId) {
-          query = query.eq('player_id', playerId);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error("Error fetching raw game stats:", error);
-          throw error;
-        }
+        if (error) throw error;
         
         console.log(`Found ${data?.length || 0} raw game stats`);
         return data || [];
@@ -135,7 +123,7 @@ export function useStatsDebugData(playerId?: string) {
         throw error; // Let the error propagate for handling in the UI
       }
     },
-    enabled: true
+    enabled: !!playerId
   });
 
   // Calculate counts for summary data
