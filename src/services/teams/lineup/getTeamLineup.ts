@@ -20,7 +20,8 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
         line_number,
         name,
         email,
-        role
+        role,
+        number
       `)
       .eq('team_id', teamId)
       .eq('role', 'player');
@@ -31,8 +32,9 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
     }
 
     console.log("Retrieved team lineup data:", data?.length || 0, "players");
-    console.log("Player data:", data?.map(p => ({
+    console.log("Player data details:", data?.map(p => ({
       id: p.id,
+      user_id: p.user_id,
       name: p.name,
       position: p.position,
       line: p.line_number

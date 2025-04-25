@@ -46,7 +46,9 @@ export function PlayerPositionSelector({
 
   // Combined list of available players plus the current player if selected
   const selectablePlayers = player 
-    ? [...availablePlayers.filter(p => p.id !== player.id), player]
+    ? [...availablePlayers, player].filter((p, index, self) => 
+        index === self.findIndex(t => t.id === p.id)
+      )
     : availablePlayers;
 
   // Sort players by name for easier selection
@@ -54,12 +56,28 @@ export function PlayerPositionSelector({
     a.name.localeCompare(b.name)
   );
 
+  // Enhanced debug logging
   const debugInfo = () => {
-    console.log(`Position ${position} - Current player:`, player);
-    console.log(`Available players count: ${availablePlayers.length}`);
-    console.log("Available players:", availablePlayers.map(p => ({ id: p.id, name: p.name })));
-    console.log(`Selectable players count: ${selectablePlayers.length}`);
-    console.log("Selectable players:", selectablePlayers.map(p => ({ id: p.id, name: p.name })));
+    console.log(`PlayerPositionSelector Debug for position ${position}:`);
+    console.log(`Current player:`, player ? {
+      id: player.id,
+      name: player.name,
+      position: player.position
+    } : 'None');
+    console.log(`Available players (${availablePlayers.length}):`, 
+      availablePlayers.map(p => ({
+        id: p.id,
+        name: p.name,
+        position: p.position
+      }))
+    );
+    console.log(`Selectable players (${selectablePlayers.length}):`, 
+      selectablePlayers.map(p => ({
+        id: p.id,
+        name: p.name,
+        position: p.position
+      }))
+    );
   };
 
   return (

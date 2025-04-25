@@ -143,7 +143,11 @@ export function getAvailablePlayers(team: Team, lines: Lines): User[] {
   });
   
   console.log(`Found ${availablePlayers.length} available players out of ${team.players.length} total`);
-  console.log("Available players:", availablePlayers.map(p => ({ id: p.id, name: p.name })));
+  console.log("Available players details:", availablePlayers.map(p => ({
+    id: p.id,
+    name: p.name,
+    position: p.position
+  })));
   
   return availablePlayers;
 }
