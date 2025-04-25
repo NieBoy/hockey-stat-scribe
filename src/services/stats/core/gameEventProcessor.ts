@@ -3,11 +3,11 @@ import { supabase } from "@/lib/supabase";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
 
 /**
- * Creates game stats from game events
+ * Process game events to stats for a specific player
  * @param playerId The team_member.id to process stats for
  * @param events Array of game events
  */
-export const createGameStatsFromEvents = async (playerId: string, events: any[]): Promise<boolean> => {
+export const processEventsToStats = async (playerId: string, events: any[]): Promise<boolean> => {
   console.log(`Processing ${events.length} events for player ${playerId}`);
   
   try {
@@ -57,6 +57,15 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
     console.error(`Error processing events for player ${playerId}:`, error);
     return false;
   }
+};
+
+/**
+ * Creates game stats from game events
+ * @param playerId The team_member.id to process stats for
+ * @param events Array of game events
+ */
+export const createGameStatsFromEvents = async (playerId: string, events: any[]): Promise<boolean> => {
+  return processEventsToStats(playerId, events);
 };
 
 /**

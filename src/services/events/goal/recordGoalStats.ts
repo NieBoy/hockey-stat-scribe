@@ -75,8 +75,7 @@ export async function recordGoalStats({
         gameId,
         playersOnIce,
         period,
-        isHomeScoringTeam,
-        isHomeScoringTeam ? 1 : -1
+        isHomeScoringTeam
       );
     } catch (plusMinusError) {
       console.error("Error recording plus/minus stats:", plusMinusError);

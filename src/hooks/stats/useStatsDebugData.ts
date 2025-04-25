@@ -102,13 +102,45 @@ export function useStatsDebugData(playerId?: string) {
     },
     enabled: true
   });
+  
+  // Debug raw game stats for counting
+  const {
+    data: rawGameStats,
+    error: rawGameStatsError,
+    refetch: refetchRawGameStats
+  } = useQuery({
+    queryKey: ['debugRawGameStats', playerId],
+    queryFn: async () => {
+      try {
+        let query = supabase.from('game_stats').select('*');
+        
+        if (playerId) {
+          query = query.eq('player_id', playerId);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching debug raw game stats:", error);
+        return [];
+      }
+    },
+    enabled: true
+  });
+
+  // Calculate counts for summary data
+  const gameCount = rawGameStats ? [...new Set(rawGameStats.map(stat => stat.game_id))].length : 0;
+  const playerCount = rawGameStats ? [...new Set(rawGameStats.map(stat => stat.player_id))].length : 0;
 
   // Refetch all debug data
   const refetchAll = async () => {
     await Promise.all([
       refetchPlayerInfo(),
       refetchPlayerStats(),
-      refetchPlusMinus()
+      refetchPlusMinus(),
+      refetchRawGameStats()
     ]);
   };
 
@@ -116,12 +148,16 @@ export function useStatsDebugData(playerId?: string) {
     debugData: {
       playerInfo,
       playerStats,
-      plusMinusStats
+      plusMinusStats,
+      rawGameStats,
+      gameCount,
+      playerCount
     },
     errors: {
       playerError,
       playerStatsError,
-      plusMinusError
+      plusMinusError,
+      rawGameStatsError
     },
     refetchAll
   };

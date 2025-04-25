@@ -10,16 +10,21 @@ import { validateMultiplePlayers, validatePlayerId } from "@/services/events/sha
 export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>): Promise<GameStat | null> => {
   try {
     // Validate that player_id exists in team_members before insertion
-    const isValid = await validatePlayerId(stat.playerId);
+    const isValid = await validatePlayerId(stat.playerId || stat.player_id);
     if (!isValid) {
-      throw new Error(`Invalid player ID: ${stat.playerId} - not found in team_members table`);
+      throw new Error(`Invalid player ID: ${stat.playerId || stat.player_id} - not found in team_members table`);
     }
+    
+    // Make sure we have both gameId/game_id and playerId/player_id set
+    const gameId = stat.gameId || stat.game_id;
+    const playerId = stat.playerId || stat.player_id;
+    const statType = stat.statType || stat.stat_type;
     
     // Use RPC call to record_game_stat function for better error handling
     const { data, error } = await supabase.rpc('record_game_stat', {
-      p_game_id: stat.gameId,
-      p_player_id: stat.playerId,
-      p_stat_type: stat.statType,
+      p_game_id: gameId,
+      p_player_id: playerId,
+      p_stat_type: statType,
       p_period: stat.period,
       p_value: stat.value,
       p_details: stat.details || ''
@@ -62,9 +67,9 @@ export const recordPlusMinusStats = async (
     // Create plus/minus stats for each player
     const promises = playerIds.map(playerId => 
       insertGameStat({
-        gameId,
-        playerId,
-        statType: 'plusMinus',
+        game_id: gameId,
+        player_id: playerId,
+        stat_type: 'plusMinus',
         period,
         value,
         details

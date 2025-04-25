@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +11,6 @@ export function useGameStatus(gameId?: string) {
   const [stopReason, setStopReason] = useState<string>('');
   const [isProcessingStats, setIsProcessingStats] = useState(false);
   
-  // Fetch initial game status
   const { data: game } = useQuery({
     queryKey: ['gameStatus', gameId],
     queryFn: async () => {
@@ -39,7 +37,6 @@ export function useGameStatus(gameId?: string) {
     enabled: !!gameId
   });
   
-  // Start the game
   const startGame = useCallback(async () => {
     if (!gameId) return;
     
@@ -60,7 +57,6 @@ export function useGameStatus(gameId?: string) {
     }
   }, [gameId]);
   
-  // Stop the game and process stats
   const stopGame = useCallback(async () => {
     if (!gameId) return;
     
@@ -76,12 +72,10 @@ export function useGameStatus(gameId?: string) {
       setGameStatus('stopped');
       console.log("Game stopped");
       
-      // When a game is stopped/completed, process all events to stats
       setIsProcessingStats(true);
       toast.loading("Processing game statistics...");
       
       try {
-        // First get the game teams
         const { data: gameData, error: gameError } = await supabase
           .from('games')
           .select('home_team_id, away_team_id')
@@ -97,7 +91,6 @@ export function useGameStatus(gameId?: string) {
           const teamIds = [gameData.home_team_id];
           if (gameData.away_team_id) teamIds.push(gameData.away_team_id);
           
-          // For each team, get players
           let successCount = 0;
           let playerCount = 0;
           
@@ -116,7 +109,6 @@ export function useGameStatus(gameId?: string) {
             if (players && players.length > 0) {
               playerCount += players.length;
               
-              // Get all events for this game
               const { data: events, error: eventsError } = await supabase
                 .rpc('get_game_events', { p_game_id: gameId });
                 
@@ -128,7 +120,6 @@ export function useGameStatus(gameId?: string) {
               if (events && events.length > 0) {
                 console.log(`Processing ${events.length} events for ${players.length} players`);
                 
-                // Process events for each player
                 for (const player of players) {
                   console.log(`Processing events for player: ${player.name} (${player.id})`);
                   
@@ -175,7 +166,6 @@ export function useGameStatus(gameId?: string) {
     }
   }, [gameId]);
   
-  // Handle stoppage
   const handleStoppage = useCallback(() => {
     setStopReason('stoppage');
     setGameStatus('stopped');
