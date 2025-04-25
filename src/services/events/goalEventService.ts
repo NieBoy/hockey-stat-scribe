@@ -1,88 +1,155 @@
 
-import { supabase } from '@/lib/supabase';
-import { validatePlayers } from './goal/validatePlayers';
-import { recordGoalStats } from './goal/recordGoalStats';
-import { GoalEventData } from './goal/types';
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { validatePlayerId, validateMultiplePlayers } from "./shared/validatePlayer";
 
-/**
- * Records a goal event and related statistics
- * @param data Goal event data
- * @returns Promise with success status and event ID
- */
-export const recordGoalEvent = async (data: GoalEventData) => {
+interface GoalEventData {
+  gameId: string;
+  period: number;
+  teamType: 'home' | 'away';
+  playersOnIce: string[];
+  scorerId?: string;
+  primaryAssistId?: string;
+  secondaryAssistId?: string;
+}
+
+export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean> => {
   try {
-    console.log("Recording goal event with data:", data);
+    console.log("Recording goal event with data:", goalData);
     
-    // Make sure we have the minimum required data
-    if (!data.gameId || !data.period || !data.teamType) {
-      throw new Error("Missing required goal event data");
+    // Validate all player IDs before proceeding
+    const playerIds = [
+      ...goalData.playersOnIce,
+      goalData.scorerId,
+      goalData.primaryAssistId,
+      goalData.secondaryAssistId
+    ].filter(Boolean) as string[];
+    
+    const arePlayersValid = await validateMultiplePlayers(playerIds);
+    if (!arePlayersValid) {
+      toast.error("Invalid Player Data", {
+        description: "One or more players could not be validated"
+      });
+      return false;
     }
-
-    // Validate all players before proceeding (all IDs are team_member.id)
-    await validatePlayers(data.scorerId, data.primaryAssistId, data.secondaryAssistId);
-
-    // Validate players on ice (all IDs are team_member.id)
-    if (data.playersOnIce.length > 0) {
-      const { data: validPlayers, error: validationError } = await supabase
-        .from('team_members')
-        .select('id')
-        .in('id', data.playersOnIce);
-        
-      if (validationError) {
-        console.error("Error validating players on ice:", validationError);
-        throw new Error("Failed to validate players on ice");
-      }
-      
-      const validPlayerIds = validPlayers.map(p => p.id);
-      const invalidPlayers = data.playersOnIce.filter(id => !validPlayerIds.includes(id));
-      
-      if (invalidPlayers.length > 0) {
-        console.error("Invalid player IDs:", invalidPlayers);
-        throw new Error(`Some players on ice do not exist: ${invalidPlayers.join(', ')}`);
-      }
-    }
-
-    // Create the details object with player information (all team_member.id references)
+    
+    // Create the details object for the event
     const details = {
-      playerId: data.scorerId,
-      primaryAssistId: data.primaryAssistId,
-      secondaryAssistId: data.secondaryAssistId,
-      playersOnIce: data.playersOnIce
+      playersOnIce: goalData.playersOnIce || [],
+      playerId: goalData.scorerId,
+      primaryAssistId: goalData.primaryAssistId,
+      secondaryAssistId: goalData.secondaryAssistId
     };
 
-    console.log("Creating game event with details:", details);
-    
-    // Record the game event with details explicitly passed as a parameter
-    const { data: eventData, error: eventError } = await supabase
-      .rpc('create_game_event', {
-        p_game_id: data.gameId,
+    // Create the goal event
+    const { data: eventData, error: eventError } = await supabase.rpc(
+      'create_game_event',
+      {
+        p_game_id: goalData.gameId,
         p_event_type: 'goal',
-        p_period: data.period,
-        p_team_type: data.teamType,
+        p_period: goalData.period,
+        p_team_type: goalData.teamType,
         p_details: details
-      });
-      
-    if (eventError) {
-      console.error("Error calling create_game_event function:", eventError);
-      throw new Error(`Failed to record goal event: ${eventError.message}`);
-    }
-    
-    console.log("Successfully created game event:", eventData);
-    
-    // Record all related stats
-    await recordGoalStats({
-      gameId: data.gameId,
-      period: data.period,
-      scorerId: data.scorerId,
-      primaryAssistId: data.primaryAssistId,
-      secondaryAssistId: data.secondaryAssistId,
-      playersOnIce: data.playersOnIce,
-      isHomeScoringTeam: data.teamType === 'home'
-    });
+      }
+    );
 
-    return { success: true, eventId: eventData?.id };
+    if (eventError) {
+      console.error("Error creating goal event:", eventError);
+      return false;
+    }
+
+    // Record individual game stats
+    const statPromises = [];
+    
+    // Record goal for scorer
+    if (goalData.scorerId) {
+      statPromises.push(
+        supabase.rpc('record_game_stat', {
+          p_game_id: goalData.gameId,
+          p_player_id: goalData.scorerId,
+          p_stat_type: 'goals',
+          p_period: goalData.period,
+          p_value: 1,
+          p_details: ''
+        })
+      );
+    }
+
+    // Record primary assist
+    if (goalData.primaryAssistId) {
+      statPromises.push(
+        supabase.rpc('record_game_stat', {
+          p_game_id: goalData.gameId,
+          p_player_id: goalData.primaryAssistId,
+          p_stat_type: 'assists',
+          p_period: goalData.period,
+          p_value: 1,
+          p_details: 'primary'
+        })
+      );
+    }
+
+    // Record secondary assist
+    if (goalData.secondaryAssistId) {
+      statPromises.push(
+        supabase.rpc('record_game_stat', {
+          p_game_id: goalData.gameId,
+          p_player_id: goalData.secondaryAssistId,
+          p_stat_type: 'assists',
+          p_period: goalData.period,
+          p_value: 1,
+          p_details: 'secondary'
+        })
+      );
+    }
+
+    // Record plus for all players on ice
+    for (const playerId of goalData.playersOnIce) {
+      statPromises.push(
+        supabase.rpc('record_game_stat', {
+          p_game_id: goalData.gameId,
+          p_player_id: playerId,
+          p_stat_type: 'plusMinus',
+          p_period: goalData.period,
+          p_value: 1,
+          p_details: 'plus'
+        })
+      );
+    }
+
+    // Execute all stat recording operations
+    const results = await Promise.allSettled(statPromises);
+    
+    // Check for errors in the stat recordings
+    const errors = results.filter(r => r.status === 'rejected');
+    if (errors.length > 0) {
+      console.error(`${errors.length} errors occurred while recording goal stats:`, errors);
+      // We don't return false here because the event was created successfully
+      // The stats that failed can be regenerated later with the refresh function
+    }
+
+    return true;
   } catch (error) {
-    console.error("Error recording goal event:", error);
-    throw error;
+    console.error("Error in recordGoalEvent:", error);
+    return false;
+  }
+};
+
+export const deleteGoalEvent = async (eventId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc(
+      'delete_game_event',
+      { p_event_id: eventId }
+    );
+
+    if (error) {
+      console.error("Error deleting goal event:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in deleteGoalEvent:", error);
+    return false;
   }
 };
