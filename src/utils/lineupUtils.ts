@@ -1,3 +1,4 @@
+
 import { Team, Lines, User, ForwardLine, DefenseLine } from "@/types";
 
 /**
@@ -100,6 +101,9 @@ export function getAvailablePlayers(team: Team, lines: Lines): User[] {
 
   // Create a set of all player IDs already in lines
   const assignedPlayerIds = new Set<string>();
+  
+  // Debug info for assigned player tracking
+  console.log("Tracking players already assigned to positions:");
   
   // Add all players from forwards
   lines.forwards.forEach(line => {

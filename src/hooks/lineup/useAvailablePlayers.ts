@@ -40,14 +40,14 @@ export function useAvailablePlayers(team: Team, lines: Lines) {
       goalies: newLines.goalies.map(g => g.id)
     });
     
-    const newAvailablePlayers = getAvailablePlayers(team, lines);
+    const newAvailablePlayers = getAvailablePlayers(team, newLines);
     console.log("New available players details:", newAvailablePlayers.map(p => ({
       id: p.id,
       name: p.name,
       position: p.position
     })));
     setAvailablePlayers(newAvailablePlayers);
-  }, [team, lines]);
+  }, [team]);
 
   useEffect(() => {
     console.log("Team or lines changed, recalculating available players");
