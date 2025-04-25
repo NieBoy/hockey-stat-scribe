@@ -6,7 +6,6 @@ import { useDragAndDrop } from '@/hooks/lineup/useDragAndDrop';
 import { AvailablePlayersSection } from './AvailablePlayersSection';
 import { EvenStrengthLines } from './EvenStrengthLines';
 import { SpecialTeamsUnit } from './SpecialTeamsUnit';
-import { toast } from 'sonner';
 
 interface RosterContainerProps {
   team: Team;
@@ -27,16 +26,10 @@ export function RosterContainer({
 }: RosterContainerProps) {
   const { onDragEnd } = useDragAndDrop({ lines, availablePlayers, handlePlayerMove });
 
-  const handleSuccessfulDrop = () => {
-    toast.success('Player position updated');
-  };
-
   return (
     <DragDropContext onDragEnd={(result) => {
       onDragEnd(result);
-      if (result.destination) {
-        handleSuccessfulDrop();
-      }
+      // Removed the success toast and auto-save trigger
     }}>
       <div className="space-y-6">
         <AvailablePlayersSection availablePlayers={availablePlayers} />
