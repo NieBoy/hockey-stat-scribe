@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Team, Lines } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { RosterContainer } from './lineup/RosterContainer';
+import { toast } from 'sonner';
 
 interface RosterDragDropProps {
   team: Team;
@@ -18,15 +19,26 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     handlePlayerMove,
     addForwardLine,
     addDefenseLine,
+    isLoading
   } = useLineupEditor(team);
 
-  // Auto-save whenever lines change
+  // Enhanced auto-save with better feedback
   useEffect(() => {
+    // Don't trigger save during initial loading
+    if (isLoading) {
+      return;
+    }
+    
+    console.log("Lineup changed, scheduling auto-save", lines);
+
     const saveLines = async () => {
       try {
+        console.log("Auto-saving lineup...");
         await onSave(lines);
+        console.log("Auto-save completed");
       } catch (error) {
         console.error("Error auto-saving lineup:", error);
+        toast.error("Failed to save lineup");
       }
     };
     
@@ -35,7 +47,7 @@ export default function RosterDragDrop({ team, onSave, isSaving = false }: Roste
     }, 500);
     
     return () => clearTimeout(timeoutId);
-  }, [lines, onSave]);
+  }, [lines, onSave, isLoading]);
 
   return (
     <RosterContainer

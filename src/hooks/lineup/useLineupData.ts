@@ -39,16 +39,30 @@ export function useLineupData(team: Team, refreshKey: number = 0) {
         }
       }
       
+      // Create a player map using team_member.id as the key (not user_id)
+      const playerPositionsMap = new Map();
+      lineupData.forEach(member => {
+        if (member.position) {
+          playerPositionsMap.set(member.id, {
+            position: member.position,
+            lineNumber: member.line_number
+          });
+        }
+      });
+      
+      console.log("useLineupData - Player positions map:", Object.fromEntries(playerPositionsMap));
+      
+      // Apply positions to players in team.players array
       const updatedTeam = {
         ...team,
         players: team.players.map(player => {
-          // Find lineup player by user_id (important: not by id!)
-          const lineupPlayer = lineupData.find(lp => lp.user_id === player.id);
-          if (lineupPlayer && lineupPlayer.position) {
+          // Check if this player has position data using player's id (which is team_member.id)
+          const positionInfo = playerPositionsMap.get(player.id);
+          if (positionInfo) {
             return {
               ...player,
-              position: lineupPlayer.position,
-              lineNumber: lineupPlayer.line_number
+              position: positionInfo.position,
+              lineNumber: positionInfo.lineNumber
             };
           }
           return player;

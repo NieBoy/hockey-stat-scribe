@@ -81,4 +81,3 @@ export const updateTeamLineup = async (
     return false;
   }
 };
-
