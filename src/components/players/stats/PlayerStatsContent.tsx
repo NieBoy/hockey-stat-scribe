@@ -5,6 +5,8 @@ import { usePlayerStatsDebug } from "@/hooks/players/usePlayerStatsDebug";
 import PlayerStatsHeader from "./components/PlayerStatsHeader";
 import StatsContent from "./components/StatsContent";
 import PlayerStatsDebug from "./components/PlayerStatsDebug";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface PlayerStatsContentProps {
   playerId: string;
@@ -40,18 +42,6 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
     );
   }
 
-  if (statsError) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-center text-red-500">
-            {statsError.message || "Error loading stats"}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardContent>
@@ -62,6 +52,26 @@ const PlayerStatsContent = ({ playerId }: PlayerStatsContentProps) => {
           onToggleDebug={toggleDebug}
           showDebugInfo={showDebug}
         />
+
+        {statsError && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {statsError.message || "Error loading stats"}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isRefreshing && refreshStatus && (
+          <Alert className="mt-4">
+            <div className="flex items-center">
+              <div className="mr-2 animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+              <AlertDescription>
+                {refreshStatus}
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
 
         <StatsContent 
           stats={stats || []}

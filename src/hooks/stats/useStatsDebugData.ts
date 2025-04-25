@@ -59,7 +59,7 @@ export function useStatsDebugData(playerId?: string) {
         return data as PlayerStat[];
       } catch (error) {
         console.error("Error fetching debug player stats:", error);
-        return [];
+        throw error; // Let the error propagate for handling in the UI
       }
     },
     enabled: true
@@ -82,6 +82,7 @@ export function useStatsDebugData(playerId?: string) {
             game_id,
             period,
             value,
+            stat_type,
             details
           `)
           .eq('stat_type', 'plusMinus');
@@ -96,7 +97,7 @@ export function useStatsDebugData(playerId?: string) {
         return data || [];
       } catch (error) {
         console.error("Error fetching debug plus/minus stats:", error);
-        return [];
+        throw error; // Let the error propagate for handling in the UI
       }
     },
     enabled: true
@@ -111,7 +112,10 @@ export function useStatsDebugData(playerId?: string) {
     queryKey: ['debugRawGameStats', playerId],
     queryFn: async () => {
       try {
-        let query = supabase.from('game_stats').select('*');
+        console.log('Fetching debug raw game stats for player:', playerId);
+        let query = supabase
+          .from('game_stats') // Use gs as the alias to avoid ambiguity
+          .select('*');
         
         if (playerId) {
           query = query.eq('player_id', playerId);
@@ -119,11 +123,16 @@ export function useStatsDebugData(playerId?: string) {
         
         const { data, error } = await query;
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching raw game stats:", error);
+          throw error;
+        }
+        
+        console.log(`Found ${data?.length || 0} raw game stats`);
         return data || [];
       } catch (error) {
         console.error("Error fetching debug raw game stats:", error);
-        return [];
+        throw error; // Let the error propagate for handling in the UI
       }
     },
     enabled: true

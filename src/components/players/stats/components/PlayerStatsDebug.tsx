@@ -5,6 +5,8 @@ import StatsDebugPanel from "@/components/stats/debug/StatsDebugPanel";
 import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface PlayerStatsDebugProps {
   playerId: string;
@@ -13,9 +15,10 @@ interface PlayerStatsDebugProps {
 }
 
 export default function PlayerStatsDebug({ playerId, stats, onRefresh }: PlayerStatsDebugProps) {
-  const { debugData, refetchAll: refetchDebugData } = useStatsDebugData(playerId);
+  const { debugData, refetchAll: refetchDebugData, errors } = useStatsDebugData(playerId);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
+  const [processingErrors, setProcessingErrors] = useState<string | null>(null);
 
   const handleProcessingComplete = async () => {
     console.log("Stats processing complete, refreshing data");
@@ -23,9 +26,11 @@ export default function PlayerStatsDebug({ playerId, stats, onRefresh }: PlayerS
       await onRefresh();
       await refetchDebugData();
       toast.success("Stats processing and refresh completed");
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || "Unknown error during refresh";
       console.error("Error during refresh:", error);
       toast.error("Error refreshing stats after processing");
+      setProcessingErrors(errorMessage);
     }
   };
 
@@ -34,13 +39,34 @@ export default function PlayerStatsDebug({ playerId, stats, onRefresh }: PlayerS
     setStatusMessages(prev => [...prev, message]);
   };
 
+  // Handle SQL errors from the debug data
+  const sqlErrors = errors?.playerStatsError || errors?.rawGameStatsError;
+  
   return (
     <div className="space-y-6 mt-8 border-t pt-6">
+      {sqlErrors && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Database Error:</strong> {sqlErrors.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {processingErrors && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Processing Error:</strong> {processingErrors}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <StatsProcessingStatus 
         playerId={playerId} 
         onRefresh={onRefresh}
         statusMessages={statusMessages} 
-        error={null}
+        error={processingErrors}
         isProcessing={isProcessing}
         finishedProcessing={false}
       />
