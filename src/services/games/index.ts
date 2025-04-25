@@ -83,8 +83,9 @@ export const getGames = async () => {
       is_active: game.is_active,
       isActive: game.is_active, // Add isActive alias for compatibility
       homeTeam: {
-        id: game.home_team?.id || '',
-        name: game.home_team?.name || 'Unknown Team',
+        // Access as object, not array
+        id: typeof game.home_team === 'object' && game.home_team ? game.home_team.id || '' : '',
+        name: typeof game.home_team === 'object' && game.home_team ? game.home_team.name || 'Unknown Team' : 'Unknown Team',
         players: []
       },
       awayTeam: game.opponent_name ? { id: 'opponent', name: game.opponent_name, players: [] } : null
@@ -129,8 +130,9 @@ export const getGameById = async (gameId: string) => {
       isActive: data.is_active, // Add isActive alias for compatibility
       opponent_name: data.opponent_name,
       homeTeam: {
-        id: data.home_team?.id || '',
-        name: data.home_team?.name || 'Unknown Team',
+        // Access as object, not array
+        id: typeof data.home_team === 'object' && data.home_team ? data.home_team.id || '' : '',
+        name: typeof data.home_team === 'object' && data.home_team ? data.home_team.name || 'Unknown Team' : 'Unknown Team',
         players: []
       },
       awayTeam: data.opponent_name ? { id: 'opponent', name: data.opponent_name, players: [] } : null,
