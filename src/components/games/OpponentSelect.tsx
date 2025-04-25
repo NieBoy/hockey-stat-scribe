@@ -34,28 +34,40 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const { data, refetch } = useQuery({
     queryKey: ['opponents'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('games')
-        .select('opponent_name')
-        .not('opponent_name', 'is', null)
-        .order('opponent_name');
-      
-      if (error) {
-        console.error('Error fetching opponents:', error);
+      try {
+        const { data, error } = await supabase
+          .from('games')
+          .select('opponent_name')
+          .not('opponent_name', 'is', null)
+          .order('opponent_name');
+        
+        if (error) {
+          console.error('Error fetching opponents:', error);
+          return [];
+        }
+
+        if (!data || !Array.isArray(data)) {
+          console.log('No opponent data returned or invalid format');
+          return [];
+        }
+
+        // Extract unique opponent names, ensuring we handle potential nulls/undefined
+        const opponentNames = data
+          .map(game => game.opponent_name)
+          .filter(name => name !== null && name !== undefined);
+          
+        const uniqueOpponents = [...new Set(opponentNames)];
+          
+        return uniqueOpponents.map(name => ({ label: name, value: name }));
+      } catch (err) {
+        console.error('Unexpected error fetching opponents:', err);
         return [];
       }
-
-      // Extract unique opponent names
-      const uniqueOpponents = [...new Set(data
-        .map(game => game.opponent_name)
-        .filter(Boolean) as string[])];
-        
-      return uniqueOpponents.map(name => ({ label: name, value: name }));
     }
   });
   
   // Ensure we always have an array even if data is undefined
-  const opponents = data || [];
+  const opponents = Array.isArray(data) ? data : [];
 
   const handleAddNewOpponent = () => {
     if (!newOpponent.trim()) return;

@@ -18,11 +18,15 @@ export function TeamSelector({ teams = [], value, onChange, error }: TeamSelecto
           <SelectValue placeholder="Select home team" />
         </SelectTrigger>
         <SelectContent>
-          {teams.map((team) => (
-            <SelectItem key={team.id} value={team.id}>
-              {team.name}
-            </SelectItem>
-          ))}
+          {teams && teams.length > 0 ? (
+            teams.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="no-teams" disabled>No teams available</SelectItem>
+          )}
         </SelectContent>
       </Select>
       {error && (

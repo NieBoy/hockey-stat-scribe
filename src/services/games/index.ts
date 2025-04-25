@@ -1,176 +1,98 @@
 
-import { supabase } from "@/lib/supabase";
-import { transform, transformSingle } from "./teamTransforms";
-import { Game } from "@/types";
+import { supabase } from '@/lib/supabase';
+import { queries } from './queries';
+import { transformTeamForCreate } from './teamTransforms';
 
-export async function getGames(): Promise<Game[]> {
-  try {
-    const { data, error } = await supabase
-      .from('games')
-      .select(`
-        id,
-        date,
-        location,
-        periods,
-        current_period,
-        is_active,
-        opponent_name,
-        home_team_id (
-          id,
-          name
-        ),
-        away_team_id (
-          id,
-          name
-        )
-      `)
-      .order('date', { ascending: false });
-
-    if (error) throw error;
-    
-    // Transform the data
-    return transform(data || []);
-  } catch (error) {
-    console.error("Error fetching games:", error);
-    return [];
-  }
+export interface GameCreateParams {
+  date: Date;
+  location: string;
+  homeTeam: string;
+  opponentName?: string;
+  periods?: number;
 }
 
-export async function getGameById(id: string): Promise<Game | null> {
+// Create a new game
+export const createGame = async (params: GameCreateParams) => {
   try {
+    const { date, location, homeTeam, opponentName, periods = 3 } = params;
+
+    // Create the game with the home team and opponent name
     const { data, error } = await supabase
       .from('games')
-      .select(`
-        id,
-        date,
+      .insert({
+        date: date.toISOString(),
         location,
+        home_team_id: homeTeam,
+        opponent_name: opponentName || null,
         periods,
-        current_period,
-        is_active,
-        opponent_name,
-        home_team_id (
-          id,
-          name
-        ),
-        away_team_id (
-          id,
-          name
-        )
-      `)
-      .eq('id', id)
+        current_period: 0,
+        is_active: false,
+      })
+      .select()
       .single();
 
     if (error) {
-      console.error("Error fetching game:", error);
-      return null;
+      console.error('Error creating game:', error);
+      return { success: false, error };
     }
-    
-    // First get the basic game object with team references
-    const game = transformSingle(data);
-    
-    if (!game) return null;
-    
-    // Fetch players for home team
-    if (game.homeTeam) {
-      const { data: homePlayers, error: homeError } = await supabase
-        .from('team_members')
-        .select('id, name, position')
-        .eq('team_id', game.homeTeam.id)
-        .eq('role', 'player');
-      
-      if (homeError) {
-        console.error("Error fetching home players:", homeError);
-      } else {
-        game.homeTeam.players = homePlayers || [];
-      }
-    }
-    
-    // Fetch players for away team if it exists
-    if (game.awayTeam) {
-      const { data: awayPlayers, error: awayError } = await supabase
-        .from('team_members')
-        .select('id, name, position')
-        .eq('team_id', game.awayTeam.id)
-        .eq('role', 'player');
-      
-      if (awayError) {
-        console.error("Error fetching away players:", awayError);
-      } else {
-        game.awayTeam.players = awayPlayers || [];
-      }
-    } else if (game.opponent_name) {
-      // For opponent games, ensure we still have a valid structure but mark as external
-      game.awayTeam = null;
-    }
-    
-    return game;
-  } catch (error) {
-    console.error("Error in getGameById:", error);
-    return null;
-  }
-}
 
-export async function createGame(gameData: any): Promise<{ success: boolean; id?: string; error?: any }> {
-  try {
-    // Format the data for the Supabase insert
-    const formattedData = {
-      date: gameData.date.toISOString(),
-      location: gameData.location,
-      home_team_id: gameData.homeTeam,
-      away_team_id: null, // No away team ID when using opponent name
-      opponent_name: gameData.opponentName,
-      periods: gameData.periods,
-      current_period: 0,
-      is_active: false
+    return {
+      success: true,
+      data,
     };
-    
-    console.log("Creating new game with data:", formattedData);
-    
+  } catch (error) {
+    console.error('Error in createGame service:', error);
+    return {
+      success: false,
+      error: {
+        message: 'Failed to create game',
+        details: error,
+      },
+    };
+  }
+};
+
+// Get all games
+export const getGames = async () => {
+  try {
+    // Get games with team data
     const { data, error } = await supabase
       .from('games')
-      .insert(formattedData)
-      .select();
+      .select(`
+        id,
+        date,
+        location,
+        periods,
+        current_period,
+        is_active,
+        opponent_name,
+        home_team:teams!home_team_id (id, name)
+      `)
+      .order('date', { ascending: false });
 
     if (error) {
-      console.error("Error creating game:", error);
-      return { 
-        success: false, 
-        error 
-      };
+      console.error('Error fetching games:', error);
+      return [];
     }
 
-    return { 
-      success: true, 
-      id: data?.[0]?.id 
-    };
+    return data.map(game => ({
+      id: game.id,
+      date: game.date,
+      location: game.location,
+      periods: game.periods,
+      current_period: game.current_period,
+      is_active: game.is_active,
+      homeTeam: {
+        id: game.home_team?.id || '',
+        name: game.home_team?.name || 'Unknown Team',
+        players: []
+      },
+      awayTeam: game.opponent_name ? { id: 'opponent', name: game.opponent_name, players: [] } : null
+    }));
   } catch (error) {
-    console.error("Unexpected error in createGame:", error);
-    return { 
-      success: false, 
-      error 
-    };
+    console.error('Error in getGames service:', error);
+    return [];
   }
-}
+};
 
-export async function updateGame(id: string, gameData: any): Promise<{ success: boolean; error?: any }> {
-  try {
-    const { error } = await supabase
-      .from('games')
-      .update(gameData)
-      .eq('id', id);
-
-    if (error) {
-      return { 
-        success: false, 
-        error 
-      };
-    }
-
-    return { success: true };
-  } catch (error) {
-    return { 
-      success: false, 
-      error 
-    };
-  }
-}
+export { queries };
