@@ -18,6 +18,11 @@ DECLARE
   new_stat_id UUID;
   result JSON;
 BEGIN
+  -- Validate that player_id exists in team_members
+  IF NOT EXISTS (SELECT 1 FROM team_members WHERE id = p_player_id) THEN
+    RAISE EXCEPTION 'Invalid player_id: % - not found in team_members table', p_player_id;
+  END IF;
+
   INSERT INTO public.game_stats (
     game_id,
     player_id,   -- This directly stores the team_member.id
@@ -50,3 +55,4 @@ BEGIN
   RETURN result;
 END;
 $$;
+

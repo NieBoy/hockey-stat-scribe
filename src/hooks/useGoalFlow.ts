@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User, Game } from '@/types';
 import { toast } from 'sonner';
@@ -38,15 +39,29 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       console.log("GoalFlow - Retrieved lineup data:", lineupData);
       
       if (lineupData && Array.isArray(lineupData)) {
-        const updatedTeam = teamType === 'home' ? game.homeTeam : game.awayTeam;
+        // Create a new copy of the team to avoid mutating the original
+        const updatedTeam = teamType === 'home' 
+          ? { ...game.homeTeam } 
+          : { ...game.awayTeam };
+        
         if (updatedTeam) {
+          // Map the raw lineup data to the User type expected by the UI
           updatedTeam.players = lineupData.map(player => ({
-            id: player.id,
+            id: player.id, // Use team_member.id as the primary identifier
             name: player.name || 'Unknown Player',
-            email: player.email,
-            position: player.position,
+            email: player.email || '',
+            position: player.position || '',
             lineNumber: player.line_number
           }));
+          
+          // Update the game object with our modified team
+          if (teamType === 'home') {
+            game.homeTeam = updatedTeam;
+          } else {
+            game.awayTeam = updatedTeam;
+          }
+          
+          console.log(`Updated ${teamType} team players:`, updatedTeam.players);
         }
       }
       
@@ -73,6 +88,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   };
 
   const handleScorerSelect = (player: User) => {
+    console.log("Selected scorer:", player);
     setSelectedScorer(player);
     setCurrentStep('primary-assist');
   };
@@ -115,6 +131,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       return false;
     }
     
+    // Validate that all players have valid IDs that exist in the team
     for (const player of playersOnIce) {
       if (!player || !player.id || !allValidPlayerIds.includes(player.id)) {
         toast.error("Invalid Player", {

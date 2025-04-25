@@ -27,6 +27,7 @@ export function ScorerSelectionStep({
   console.log('ScorerSelectionStep - Team:', team);
   console.log('ScorerSelectionStep - Players:', team?.players);
   console.log('ScorerSelectionStep - Has Players:', hasPlayers);
+  console.log('ScorerSelectionStep - Is Loading:', isLoadingLineups);
 
   return (
     <div>
