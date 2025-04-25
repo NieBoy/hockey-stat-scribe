@@ -108,9 +108,10 @@ const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSyste
         .from('game_events')
         .select('*')
         .or(
-          `details->playerId.eq."${playerId}",` +
-          `details->primaryAssistId.eq."${playerId}",` +
-          `details->secondaryAssistId.eq."${playerId}"`
+          `details->>'playerId'.eq.${playerId},` + 
+          `details->>'primaryAssistId'.eq.${playerId},` +
+          `details->>'secondaryAssistId'.eq.${playerId},` +
+          `details->'playersOnIce'??${playerId}`
         )
         .order('timestamp', { ascending: true });
 
@@ -132,12 +133,16 @@ const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSyste
         console.log(`Event ${index + 1}:`, {
           id: event.id,
           type: event.event_type,
-          details: event.details
+          details: event.details,
+          playerId: event.details?.playerId,
+          primaryAssistId: event.details?.primaryAssistId,
+          secondaryAssistId: event.details?.secondaryAssistId,
+          playersOnIce: event.details?.playersOnIce
         });
       });
 
-      // Step 2: Process events for player
-      addStatusMessage("Processing events to stats...");
+      // Step 2: Process events for player stats
+      addStatusMessage("Processing events to game stats...");
       const { data: gameEventsResult, error: processError } = await supabase.rpc(
         'refresh_player_stats',
         { p_player_id: playerId }
@@ -175,8 +180,8 @@ const StatsSystemDebug = ({ playerId, teamId, onProcessingComplete }: StatsSyste
         }
       }
 
-      // Step 5: Final refresh
-      addStatusMessage("Final stats refresh...");
+      // Step 5: Final refresh of aggregated stats
+      addStatusMessage("Performing final stats refresh...");
       const refreshResult = await refreshPlayerStats(playerId);
       
       if (refreshResult?.success) {
