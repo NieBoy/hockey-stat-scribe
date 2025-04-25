@@ -1,10 +1,10 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ForwardLine, User, Position } from "@/types";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, RefreshCw } from "lucide-react";
 
 interface ForwardLineEditorProps {
   line: ForwardLine;
@@ -14,6 +14,25 @@ interface ForwardLineEditorProps {
 }
 
 const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: ForwardLineEditorProps) => {
+  // Log for debugging when the component renders
+  useEffect(() => {
+    console.log(`ForwardLineEditor ${index} rendering with ${availablePlayers.length} available players`);
+    console.log(`Line ${index} data:`, line);
+  }, [index, line, availablePlayers.length]);
+
+  // Get all players eligible for each position
+  const getSelectablePlayers = (currentPlayer: User | null) => {
+    const selectablePlayers = currentPlayer 
+      ? [...availablePlayers, currentPlayer]
+      : availablePlayers;
+    
+    return [...selectablePlayers].sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const leftWingPlayers = getSelectablePlayers(line.leftWing);
+  const centerPlayers = getSelectablePlayers(line.center);
+  const rightWingPlayers = getSelectablePlayers(line.rightWing);
+
   return (
     <Card>
       <CardHeader>
@@ -38,22 +57,20 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
             <Select 
               value={line.leftWing?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'LW', value)}
+              onOpenChange={(open) => {
+                if (open) console.log("LW select opened with options:", leftWingPlayers.map(p => p.name));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select player" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
-                {availablePlayers.map((player) => (
+                {leftWingPlayers.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {player.name} {player.id === line.leftWing?.id ? " (Current)" : ""}
                   </SelectItem>
                 ))}
-                {line.leftWing && (
-                  <SelectItem value={line.leftWing.id}>
-                    {line.leftWing.name}
-                  </SelectItem>
-                )}
               </SelectContent>
             </Select>
           </div>
@@ -74,22 +91,20 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
             <Select 
               value={line.center?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'C', value)}
+              onOpenChange={(open) => {
+                if (open) console.log("C select opened with options:", centerPlayers.map(p => p.name));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select player" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
-                {availablePlayers.map((player) => (
+                {centerPlayers.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {player.name} {player.id === line.center?.id ? " (Current)" : ""}
                   </SelectItem>
                 ))}
-                {line.center && (
-                  <SelectItem value={line.center.id}>
-                    {line.center.name}
-                  </SelectItem>
-                )}
               </SelectContent>
             </Select>
           </div>
@@ -110,22 +125,20 @@ const ForwardLineEditor = ({ line, index, availablePlayers, onPlayerSelect }: Fo
             <Select 
               value={line.rightWing?.id || 'none'} 
               onValueChange={(value) => onPlayerSelect('forwards', index, 'RW', value)}
+              onOpenChange={(open) => {
+                if (open) console.log("RW select opened with options:", rightWingPlayers.map(p => p.name));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select player" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
-                {availablePlayers.map((player) => (
+                {rightWingPlayers.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {player.name} {player.id === line.rightWing?.id ? " (Current)" : ""}
                   </SelectItem>
                 ))}
-                {line.rightWing && (
-                  <SelectItem value={line.rightWing.id}>
-                    {line.rightWing.name}
-                  </SelectItem>
-                )}
               </SelectContent>
             </Select>
           </div>

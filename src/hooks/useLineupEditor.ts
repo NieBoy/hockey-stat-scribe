@@ -8,6 +8,7 @@ import { usePlayerSelection } from "./lineup/usePlayerSelection";
 
 export function useLineupEditor(team: Team) {
   console.log("useLineupEditor initializing with team:", team?.id);
+  console.log("Team players count:", team?.players?.length);
   
   const {
     lines,
@@ -47,6 +48,8 @@ export function useLineupEditor(team: Team) {
     setAvailablePlayers
   );
 
+  console.log("useLineupEditor - Available players count:", availablePlayers.length);
+
   return {
     lines,
     setLines,
@@ -62,6 +65,7 @@ export function useLineupEditor(team: Team) {
     isLoading: loadingState === 'loading',
     error,
     refreshLineupData: refreshLineup,
-    lineupData
+    lineupData,
+    updateAvailablePlayers
   };
 }

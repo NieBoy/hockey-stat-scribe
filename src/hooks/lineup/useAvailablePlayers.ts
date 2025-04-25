@@ -9,13 +9,16 @@ export function useAvailablePlayers(team: Team, lines: Lines) {
   );
 
   const updateAvailablePlayers = useCallback((newLines: Lines) => {
+    console.log("Updating available players for team:", team.id);
+    console.log("Total team players:", team.players.length);
     setAvailablePlayers(getAvailablePlayers(team, newLines));
   }, [team]);
 
-  // Initial update of available players
+  // Update available players when lines or team changes
   useEffect(() => {
+    console.log("Team or lines changed, updating available players");
     updateAvailablePlayers(lines);
-  }, [team.id]); // Only run this when team ID changes, not every time lines change
+  }, [team.id, lines, updateAvailablePlayers]);
 
   return {
     availablePlayers,

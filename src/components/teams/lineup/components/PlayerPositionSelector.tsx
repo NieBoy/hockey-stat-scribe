@@ -10,6 +10,8 @@ import {
   SelectItem
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface PlayerPositionSelectorProps {
   position: Position;
@@ -24,6 +26,8 @@ export function PlayerPositionSelector({
   availablePlayers,
   onSelect
 }: PlayerPositionSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   // Get position-specific styling
   const getPositionStyles = () => {
     switch(position) {
@@ -43,7 +47,7 @@ export function PlayerPositionSelector({
 
   // Combined list of available players plus the current player if selected
   const selectablePlayers = player 
-    ? [...availablePlayers, player]
+    ? [...availablePlayers.filter(p => p.id !== player.id), player]
     : availablePlayers;
 
   // Sort players by name for easier selection
@@ -51,11 +55,21 @@ export function PlayerPositionSelector({
     a.name.localeCompare(b.name)
   );
 
+  const debugInfo = () => {
+    console.log(`Position ${position} - Current player:`, player);
+    console.log(`Available players (${availablePlayers.length}):`, availablePlayers);
+    console.log(`Selectable players (${selectablePlayers.length}):`, selectablePlayers);
+  };
+
   return (
     <div className="space-y-1">
       <Select
         value={player?.id || "none"}
         onValueChange={onSelect}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          if (open) debugInfo();
+        }}
       >
         <SelectTrigger 
           className={cn(
@@ -85,12 +99,18 @@ export function PlayerPositionSelector({
         <SelectContent>
           <SelectItem value="none">None (Clear Position)</SelectItem>
           <div className="max-h-[200px] overflow-auto">
-            {sortedPlayers.map(p => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name} {p.number ? `#${p.number}` : ''}
-                {p.id === player?.id && " (Current)"}
-              </SelectItem>
-            ))}
+            {sortedPlayers.length > 0 ? (
+              sortedPlayers.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name} {p.number ? `#${p.number}` : ''}
+                  {p.id === player?.id && " (Current)"}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="p-2 text-center text-muted-foreground">
+                No players available
+              </div>
+            )}
           </div>
         </SelectContent>
       </Select>

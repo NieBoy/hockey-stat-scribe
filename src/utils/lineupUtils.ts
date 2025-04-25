@@ -94,6 +94,9 @@ export function buildInitialLines(team: Team): Lines {
  * Gets available players not assigned to positions
  */
 export function getAvailablePlayers(team: Team, lines: Lines): User[] {
+  console.log("Getting available players for team:", team?.id);
+  console.log("Total team players:", team?.players?.length || 0);
+  
   // Create a set of all player IDs already in lines
   const assignedPlayerIds = new Set<string>();
   
@@ -131,7 +134,13 @@ export function getAvailablePlayers(team: Team, lines: Lines): User[] {
   }
   
   // Return all players not already assigned
-  return team.players.filter(player => !assignedPlayerIds.has(player.id));
+  const availablePlayers = team.players.filter(player => !assignedPlayerIds.has(player.id));
+  
+  console.log(`Found ${availablePlayers.length} available players out of ${team.players.length} total`);
+  console.log("Available players:", availablePlayers.map(p => p.name).join(", "));
+  console.log("Assigned player IDs:", Array.from(assignedPlayerIds));
+  
+  return availablePlayers;
 }
 
 /**
@@ -181,3 +190,4 @@ export const removePlayerFromCurrentPosition = (playerId: string, lines: Lines) 
     }
   }
 };
+
