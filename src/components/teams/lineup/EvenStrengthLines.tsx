@@ -1,5 +1,5 @@
 
-import { Lines } from '@/types';
+import { Lines, Position, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ForwardLinesSection } from '@/components/events/player-lines/ForwardLinesSection';
 import { DefensePairsSection } from '@/components/events/player-lines/DefensePairsSection';
@@ -9,18 +9,23 @@ interface EvenStrengthLinesProps {
   lines: Lines;
   onAddForwardLine: () => void;
   onAddDefenseLine: () => void;
+  onPositionClick?: (lineType: 'forwards' | 'defense' | 'goalies', lineIndex: number, position: Position, player: User | null) => void;
 }
 
 export function EvenStrengthLines({ 
   lines, 
   onAddForwardLine, 
-  onAddDefenseLine 
+  onAddDefenseLine,
+  onPositionClick
 }: EvenStrengthLinesProps) {
   return (
     <div className="space-y-6">
       <ForwardLinesSection
         forwardLines={lines.forwards}
         isDraggable={true}
+        onPositionClick={onPositionClick ? 
+          (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position, player) : 
+          undefined}
       />
       
       <Button 
@@ -34,6 +39,9 @@ export function EvenStrengthLines({
       <DefensePairsSection
         defensePairs={lines.defense}
         isDraggable={true}
+        onPositionClick={onPositionClick ? 
+          (lineIndex, position, player) => onPositionClick('defense', lineIndex, position, player) : 
+          undefined}
       />
       
       <Button 
@@ -47,6 +55,9 @@ export function EvenStrengthLines({
       <GoaliesSection 
         goalies={lines.goalies}
         isDraggable={true}
+        onPositionClick={onPositionClick ? 
+          (index, player) => onPositionClick('goalies', index, 'G', player) : 
+          undefined}
       />
     </div>
   );

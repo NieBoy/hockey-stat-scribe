@@ -1,6 +1,6 @@
 
 import { DragDropContext } from '@hello-pangea/dnd';
-import { Team, Lines } from '@/types';
+import { Team, Lines, Position, User } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDragAndDrop } from '@/hooks/lineup/useDragAndDrop';
 import { AvailablePlayersSection } from './AvailablePlayersSection';
@@ -11,9 +11,10 @@ interface RosterContainerProps {
   team: Team;
   lines: Lines;
   availablePlayers: any[];
-  handlePlayerMove: any;
+  handlePlayerMove: (sourceId: string, destId: string, playerId: string) => void;
   addForwardLine: () => void;
   addDefenseLine: () => void;
+  onPositionClick?: (lineType: 'forwards' | 'defense' | 'goalies', lineIndex: number, position: Position, player: User | null) => void;
 }
 
 export function RosterContainer({ 
@@ -22,15 +23,13 @@ export function RosterContainer({
   availablePlayers,
   handlePlayerMove,
   addForwardLine,
-  addDefenseLine
+  addDefenseLine,
+  onPositionClick
 }: RosterContainerProps) {
   const { onDragEnd } = useDragAndDrop({ lines, availablePlayers, handlePlayerMove });
 
   return (
-    <DragDropContext onDragEnd={(result) => {
-      onDragEnd(result);
-      // Removed the success toast and auto-save trigger
-    }}>
+    <DragDropContext onDragEnd={onDragEnd}>
       <div className="space-y-6">
         <AvailablePlayersSection availablePlayers={availablePlayers} />
 
@@ -46,6 +45,7 @@ export function RosterContainer({
               lines={lines}
               onAddForwardLine={addForwardLine}
               onAddDefenseLine={addDefenseLine}
+              onPositionClick={onPositionClick}
             />
           </TabsContent>
           
@@ -56,6 +56,9 @@ export function RosterContainer({
               positions={['LW', 'C', 'RW', 'LD', 'RD']}
               type="pp"
               players={lines.specialTeams?.powerPlay}
+              onPositionClick={onPositionClick ? 
+                (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position as Position, player) : 
+                undefined}
             />
           </TabsContent>
           
@@ -66,6 +69,9 @@ export function RosterContainer({
               positions={['LF', 'RF', 'LD', 'RD']}
               type="pk"
               players={lines.specialTeams?.penaltyKill}
+              onPositionClick={onPositionClick ? 
+                (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position as Position, player) : 
+                undefined}
             />
           </TabsContent>
         </Tabs>

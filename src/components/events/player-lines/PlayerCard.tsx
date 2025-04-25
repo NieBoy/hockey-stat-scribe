@@ -1,3 +1,4 @@
+
 import { User } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -7,7 +8,7 @@ interface PlayerCardProps {
   player: User | null;
   position: string;
   isSelected?: boolean;
-  onClick?: (player: User) => void;
+  onClick?: (player: User | null) => void;
   isDraggable?: boolean;
   index?: number;
   dragId?: string;
@@ -23,19 +24,20 @@ export function PlayerCard({
   dragId
 }: PlayerCardProps) {
   const handleClick = () => {
-    if (onClick && player) {
+    if (onClick) {
       onClick(player);
     }
   };
 
   const card = (
-    <Card className={cn(
-      "relative border",
-      isSelected && "border-primary",
-      !player && "border-dashed",
-      onClick && player && "cursor-pointer"
-    )}
-    onClick={handleClick}
+    <Card 
+      className={cn(
+        "relative border",
+        isSelected && "border-primary",
+        !player && "border-dashed",
+        onClick && "cursor-pointer hover:border-primary hover:bg-primary/5"
+      )}
+      onClick={handleClick}
     >
       <CardContent className="p-3 text-center">
         {player ? (

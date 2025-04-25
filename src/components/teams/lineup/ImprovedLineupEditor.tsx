@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Team, Lines } from '@/types';
+import { Team, Lines, Position, User } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import RosterDragDrop from '../RosterDragDrop';
 import LoadingSpinner from '@/components/ui/loading-spinner';
@@ -18,6 +18,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
     lines,
     availablePlayers,
     handlePlayerMove,
+    handlePlayerSelect,
     addForwardLine,
     addDefenseLine,
     isLoading,
