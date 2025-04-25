@@ -31,7 +31,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
 
   // Function to handle the refresh button click
   // Make sure it returns a Promise to match expected type
-  const handleRefresh = async () => {
+  const handleRefresh = async (): Promise<void> => {
     await refreshStats();
   };
 
@@ -92,7 +92,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
         <TeamStatsDebug
           team={team}
           refreshStatus={{}}
-          onReprocessAllStats={() => {}}
+          onReprocessAllStats={async (): Promise<void> => {}}
           isReprocessing={false}
         />
       )}
