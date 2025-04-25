@@ -21,8 +21,12 @@ export function ScorerSelectionStep({
   isLoadingLineups,
   onRefreshLineups
 }: ScorerSelectionStepProps) {
-  // Ensure we have valid team data before proceeding
-  const hasPlayers = team?.players && Array.isArray(team.players) && team.players.length > 0;
+  // Check if we have valid team and players data
+  const hasPlayers = team?.players && team.players.length > 0;
+  
+  console.log('ScorerSelectionStep - Team:', team);
+  console.log('ScorerSelectionStep - Players:', team?.players);
+  console.log('ScorerSelectionStep - Has Players:', hasPlayers);
 
   return (
     <div>
@@ -55,7 +59,7 @@ export function ScorerSelectionStep({
           ) : (
             <div className="py-4 text-center text-muted-foreground">
               <p>No players found for this team.</p>
-              <p className="text-sm mt-1">Try refreshing the player list or check team settings.</p>
+              <p className="text-sm mt-1">Try refreshing the player list.</p>
             </div>
           )}
         </CardContent>

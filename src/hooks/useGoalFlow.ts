@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User, Game } from '@/types';
 import { toast } from 'sonner';
@@ -16,11 +15,9 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Add state to track lineup data loading
   const [hasLoadedLineups, setHasLoadedLineups] = useState(false);
   const [isLoadingLineups, setIsLoadingLineups] = useState(false);
 
-  // Function to load lineup data when a team is selected
   const loadLineupData = async (teamType: 'home' | 'away') => {
     try {
       setIsLoadingLineups(true);
@@ -40,6 +37,19 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       const lineupData = await getTeamLineup(teamToLoad.id);
       console.log("GoalFlow - Retrieved lineup data:", lineupData);
       
+      if (lineupData && Array.isArray(lineupData)) {
+        const updatedTeam = teamType === 'home' ? game.homeTeam : game.awayTeam;
+        if (updatedTeam) {
+          updatedTeam.players = lineupData.map(player => ({
+            id: player.id,
+            name: player.name || 'Unknown Player',
+            email: player.email,
+            position: player.position,
+            lineNumber: player.line_number
+          }));
+        }
+      }
+      
       setHasLoadedLineups(true);
     } catch (error) {
       console.error("GoalFlow - Error loading lineup data:", error);
@@ -49,42 +59,16 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     }
   };
 
-  // Function to refresh lineup data
   const handleRefreshLineups = async () => {
     if (!selectedTeam) return;
-    
-    try {
-      setIsLoadingLineups(true);
-      const teamToLoad = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
-      
-      if (!teamToLoad || !teamToLoad.id) {
-        console.warn("Cannot refresh lineup - invalid team data");
-        setIsLoadingLineups(false);
-        return;
-      }
-      
-      console.log("GoalFlow - Refreshing lineup data for team:", teamToLoad.id);
-      
-      await getTeamLineup(teamToLoad.id);
-      
-      // Force a re-render by updating state
-      setHasLoadedLineups(false);
-      setTimeout(() => setHasLoadedLineups(true), 100);
-    } catch (error) {
-      console.error("GoalFlow - Error refreshing lineup data:", error);
-      toast.error("Failed to refresh team lineup");
-    } finally {
-      setIsLoadingLineups(false);
-    }
+    await loadLineupData(selectedTeam);
   };
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
     
-    // Always go to scorer selection regardless of team type
     setCurrentStep('scorer-select');
     
-    // Load lineup data for the selected team
     loadLineupData(team);
   };
 
@@ -103,16 +87,13 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     setCurrentStep('players-on-ice');
   };
   
-  // Function to handle moving to the next step
   const handleNextStep = () => {
     setCurrentStep('submit');
   };
 
-  // Validation function to check if players are valid
   const validatePlayers = () => {
     if (!game) return false;
     
-    // With proper team selection, we should be able to validate players more easily
     if (!selectedTeam) {
       toast.error("No team selected");
       return false;
@@ -124,13 +105,11 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     
     const allValidPlayerIds = teamPlayers.map(p => p.id);
     
-    // Check if there's a scorer
     if (!selectedScorer) {
       toast.error("No scorer selected");
       return false;
     }
     
-    // Validate all players on ice
     if (!playersOnIce || playersOnIce.length === 0) {
       toast.error("No players on ice selected");
       return false;
@@ -148,27 +127,20 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   };
 
   const handlePlayersOnIceSelect = (players: User[]) => {
-    console.log("handlePlayersOnIceSelect called with players:", players);
-    
-    // Create a new array with unique players
     const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
     
-    // Add mandatory players (scorer, primary assist, secondary assist) if not already included
     const mandatoryPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
     
     const allPlayers = [...uniquePlayers];
     
-    // Add any mandatory players not already in the selection
     mandatoryPlayers.forEach(requiredPlayer => {
       if (requiredPlayer && !allPlayers.some(p => p.id === requiredPlayer.id)) {
         allPlayers.push(requiredPlayer);
       }
     });
     
-    // Limit to 6 players maximum
     const limitedPlayers = allPlayers.slice(0, 6);
     
-    console.log("Final players on ice set to:", limitedPlayers);
     setPlayersOnIce(limitedPlayers);
   };
 
@@ -188,7 +160,6 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     console.log("Submitting goal with players:", playersOnIce);
 
     try {
-      // Create the goal data with the base properties
       const goalData: {
         gameId: string;
         period: number;
@@ -204,7 +175,6 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
         playersOnIce: playersOnIce.map(p => p.id)
       };
 
-      // Add optional properties conditionally
       if (selectedScorer) goalData.scorerId = selectedScorer.id;
       if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
       if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
@@ -212,7 +182,6 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
 
-      // Show success message with appropriate team context
       const teamName = selectedTeam === 'home' 
         ? game.homeTeam?.name || 'Home team'
         : game.awayTeam?.name || 'Away team';
