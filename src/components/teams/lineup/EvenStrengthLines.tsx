@@ -24,7 +24,7 @@ export function EvenStrengthLines({
         forwardLines={lines.forwards}
         isDraggable={true}
         onPositionClick={onPositionClick ? 
-          (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position, player) : 
+          (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position as Position, player) : 
           undefined}
       />
       
@@ -40,7 +40,7 @@ export function EvenStrengthLines({
         defensePairs={lines.defense}
         isDraggable={true}
         onPositionClick={onPositionClick ? 
-          (lineIndex, position, player) => onPositionClick('defense', lineIndex, position, player) : 
+          (lineIndex, position, player) => onPositionClick('defense', lineIndex, position as Position, player) : 
           undefined}
       />
       
@@ -56,7 +56,7 @@ export function EvenStrengthLines({
         goalies={lines.goalies}
         isDraggable={true}
         onPositionClick={onPositionClick ? 
-          (index, player) => onPositionClick('goalies', index, 'G', player) : 
+          (index, player) => onPositionClick('goalies', index, 'G' as Position, player) : 
           undefined}
       />
     </div>
