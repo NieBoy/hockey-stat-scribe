@@ -3,7 +3,7 @@ import React from "react";
 import { Team } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw, History } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import TeamStatsHeader from "./stats/TeamStatsHeader";
 import TeamStatsDebug from "./stats/TeamStatsDebug";
@@ -27,7 +27,7 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     refreshStats,
   } = useTeamStats(team.id);
 
-  const { transformedStats, statTypes } = useTransformedTeamStats(stats || []);
+  const { transformedStats, statTypes } = useTransformedTeamStats(stats || [], team.players);
 
   // Function to handle the refresh button click
   // Make sure it returns a Promise to match expected type
@@ -64,25 +64,14 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
           <CardTitle>Team Statistics</CardTitle>
         </CardHeader>
         <CardContent>
-          {transformedStats.length > 0 ? (
+          {team.players.length > 0 ? (
             <TeamStatsTable 
               stats={transformedStats}
               statTypes={statTypes}
             />
           ) : (
             <div className="text-center text-muted-foreground py-8">
-              <p>No statistics available for this team.</p>
-              <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
-                <Button 
-                  onClick={handleRefresh} 
-                  variant="outline" 
-                  className="gap-2"
-                  disabled={isRefreshing}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Stats
-                </Button>
-              </div>
+              <p>No players available for this team.</p>
             </div>
           )}
         </CardContent>
