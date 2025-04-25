@@ -24,39 +24,39 @@ export const updateTeamLineup = async (
       return true;
     }
     
-    // Track all user IDs that should have positions
-    const updatedUserIds = updates.map(update => update.user_id);
+    // Track all member IDs that should have positions
+    const updatedMemberIds = updates.map(update => update.id);
     
     // Apply all player position updates
     let allUpdatesSuccessful = true;
     
     for (const update of updates) {
-      if (!update.user_id) {
-        console.error("Invalid user_id in update:", update);
+      if (!update.id) {
+        console.error("Invalid id in update:", update);
         continue;
       }
       
-      // Important: We're updating the team_members table using user_id field, not id field
+      // Important: We're updating the team_members table using id field, not user_id
       const { error } = await supabase
         .from('team_members')
         .update({
           position: update.position,
           line_number: update.line_number
         })
-        .eq('team_id', update.team_id)
-        .eq('user_id', update.user_id);
+        .eq('id', update.id)
+        .eq('team_id', update.team_id);
         
       if (error) {
         console.error("Error updating player position:", error);
         console.error("Failed update data:", update);
         allUpdatesSuccessful = false;
       } else {
-        console.log(`Successfully updated player ${update.user_id} to position ${update.position} on line ${update.line_number}`);
+        console.log(`Successfully updated player ${update.id} to position ${update.position} on line ${update.line_number}`);
       }
     }
     
     // Clear positions for players not in the lineup
-    if (updatedUserIds.length > 0) {
+    if (updatedMemberIds.length > 0) {
       const { error: clearError } = await supabase
         .from('team_members')
         .update({
@@ -65,7 +65,7 @@ export const updateTeamLineup = async (
         })
         .eq('team_id', teamId)
         .eq('role', 'player')
-        .not('user_id', 'in', updatedUserIds);
+        .not('id', 'in', updatedMemberIds);
         
       if (clearError) {
         console.error("Error clearing unused player positions:", clearError);
@@ -81,3 +81,4 @@ export const updateTeamLineup = async (
     return false;
   }
 };
+

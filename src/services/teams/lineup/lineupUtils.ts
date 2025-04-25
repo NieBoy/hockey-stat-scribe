@@ -3,7 +3,7 @@ import { Lines } from "@/types";
 
 interface LineupUpdate {
   team_id: string;
-  user_id: string;
+  id: string; // Changed from user_id to id since we're updating team_members table using id
   role: string;
   position: string;
   line_number: number;
@@ -17,7 +17,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (line.leftWing) {
       updates.push({
         team_id: teamId,
-        user_id: line.leftWing.id,
+        id: line.leftWing.id,
         role: 'player',
         position: 'LW',
         line_number: line.lineNumber
@@ -27,7 +27,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (line.center) {
       updates.push({
         team_id: teamId,
-        user_id: line.center.id,
+        id: line.center.id,
         role: 'player',
         position: 'C',
         line_number: line.lineNumber
@@ -37,7 +37,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (line.rightWing) {
       updates.push({
         team_id: teamId,
-        user_id: line.rightWing.id,
+        id: line.rightWing.id,
         role: 'player',
         position: 'RW',
         line_number: line.lineNumber
@@ -50,7 +50,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (line.leftDefense) {
       updates.push({
         team_id: teamId,
-        user_id: line.leftDefense.id,
+        id: line.leftDefense.id,
         role: 'player',
         position: 'LD',
         line_number: line.lineNumber
@@ -60,7 +60,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (line.rightDefense) {
       updates.push({
         team_id: teamId,
-        user_id: line.rightDefense.id,
+        id: line.rightDefense.id,
         role: 'player',
         position: 'RD',
         line_number: line.lineNumber
@@ -73,7 +73,7 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
     if (goalie) {
       updates.push({
         team_id: teamId,
-        user_id: goalie.id,
+        id: goalie.id,
         role: 'player',
         position: 'G',
         line_number: index + 1
@@ -83,3 +83,4 @@ export const prepareUpdates = (teamId: string, lines: Lines): LineupUpdate[] => 
   
   return updates;
 };
+
