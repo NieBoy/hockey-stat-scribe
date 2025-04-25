@@ -1,7 +1,6 @@
 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Team } from '@/types';
 
 interface TeamSelectorProps {
   teams: { id: string; name: string }[];
@@ -10,7 +9,7 @@ interface TeamSelectorProps {
   error?: string;
 }
 
-export function TeamSelector({ teams, value, onChange, error }: TeamSelectorProps) {
+export function TeamSelector({ teams = [], value, onChange, error }: TeamSelectorProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor="homeTeam">Home Team</Label>

@@ -15,7 +15,7 @@ export default function NewGame() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  const { data: teams, isLoading, error } = useQuery({
+  const { data: teams = [], isLoading, error } = useQuery({
     queryKey: ['teams'],
     queryFn: getTeams
   });
@@ -76,7 +76,7 @@ export default function NewGame() {
         ) : (
           <NewGameForm 
             onSubmit={handleCreateGame} 
-            teams={(teams as Team[] || [])} 
+            teams={teams || []} 
             isLoading={loading}
           />
         )}

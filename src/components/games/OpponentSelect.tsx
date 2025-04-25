@@ -31,7 +31,7 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const [newOpponent, setNewOpponent] = useState('');
   
   // Fetch unique opponent names from existing games
-  const { data: opponents = [], refetch } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: ['opponents'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,6 +53,9 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
       return uniqueOpponents.map(name => ({ label: name, value: name }));
     }
   });
+  
+  // Ensure we always have an array even if data is undefined
+  const opponents = data || [];
 
   const handleAddNewOpponent = () => {
     if (!newOpponent.trim()) return;

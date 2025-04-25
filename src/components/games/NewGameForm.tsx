@@ -14,7 +14,7 @@ interface NewGameFormProps {
   isLoading?: boolean;
 }
 
-export default function NewGameForm({ teams, onSubmit, isLoading = false }: NewGameFormProps) {
+export default function NewGameForm({ teams = [], onSubmit, isLoading = false }: NewGameFormProps) {
   const {
     date,
     setDate,
