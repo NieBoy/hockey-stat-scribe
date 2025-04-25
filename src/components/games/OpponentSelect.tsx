@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,16 +46,20 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
           return [];
         }
 
-        // Extract unique opponent names
-        const opponentNames = Array.from(
-          new Set(
-            gameData
-              .map(game => game.opponent_name)
-              .filter(name => name !== null && name !== undefined)
-          )
-        );
+        // Safely extract unique opponent names
+        if (!gameData || !Array.isArray(gameData)) {
+          return [];
+        }
+
+        // Extract unique opponent names using Set
+        const uniqueNames = new Set<string>();
+        gameData.forEach(game => {
+          if (game && game.opponent_name) {
+            uniqueNames.add(game.opponent_name);
+          }
+        });
           
-        return opponentNames.map(name => ({ label: name, value: name }));
+        return Array.from(uniqueNames).map(name => ({ label: name, value: name }));
       } catch (err) {
         console.error('Unexpected error fetching opponents:', err);
         return [];
@@ -67,7 +72,8 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
   const handleAddNewOpponent = () => {
     if (!newOpponent.trim()) return;
     
-    const opponentExists = data.some(
+    // Safely check if opponent exists
+    const opponentExists = Array.isArray(data) && data.some(
       opponent => opponent.value.toLowerCase() === newOpponent.trim().toLowerCase()
     );
     
@@ -81,6 +87,9 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
     setOpen(false);
     refetch();
   };
+
+  // Ensure we have a valid array for rendering
+  const opponents = Array.isArray(data) ? data : [];
 
   return (
     <div className="space-y-2">
@@ -122,9 +131,9 @@ export function OpponentSelect({ value, onChange }: OpponentSelectProps) {
                 </div>
               </div>
             </CommandEmpty>
-            {data.length > 0 && (
+            {opponents.length > 0 && (
               <CommandGroup>
-                {data.map((opponent) => (
+                {opponents.map((opponent) => (
                   <CommandItem
                     key={opponent.value}
                     value={opponent.value}
