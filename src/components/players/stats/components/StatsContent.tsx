@@ -24,14 +24,15 @@ export default function StatsContent({
   activeTab,
   onTabChange
 }: StatsContentProps) {
-  // Call refresh_player_stats when component mounts or when rawGameStats changes
+  // Refresh stats when component mounts or when raw stats change
   useEffect(() => {
     const refreshStats = async () => {
       if (rawGameStats && rawGameStats.length > 0) {
         const playerId = rawGameStats[0].player_id;
+        console.log(`Refreshing stats for player ${playerId}`);
         
         try {
-          const { data, error } = await supabase.rpc('refresh_player_stats', {
+          const { error } = await supabase.rpc('refresh_player_stats', {
             player_id: playerId
           });
           
@@ -50,7 +51,6 @@ export default function StatsContent({
     refreshStats();
   }, [rawGameStats]);
 
-  // Always render tabs, even if no stats
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="mt-6">
       <TabsList>

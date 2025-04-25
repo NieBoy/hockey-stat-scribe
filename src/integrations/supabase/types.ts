@@ -276,6 +276,7 @@ export type Database = {
           id: string
           player_id: string
           stat_type: string
+          updated_at: string | null
           value: number
         }
         Insert: {
@@ -284,6 +285,7 @@ export type Database = {
           id?: string
           player_id: string
           stat_type: string
+          updated_at?: string | null
           value?: number
         }
         Update: {
@@ -292,6 +294,7 @@ export type Database = {
           id?: string
           player_id?: string
           stat_type?: string
+          updated_at?: string | null
           value?: number
         }
         Relationships: []

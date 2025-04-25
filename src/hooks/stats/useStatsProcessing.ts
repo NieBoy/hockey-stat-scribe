@@ -27,7 +27,6 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
       return;
     }
     
-    // Prevent multiple concurrent processing
     if (isProcessing) {
       addStatusMessage("Processing already in progress");
       return;
@@ -51,6 +50,67 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
       toast.error("Failed to process stats");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const processPlayer = async (playerId: string) => {
+    try {
+      addStatusMessage(`Fetching game events for player ${playerId}...`);
+      
+      // Fix: Use proper JSONB containment operators
+      const { data: events, error: eventsError } = await supabase
+        .from('game_events')
+        .select('*')
+        .or(
+          `details->>'playerId'.eq.${playerId},` + 
+          `details->>'primaryAssistId'.eq.${playerId},` +
+          `details->>'secondaryAssistId'.eq.${playerId}`
+        )
+        .order('timestamp', { ascending: true });
+
+      if (eventsError) {
+        throw new Error(`Error fetching events: ${eventsError.message}`);
+      }
+      
+      if (!events || events.length === 0) {
+        addStatusMessage("No game events found for this player.");
+        setFinishedProcessing(true);
+        return;
+      }
+
+      setGameEvents(events);
+      addStatusMessage(`Found ${events.length} events for processing`);
+
+      // Log events for debugging
+      events.forEach((event, index) => {
+        console.log(`Event ${index + 1}:`, {
+          id: event.id,
+          type: event.event_type,
+          details: event.details
+        });
+      });
+
+      addStatusMessage("Refreshing player stats...");
+      
+      // Call refresh_player_stats RPC
+      const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
+        player_id: playerId
+      });
+      
+      if (refreshError) {
+        throw refreshError;
+      }
+      
+      addStatusMessage("Stats processing complete");
+      setFinishedProcessing(true);
+      
+      if (onProcessingComplete) {
+        onProcessingComplete();
+      }
+      
+      toast.success("Player stats processing completed");
+    } catch (error: any) {
+      throw error;
     }
   };
 
@@ -84,69 +144,6 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
     }
     
     toast.success("Team stats processing completed");
-  };
-
-  const processPlayer = async (playerId: string) => {
-    try {
-      addStatusMessage(`Fetching game events for player ${playerId}...`);
-      
-      const { data: events, error: eventsError } = await supabase
-        .from('game_events')
-        .select('*')
-        .or(
-          `details->>'playerId'.eq.${playerId},` + 
-          `details->>'primaryAssistId'.eq.${playerId},` +
-          `details->>'secondaryAssistId'.eq.${playerId},` +
-          `details->'playersOnIce'??${playerId}`
-        )
-        .order('timestamp', { ascending: true });
-
-      if (eventsError) {
-        throw new Error(`Error fetching events: ${eventsError.message}`);
-      }
-      
-      if (!events || events.length === 0) {
-        addStatusMessage("No game events found for this player.");
-        setFinishedProcessing(true);
-        return;
-      }
-
-      setGameEvents(events);
-      addStatusMessage(`Found ${events.length} events for processing`);
-
-      // Log events for debugging
-      events.forEach((event, index) => {
-        console.log(`Event ${index + 1}:`, {
-          id: event.id,
-          type: event.event_type,
-          details: event.details,
-          playerId: event.details?.playerId,
-          primaryAssistId: event.details?.primaryAssistId,
-          secondaryAssistId: event.details?.secondaryAssistId,
-          playersOnIce: event.details?.playersOnIce
-        });
-      });
-
-      addStatusMessage("Refreshing player stats...");
-      
-      // Use refreshPlayerStats directly to avoid duplicate processing
-      const result = await refreshPlayerStats(playerId);
-      
-      if (result && Object.values(result).includes("Success")) {
-        addStatusMessage("Stats processing complete");
-        setFinishedProcessing(true);
-        
-        if (onProcessingComplete) {
-          onProcessingComplete();
-        }
-        
-        toast.success("Player stats processing completed");
-      } else {
-        addStatusMessage(`Stats refresh reported an issue: ${JSON.stringify(result)}`);
-      }
-    } catch (error) {
-      throw error;
-    }
   };
 
   return {
