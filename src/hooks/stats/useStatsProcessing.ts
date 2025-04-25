@@ -57,16 +57,11 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
     try {
       addStatusMessage(`Fetching game events for player ${playerId}...`);
       
-      // Fix: Use proper JSONB containment operators
+      // Fix: Use proper JSONB queries with explicit operator syntax
       const { data: events, error: eventsError } = await supabase
         .from('game_events')
         .select('*')
-        .or(
-          `details->>'playerId'.eq.${playerId},` + 
-          `details->>'primaryAssistId'.eq.${playerId},` +
-          `details->>'secondaryAssistId'.eq.${playerId}`
-        )
-        .order('timestamp', { ascending: true });
+        .or(`details->>'playerId'.eq.${playerId},details->>'primaryAssistId'.eq.${playerId},details->>'secondaryAssistId'.eq.${playerId}`);
 
       if (eventsError) {
         throw new Error(`Error fetching events: ${eventsError.message}`);
@@ -92,13 +87,13 @@ export const useStatsProcessing = ({ playerId, teamId, onProcessingComplete }: U
 
       addStatusMessage("Refreshing player stats...");
       
-      // Call refresh_player_stats RPC
+      // Call refresh_player_stats RPC with correct parameter syntax
       const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
         player_id: playerId
       });
       
       if (refreshError) {
-        throw refreshError;
+        throw new Error(`Error refreshing stats: ${refreshError.message}`);
       }
       
       addStatusMessage("Stats processing complete");

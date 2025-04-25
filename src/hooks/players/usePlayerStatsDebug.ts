@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 export function usePlayerStatsDebug(playerId: string) {
   const [showDebug, setShowDebug] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   
   const { 
     stats, 
@@ -32,14 +33,17 @@ export function usePlayerStatsDebug(playerId: string) {
     
     try {
       // First call refresh_player_stats to ensure aggregated stats are up to date
-      console.log("Refreshing aggregated stats...");
+      console.log("Calling refresh_player_stats database function...");
       const { error: refreshError } = await supabase.rpc('refresh_player_stats', {
         player_id: playerId
       });
       
       if (refreshError) {
+        console.error("Error refreshing stats:", refreshError);
         throw refreshError;
       }
+      
+      console.log("Database function completed, now refetching data...");
       
       // Then fetch the events to ensure we have latest data
       console.log("Fetching latest events...");
@@ -50,14 +54,15 @@ export function usePlayerStatsDebug(playerId: string) {
       await refetchRawStats();
       
       // Finally refresh aggregated stats
-      console.log("Refreshing aggregated stats...");
+      console.log("Refreshing aggregated stats from database...");
       await refetchStats();
       
+      setLastRefreshed(new Date());
       toast.success("Stats refreshed successfully");
       console.log("Stats refresh completed successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during stats refresh:", error);
-      toast.error("Failed to refresh stats");
+      toast.error(`Failed to refresh stats: ${error.message || "Unknown error"}`);
     } finally {
       setIsRefreshing(false);
     }
@@ -78,6 +83,8 @@ export function usePlayerStatsDebug(playerId: string) {
     playerTeam,
     showDebug,
     toggleDebug,
-    handleRefresh
+    handleRefresh,
+    lastRefreshed,
+    isRefreshing
   };
 }
