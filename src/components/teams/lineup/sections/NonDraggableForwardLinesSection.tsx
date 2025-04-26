@@ -1,5 +1,5 @@
 
-import { Lines } from '@/types';
+import { Lines, User } from '@/types';
 import { PlayerCard } from './NonDraggablePlayerCard';
 
 interface ForwardLinesSectionProps {

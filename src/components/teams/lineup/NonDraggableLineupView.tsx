@@ -1,5 +1,5 @@
 
-import { Lines, User } from '@/types';
+import { Lines, User, Position } from '@/types';
 import { ForwardLinesSection } from './sections/NonDraggableForwardLinesSection';
 import { DefensePairsSection } from './sections/NonDraggableDefensePairsSection';
 import { GoaliesSection } from './sections/NonDraggableGoaliesSection';
