@@ -32,10 +32,12 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
   } = useSaveLineup({ onSaveLineup, lines });
 
   const onSave = async () => {
+    console.log("Manual save initiated from button click");
     return await handleSave();
   };
 
   const onRefresh = async () => {
+    console.log("Manual refresh initiated from button click");
     return await refreshLineupData();
   };
 

@@ -36,11 +36,11 @@ export default function TeamLineup() {
     enabled: !!id,
     // Always get fresh data
     staleTime: 0, 
-    // Refetch every 30 seconds
-    refetchInterval: 30000,
+    // Disable automatic refetch interval to prevent auto-refreshes
+    refetchInterval: false,
   });
 
-  // Force refetch when component mounts
+  // Force refetch only when component mounts
   useEffect(() => {
     if (id) {
       console.log("TeamLineup - Component mounted, force refetching team data");
@@ -57,7 +57,7 @@ export default function TeamLineup() {
     }
     
     try {
-      console.log("TeamLineup - Saving lineup for team:", team.id);
+      console.log("TeamLineup - Manually saving lineup for team:", team.id);
       
       // Create a deep copy of the lines to prevent any mutation issues
       const linesToSave = cloneDeep(lines);

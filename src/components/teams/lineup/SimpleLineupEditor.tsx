@@ -35,6 +35,7 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
   const normalizedOnSaveLineup = async (lines: Lines): Promise<boolean> => {
     if (!onSaveLineup) return false;
     try {
+      console.log("Manual save initiated from SimpleLineupEditor");
       const result = await onSaveLineup(lines);
       // Treat both undefined and true as success
       return result === undefined || result === true;
@@ -55,7 +56,7 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
 
   // Add this effect to log lineup changes for debugging
   useEffect(() => {
-    console.log("Lineup updated:", JSON.stringify(lines, null, 2));
+    console.log("Lineup updated, changes will only be saved when you click Save button");
   }, [lines]);
 
   const handlePositionSelect = (lineIndex: number, position: Position) => {

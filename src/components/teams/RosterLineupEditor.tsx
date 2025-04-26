@@ -32,7 +32,7 @@ export default function RosterLineupEditor({ team, onSave, isSaving = false }: R
 
   const handleSave = async () => {
     try {
-      console.log("Saving lineup...");
+      console.log("Manually saving lineup...");
       await onSave(lines);
       toast.success("Lineup saved successfully");
     } catch (error) {
