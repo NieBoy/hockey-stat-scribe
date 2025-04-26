@@ -1,9 +1,8 @@
 
 import React from 'react';
 import { CardTitle, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, Save } from 'lucide-react';
+import { RefreshCw, Save } from 'lucide-react';
 import { Lines } from '@/types';
 
 interface LineupHeaderProps {
@@ -19,6 +18,16 @@ export function LineupHeader({
   isSaving, 
   hasUnsavedChanges 
 }: LineupHeaderProps) {
+  const handleSaveClick = async () => {
+    console.log("Save button clicked");
+    await onSave();
+  };
+
+  const handleRefreshClick = async () => {
+    console.log("Refresh button clicked");
+    await onRefresh();
+  };
+
   return (
     <CardHeader className="flex flex-row items-center justify-between">
       <CardTitle>Team Lineup</CardTitle>
@@ -26,7 +35,7 @@ export function LineupHeader({
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={onRefresh} 
+          onClick={handleRefreshClick} 
           disabled={isSaving}
           className="flex items-center gap-1"
         >
@@ -35,7 +44,7 @@ export function LineupHeader({
         </Button>
         
         <Button 
-          onClick={onSave} 
+          onClick={handleSaveClick} 
           disabled={isSaving || !hasUnsavedChanges}
           size="sm"
           className="flex items-center gap-1"

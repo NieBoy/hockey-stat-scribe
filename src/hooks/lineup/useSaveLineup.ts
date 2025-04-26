@@ -21,6 +21,8 @@ export function useSaveLineup({ onSaveLineup, lines }: UseLineupSaveProps) {
       console.log("Starting lineup save...");
       
       const linesToSave = cloneDeep(lines);
+      console.log("Saving lineup:", JSON.stringify(linesToSave, null, 2));
+      
       const result = await onSaveLineup(linesToSave);
       
       const saveSuccessful = result === undefined || result === true;
