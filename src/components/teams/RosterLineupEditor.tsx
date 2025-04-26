@@ -100,7 +100,9 @@ export default function RosterLineupEditor({ team, onSave, isSaving = false }: R
           availablePlayers={availablePlayers}
           onPlayerSelect={handlePlayerSelected}
           onCancel={closePlayerSelection}
-        />
+        >
+          <Button variant="outline">Select Player</Button>
+        </PlayerSelectionModal>
       )}
     </div>
   );

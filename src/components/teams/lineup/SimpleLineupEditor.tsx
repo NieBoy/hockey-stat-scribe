@@ -9,6 +9,7 @@ import { useLineupSave } from "@/hooks/lineup/useLineupSave";
 import { LineupHeader } from "./components/LineupHeader";
 import { LineupTabs } from "./components/LineupTabs";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface SimpleLineupEditorProps {
   team: Team;
@@ -141,7 +142,9 @@ export function SimpleLineupEditor({ team, onSaveLineup }: SimpleLineupEditorPro
                 handlePlayerSelectWithLogging(currentTab, selectedLineIndex, selectedPosition, playerId);
               }}
               onCancel={() => setSelectedPosition(null)}
-            />
+            >
+              <span className="sr-only">Select Player</span>
+            </PlayerSelectionModal>
           )}
         </CardContent>
       </Card>
