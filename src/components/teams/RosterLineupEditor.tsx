@@ -4,6 +4,7 @@ import { Team, Lines, Position, User } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { RosterContainer } from './lineup/RosterContainer';
 import { PlayerSelectionModal } from './lineup/PlayerSelectionModal';
+import { Button } from '@/components/ui/button';
 
 interface RosterLineupEditorProps {
   team: Team;

@@ -33,7 +33,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
 
   const onRefresh = async () => {
     console.log("Manual refresh initiated from button click");
-    await refreshLineupData();
+    return await refreshLineupData(); // This ensures the Promise<Lines> is returned
   };
 
   if (isLoading) {
