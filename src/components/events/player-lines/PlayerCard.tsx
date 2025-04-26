@@ -8,19 +8,13 @@ interface PlayerCardProps {
   position: string;
   isSelected?: boolean;
   onClick?: (player: User | null) => void;
-  isDraggable?: boolean;
-  index?: number;
-  dragId?: string;
 }
 
 export function PlayerCard({ 
   player, 
   position,
   isSelected = false,
-  onClick,
-  isDraggable = false,
-  index = 0,
-  dragId
+  onClick
 }: PlayerCardProps) {
   const handleClick = () => {
     if (onClick) {

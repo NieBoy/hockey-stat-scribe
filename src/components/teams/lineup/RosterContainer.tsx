@@ -8,8 +8,8 @@ import { SpecialTeamsUnit } from './SpecialTeamsUnit';
 interface RosterContainerProps {
   team: Team;
   lines: Lines;
-  availablePlayers: any[];
-  handlePlayerMove: (playerId: string, targetLineType: 'forwards' | 'defense' | 'goalies', targetLineIndex: number, targetPosition: Position) => void;
+  availablePlayers: User[];
+  handlePlayerMove: (player: User, targetLineType: 'forwards' | 'defense' | 'goalies', targetLineIndex: number, targetPosition: Position) => void;
   addForwardLine: () => void;
   addDefenseLine: () => void;
   onPositionClick?: (lineType: 'forwards' | 'defense' | 'goalies', lineIndex: number, position: Position, player: User | null) => void;
@@ -24,9 +24,19 @@ export function RosterContainer({
   addDefenseLine,
   onPositionClick
 }: RosterContainerProps) {
+  const handlePlayerSelect = (player: User) => {
+    // When a player is selected from the available players, prompt the user where to place them
+    console.log("Player selected from available players:", player);
+    // This would need a UI to select where to place the player
+    // For now, we just log it
+  };
+
   return (
     <div className="space-y-6">
-      <AvailablePlayersSection availablePlayers={availablePlayers} />
+      <AvailablePlayersSection 
+        availablePlayers={availablePlayers}
+        onPlayerSelect={handlePlayerSelect} 
+      />
 
       <Tabs defaultValue="even-strength" className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">

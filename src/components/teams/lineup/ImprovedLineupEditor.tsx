@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Team, Lines, Position, User } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
-import RosterDragDrop from '../RosterDragDrop';
+import RosterLineupEditor from '../RosterDragDrop';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { LineupHeader } from './components/LineupHeader';
 import { useSaveLineup } from '@/hooks/lineup/useSaveLineup';
@@ -58,7 +58,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
         hasUnsavedChanges={hasUnsavedChanges}
       />
       <CardContent>
-        <RosterDragDrop 
+        <RosterLineupEditor 
           team={team} 
           onSave={async (lines) => {
             if (onSaveLineup) {

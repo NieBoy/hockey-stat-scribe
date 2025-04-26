@@ -10,16 +10,12 @@ export function usePlayerMovement(
 ) {
   const handlePlayerMove = (
     player: User, 
-    sourceLineType: 'forwards' | 'defense' | 'goalies', 
-    sourceLineIndex: number,
-    sourcePosition: Position, 
     targetLineType: 'forwards' | 'defense' | 'goalies', 
     targetLineIndex: number, 
     targetPosition: Position
   ) => {
     console.log("Moving player:", { 
       player, 
-      from: `${sourceLineType} line ${sourceLineIndex} pos ${sourcePosition}`,
       to: `${targetLineType} line ${targetLineIndex} pos ${targetPosition}`
     });
     
