@@ -55,6 +55,11 @@ export default function RosterLineupEditor({ team, onSave, isSaving = false }: R
     closePlayerSelection();
   };
 
+  const handleSaveClick = async () => {
+    console.log("Save clicked in RosterLineupEditor");
+    await onSave();
+  };
+
   return (
     <div className="space-y-4">
       <RosterContainer

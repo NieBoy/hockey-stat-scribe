@@ -3,11 +3,10 @@ import React from 'react';
 import { CardTitle, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Save } from 'lucide-react';
-import { Lines } from '@/types';
 
 interface LineupHeaderProps {
   onSave: () => Promise<boolean>;
-  onRefresh: () => Promise<Lines | null>;
+  onRefresh: () => Promise<any>;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
 }
@@ -19,12 +18,12 @@ export function LineupHeader({
   hasUnsavedChanges 
 }: LineupHeaderProps) {
   const handleSaveClick = async () => {
-    console.log("Save button clicked");
+    console.log("Save button clicked in LineupHeader");
     await onSave();
   };
 
   const handleRefreshClick = async () => {
-    console.log("Refresh button clicked");
+    console.log("Refresh button clicked in LineupHeader");
     await onRefresh();
   };
 
@@ -47,6 +46,7 @@ export function LineupHeader({
           onClick={handleSaveClick} 
           disabled={isSaving || !hasUnsavedChanges}
           size="sm"
+          variant="default"
           className="flex items-center gap-1"
         >
           <Save className="h-4 w-4" />

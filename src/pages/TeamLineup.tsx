@@ -58,6 +58,7 @@ export default function TeamLineup() {
     
     try {
       console.log("TeamLineup - Manually saving lineup for team:", team.id);
+      console.log("TeamLineup - Lines structure received:", JSON.stringify(lines, null, 2));
       
       // Create a deep copy of the lines to prevent any mutation issues
       const linesToSave = cloneDeep(lines);

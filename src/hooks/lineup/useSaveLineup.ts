@@ -14,30 +14,40 @@ export function useSaveLineup({ onSaveLineup, lines }: UseLineupSaveProps) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(true);
 
   const handleSave = async () => {
-    if (!onSaveLineup || isSaving) return false;
+    if (!onSaveLineup) {
+      console.error("No save function provided to useSaveLineup");
+      return false;
+    }
+    
+    if (isSaving) {
+      console.log("Already saving, ignoring duplicate save request");
+      return false;
+    }
     
     try {
       setIsSaving(true);
-      console.log("Starting lineup save...");
+      console.log("useSaveLineup - Starting lineup save...");
       
       const linesToSave = cloneDeep(lines);
-      console.log("Saving lineup:", JSON.stringify(linesToSave, null, 2));
+      console.log("useSaveLineup - Saving lineup:", JSON.stringify(linesToSave, null, 2));
       
       const result = await onSaveLineup(linesToSave);
+      console.log("useSaveLineup - Save result:", result);
       
       const saveSuccessful = result === undefined || result === true;
       
       if (saveSuccessful) {
+        console.log("useSaveLineup - Save successful");
         setHasUnsavedChanges(false);
         toast.success("Lineup saved successfully");
         return true;
       } else {
-        console.error("Save returned false");
+        console.error("useSaveLineup - Save returned false");
         toast.error("Failed to save lineup");
         return false;
       }
     } catch (error) {
-      console.error("Error saving lineup:", error);
+      console.error("useSaveLineup - Error saving lineup:", error);
       toast.error("Error saving lineup", {
         description: error instanceof Error ? error.message : "Unknown error"
       });
@@ -50,6 +60,7 @@ export function useSaveLineup({ onSaveLineup, lines }: UseLineupSaveProps) {
   return {
     isSaving,
     hasUnsavedChanges,
+    setHasUnsavedChanges,
     handleSave
   };
 }
