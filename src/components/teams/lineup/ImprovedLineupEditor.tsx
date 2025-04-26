@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Team, Lines, Position, User } from '@/types';
+import { Team, Lines } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import RosterLineupEditor from '../RosterDragDrop';
 import LoadingSpinner from '@/components/ui/loading-spinner';
@@ -31,14 +31,9 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
     handleSave
   } = useSaveLineup({ onSaveLineup, lines });
 
-  const onSave = async () => {
-    console.log("Manual save initiated from button click");
-    return await handleSave();
-  };
-
   const onRefresh = async () => {
     console.log("Manual refresh initiated from button click");
-    return await refreshLineupData();
+    await refreshLineupData();
   };
 
   if (isLoading) {
@@ -54,7 +49,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
   return (
     <Card>
       <LineupHeader 
-        onSave={onSave}
+        onSave={handleSave}
         onRefresh={onRefresh}
         isSaving={isSaving} 
         hasUnsavedChanges={hasUnsavedChanges}
@@ -62,12 +57,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
       <CardContent>
         <RosterLineupEditor 
           team={team} 
-          onSave={async (lines) => {
-            if (onSaveLineup) {
-              await onSaveLineup(lines);
-              return;
-            }
-          }}
+          onSave={handleSave}
           isSaving={isSaving}
         />
       </CardContent>

@@ -3,14 +3,11 @@ import { useState } from 'react';
 import { Team, Lines, Position, User } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
 import { RosterContainer } from './lineup/RosterContainer';
-import { Button } from '../ui/button';
-import { Save } from 'lucide-react';
-import { toast } from 'sonner';
 import { PlayerSelectionModal } from './lineup/PlayerSelectionModal';
 
 interface RosterLineupEditorProps {
   team: Team;
-  onSave: (lines: Lines) => Promise<void>;
+  onSave: () => Promise<boolean>;
   isSaving?: boolean;
 }
 
@@ -29,17 +26,6 @@ export default function RosterLineupEditor({ team, onSave, isSaving = false }: R
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
-
-  const handleSave = async () => {
-    try {
-      console.log("Manually saving lineup...");
-      await onSave(lines);
-      toast.success("Lineup saved successfully");
-    } catch (error) {
-      console.error("Error saving lineup:", error);
-      toast.error("Failed to save lineup");
-    }
-  };
 
   const handlePositionClick = (
     lineType: 'forwards' | 'defense' | 'goalies', 
@@ -70,17 +56,6 @@ export default function RosterLineupEditor({ team, onSave, isSaving = false }: R
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="gap-2"
-        >
-          <Save className="h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save Lineup'}
-        </Button>
-      </div>
-
       <RosterContainer
         team={team}
         lines={lines}
