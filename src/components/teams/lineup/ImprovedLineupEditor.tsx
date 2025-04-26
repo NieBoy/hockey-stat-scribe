@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Team, Lines } from '@/types';
 import { useLineupEditor } from '@/hooks/useLineupEditor';
@@ -33,7 +33,7 @@ export function ImprovedLineupEditor({ team, onSaveLineup }: ImprovedLineupEdito
 
   const onRefresh = async () => {
     console.log("Manual refresh initiated from button click");
-    return await refreshLineupData(); // This ensures the Promise<Lines> is returned
+    return await refreshLineupData();
   };
 
   if (isLoading) {

@@ -13,17 +13,16 @@ interface LineupHeaderProps {
   hasUnsavedChanges: boolean;
 }
 
-export function LineupHeader({ onSave, onRefresh, isSaving, hasUnsavedChanges }: LineupHeaderProps) {
+export function LineupHeader({ 
+  onSave, 
+  onRefresh, 
+  isSaving, 
+  hasUnsavedChanges 
+}: LineupHeaderProps) {
   return (
     <CardHeader className="flex flex-row items-center justify-between">
       <CardTitle>Team Lineup</CardTitle>
       <div className="flex items-center gap-2">
-        {isSaving && (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" /> Saving...
-          </Badge>
-        )}
-        
         <Button 
           variant="ghost" 
           size="sm" 
@@ -42,7 +41,7 @@ export function LineupHeader({ onSave, onRefresh, isSaving, hasUnsavedChanges }:
           className="flex items-center gap-1"
         >
           <Save className="h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save Lineup'}
+          {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>
     </CardHeader>
