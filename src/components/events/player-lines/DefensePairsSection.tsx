@@ -1,8 +1,6 @@
 
 import { User } from '@/types';
 import { PlayerCard } from './PlayerCard';
-import { Droppable } from '@hello-pangea/dnd';
-import { cn } from '@/lib/utils';
 
 interface DefensePair {
   lineNumber: number;
@@ -35,54 +33,24 @@ export function DefensePairsSection({
           <p className="text-xs text-muted-foreground mb-1">Pair {pair.lineNumber}</p>
           <div className="grid grid-cols-2 gap-2">
             {/* Left Defense */}
-            <Droppable droppableId={`defense-${pair.lineNumber}-LD`}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={cn(
-                    "min-h-[96px]",
-                    snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
-                  )}
-                >
-                  <PlayerCard
-                    player={pair.leftDefense}
-                    position="LD"
-                    isSelected={pair.leftDefense ? selectedIds.has(pair.leftDefense.id) : false}
-                    onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "LD", pair.leftDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
-                    isDraggable={isDraggable && !!pair.leftDefense}
-                    index={0}
-                    dragId={isDraggable && pair.leftDefense ? `defense-${pair.lineNumber}-LD-${pair.leftDefense.id}` : undefined}
-                  />
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+            <div className="min-h-[96px]">
+              <PlayerCard
+                player={pair.leftDefense}
+                position="LD"
+                isSelected={pair.leftDefense ? selectedIds.has(pair.leftDefense.id) : false}
+                onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "LD", pair.leftDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
+              />
+            </div>
             
             {/* Right Defense */}
-            <Droppable droppableId={`defense-${pair.lineNumber}-RD`}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={cn(
-                    "min-h-[96px]",
-                    snapshot.isDraggingOver && "bg-primary/5 rounded-md p-1"
-                  )}
-                >
-                  <PlayerCard
-                    player={pair.rightDefense}
-                    position="RD"
-                    isSelected={pair.rightDefense ? selectedIds.has(pair.rightDefense.id) : false}
-                    onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "RD", pair.rightDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
-                    isDraggable={isDraggable && !!pair.rightDefense}
-                    index={0}
-                    dragId={isDraggable && pair.rightDefense ? `defense-${pair.lineNumber}-RD-${pair.rightDefense.id}` : undefined}
-                  />
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+            <div className="min-h-[96px]">
+              <PlayerCard
+                player={pair.rightDefense}
+                position="RD"
+                isSelected={pair.rightDefense ? selectedIds.has(pair.rightDefense.id) : false}
+                onClick={onPositionClick ? () => onPositionClick(pair.lineNumber - 1, "RD", pair.rightDefense) : onPlayerClick ? (player) => onPlayerClick(player!) : undefined}
+              />
+            </div>
           </div>
         </div>
       ))}

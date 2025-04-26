@@ -1,6 +1,5 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Droppable } from '@hello-pangea/dnd';
 import { PlayerCard } from '@/components/events/player-lines/PlayerCard';
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
@@ -40,29 +39,17 @@ export function SpecialTeamsUnit({
                 const player = players?.[playerId] || null;
                 
                 return (
-                  <Droppable key={pos} droppableId={`${type}-${unitNumber}-${pos}`}>
-                    {(provided, snapshot) => (
-                      <div 
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={cn(
-                          "min-h-[96px]",
-                          snapshot.isDraggingOver ? "bg-primary/5 rounded-md p-1" : ""
-                        )}
-                      >
-                        <PlayerCard
-                          player={player}
-                          position={pos}
-                          isSelected={false}
-                          onClick={onPositionClick ? () => onPositionClick(unitNumber - 1, pos, player) : undefined}
-                          isDraggable={!!player}
-                          index={0}
-                          dragId={player ? `${type}-${unitNumber}-${pos}-${player.id}` : undefined}
-                        />
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
+                  <div 
+                    key={pos}
+                    className="min-h-[96px]"
+                  >
+                    <PlayerCard
+                      player={player}
+                      position={pos}
+                      isSelected={false}
+                      onClick={onPositionClick ? () => onPositionClick(unitNumber - 1, pos, player) : undefined}
+                    />
+                  </div>
                 );
               })}
             </div>

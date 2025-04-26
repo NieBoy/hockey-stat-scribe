@@ -1,7 +1,5 @@
 
-import { useState } from 'react';
 import { Lines, User, Position } from '@/types';
-import { removePlayerFromCurrentPosition } from '@/utils/lineupUtils';
 import { cloneDeep } from 'lodash';
 
 export function usePlayerMovement(
@@ -64,19 +62,8 @@ export function usePlayerMovement(
       }
     }
     
-    // Remove the player from their current position
-    if (sourceLineType === 'forwards' && sourceLineIndex >= 0 && sourceLineIndex < newLines.forwards.length) {
-      const line = newLines.forwards[sourceLineIndex];
-      if (sourcePosition === 'LW' && line.leftWing?.id === player.id) line.leftWing = null;
-      else if (sourcePosition === 'C' && line.center?.id === player.id) line.center = null;
-      else if (sourcePosition === 'RW' && line.rightWing?.id === player.id) line.rightWing = null;
-    } else if (sourceLineType === 'defense' && sourceLineIndex >= 0 && sourceLineIndex < newLines.defense.length) {
-      const line = newLines.defense[sourceLineIndex];
-      if (sourcePosition === 'LD' && line.leftDefense?.id === player.id) line.leftDefense = null;
-      else if (sourcePosition === 'RD' && line.rightDefense?.id === player.id) line.rightDefense = null;
-    } else if (sourceLineType === 'goalies') {
-      newLines.goalies = newLines.goalies.filter(g => g.id !== player.id);
-    }
+    // Remove the player from the available players list
+    const updatedAvailablePlayers = newAvailablePlayers.filter(p => p.id !== player.id);
     
     // Place the player in their new position
     if (targetLineType === 'forwards' && targetLineIndex >= 0 && targetLineIndex < newLines.forwards.length) {
@@ -99,9 +86,6 @@ export function usePlayerMovement(
         }
       }
     }
-    
-    // Update available players - remove the player that was moved
-    const updatedAvailablePlayers = newAvailablePlayers.filter(p => p.id !== player.id);
     
     // If there was a displaced player, add them back to available players
     if (displacedPlayer) {

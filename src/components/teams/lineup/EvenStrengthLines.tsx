@@ -22,7 +22,7 @@ export function EvenStrengthLines({
     <div className="space-y-6">
       <ForwardLinesSection
         forwardLines={lines.forwards}
-        isDraggable={true}
+        isDraggable={false}
         onPositionClick={onPositionClick ? 
           (lineIndex, position, player) => onPositionClick('forwards', lineIndex, position as Position, player) : 
           undefined}
@@ -38,7 +38,7 @@ export function EvenStrengthLines({
       
       <DefensePairsSection
         defensePairs={lines.defense}
-        isDraggable={true}
+        isDraggable={false}
         onPositionClick={onPositionClick ? 
           (lineIndex, position, player) => onPositionClick('defense', lineIndex, position as Position, player) : 
           undefined}
@@ -54,7 +54,7 @@ export function EvenStrengthLines({
 
       <GoaliesSection 
         goalies={lines.goalies}
-        isDraggable={true}
+        isDraggable={false}
         onPositionClick={onPositionClick ? 
           (index, player) => onPositionClick('goalies', index, 'G' as Position, player) : 
           undefined}

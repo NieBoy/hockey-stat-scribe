@@ -1,4 +1,3 @@
-
 import { Lines } from "@/types";
 import { DraggableLocation } from "@hello-pangea/dnd";
 import { removePlayerFromCurrentPosition } from "@/utils/lineupUtils";

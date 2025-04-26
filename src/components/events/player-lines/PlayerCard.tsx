@@ -2,7 +2,6 @@
 import { User } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Draggable } from '@hello-pangea/dnd';
 
 interface PlayerCardProps {
   player: User | null;
@@ -29,7 +28,7 @@ export function PlayerCard({
     }
   };
 
-  const card = (
+  return (
     <Card 
       className={cn(
         "relative border",
@@ -54,26 +53,4 @@ export function PlayerCard({
       </CardContent>
     </Card>
   );
-
-  if (isDraggable && player && dragId) {
-    return (
-      <Draggable draggableId={dragId} index={index}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            className={cn(
-              snapshot.isDragging && "opacity-50",
-              "h-full"
-            )}
-          >
-            {card}
-          </div>
-        )}
-      </Draggable>
-    );
-  }
-
-  return card;
 }
