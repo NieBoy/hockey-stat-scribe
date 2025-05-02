@@ -77,3 +77,12 @@ export async function validateMultiplePlayers(playerIds: string[]): Promise<bool
     return false;
   }
 }
+
+/**
+ * Validates a single player ID - wrapper for validatePlayerId for compatibility
+ * @param playerId The team_member.id to validate
+ * @returns Promise<boolean> Whether the ID exists
+ */
+export async function validatePlayer(playerId: string): Promise<boolean> {
+  return validatePlayerId(playerId);
+}

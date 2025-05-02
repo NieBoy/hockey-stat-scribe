@@ -9,7 +9,10 @@ export const recordPenaltyEvent = async (data: PenaltyEventData) => {
     console.log("Recording penalty event with data:", data);
     
     // Validate the player
-    await validatePlayer(data.playerId);
+    const isValid = await validatePlayer(data.playerId);
+    if (!isValid) {
+      throw new Error(`Invalid player ID: ${data.playerId}`);
+    }
     
     // Record the game event
     const { data: eventData, error: eventError } = await supabase
