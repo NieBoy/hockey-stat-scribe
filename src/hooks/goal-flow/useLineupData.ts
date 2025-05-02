@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Game } from '@/types';
+import { Game, User } from '@/types';
 import { toast } from 'sonner';
 import { getTeamLineup } from '@/services/teams/lineup';
 

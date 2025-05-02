@@ -1,5 +1,5 @@
 
-import { Game } from '@/types';
+import { Game, User } from '@/types';
 import { useLineupData } from './goal-flow/useLineupData';
 import { usePlayerSelection } from './goal-flow/usePlayerSelection';
 import { useFlowNavigation } from './goal-flow/useFlowNavigation';
