@@ -47,7 +47,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     handleNextStep
   } = useFlowNavigation();
 
-  const { handleSubmit: submitGoal } = useGoalSubmission(onComplete);
+  const { handleSubmit: submitGoal, isSubmitting: isGoalSubmitting } = useGoalSubmission(onComplete);
 
   // Enhanced team selection handler that loads lineup data
   const handleTeamSelection = (team: 'home' | 'away') => {
@@ -102,22 +102,31 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   
   // Wrapper for submitting the goal event
   const handleSubmit = async () => {
+    console.log("handleSubmit called in useGoalFlow");
     if (!validatePlayers(game.id)) {
       return;
     }
 
-    await submitGoal(
-      game.id, 
-      period, 
-      selectedTeam, 
-      playersOnIce, 
-      selectedScorer, 
-      primaryAssist, 
-      secondaryAssist,
-      game,
-      isOpponentTeam,
-      opponentJerseyNumbers
-    );
+    setIsSubmitting(true);
+    
+    try {
+      await submitGoal(
+        game.id, 
+        period, 
+        selectedTeam, 
+        playersOnIce, 
+        selectedScorer, 
+        primaryAssist, 
+        secondaryAssist,
+        game,
+        isOpponentTeam,
+        opponentJerseyNumbers
+      );
+      // The onComplete callback is called inside submitGoal
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      setIsSubmitting(false);
+    }
   };
 
   // Handle refreshing lineups
@@ -139,7 +148,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     primaryAssist,
     secondaryAssist,
     playersOnIce,
-    isSubmitting,
+    isSubmitting: isSubmitting || isGoalSubmitting,
     isLoadingLineups,
     hasLoadedLineups,
     isOpponentTeam,

@@ -14,6 +14,7 @@ import ShotsFlow from './ShotsFlow';
 import HitsFlow from './HitsFlow';
 import { useEventSelection } from '@/hooks/useEventSelection';
 import { EventButtons } from './tracker/EventButtons';
+import GameScoreDisplay from './GameScoreDisplay';
 
 export default function EventTracker() {
   const { id: gameId } = useParams<{ id: string }>();
@@ -39,7 +40,7 @@ export default function EventTracker() {
   const { data: game, isLoading } = useQuery({
     queryKey: ['games', gameId],
     queryFn: () => gameId ? getGameById(gameId) : null,
-    enabled: !!gameId && gameStatus === 'in-progress'
+    enabled: !!gameId
   });
 
   if (isLoading) {
@@ -52,7 +53,7 @@ export default function EventTracker() {
     );
   }
 
-  if (!game && gameStatus === 'in-progress') {
+  if (!game) {
     return (
       <div className="container mx-auto p-4 max-w-2xl">
         <Card className="p-6">
@@ -65,6 +66,11 @@ export default function EventTracker() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="p-6">
+        {/* Add Game Score Display */}
+        {gameId && game && (
+          <GameScoreDisplay gameId={gameId} game={game} />
+        )}
+        
         <GameControls
           period={currentPeriod}
           teamType={teamType}

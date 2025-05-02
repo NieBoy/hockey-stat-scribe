@@ -30,6 +30,15 @@ export function useGoalSubmission(onComplete: () => void) {
       return;
     }
 
+    console.log("Goal submission started", { 
+      gameId, 
+      period, 
+      selectedTeam, 
+      playersCount: playersOnIce.length,
+      isOpponentTeam,
+      opponentJerseyNumbers 
+    });
+    
     setIsSubmitting(true);
     
     try {
@@ -85,6 +94,7 @@ export function useGoalSubmission(onComplete: () => void) {
         description: `Goal by ${scorerName} (${teamName})`
       });
 
+      console.log("Goal recorded successfully, calling onComplete");
       onComplete();
     } catch (error: any) {
       console.error("Error recording goal:", error);

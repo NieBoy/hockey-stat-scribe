@@ -39,6 +39,12 @@ export function GoalSummaryStep({
   const selectedTeam = isOpponentTeam ? game.awayTeam : game.homeTeam;
   const teamName = selectedTeam?.name || (isOpponentTeam ? 'Opponent' : 'Home Team');
 
+  const handleSubmitClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log("Submit button clicked, calling onSubmit handler");
+    onSubmit();
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -128,7 +134,7 @@ export function GoalSummaryStep({
         <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button onClick={onSubmit} disabled={isSubmitting}>
+        <Button onClick={handleSubmitClick} disabled={isSubmitting}>
           {isSubmitting ? 'Recording...' : 'Record Goal'}
         </Button>
       </div>
