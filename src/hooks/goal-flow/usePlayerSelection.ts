@@ -53,6 +53,8 @@ export function usePlayerSelection() {
   };
 
   const handlePlayersOnIceSelect = (players: User[]) => {
+    console.log("Selected players on ice:", players);
+    
     const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
     
     // Only add mandatory players if it's not an opponent team goal
@@ -86,14 +88,19 @@ export function usePlayerSelection() {
       return false;
     }
     
-    // For opponent team, we don't require full validation
+    // For opponent team goals, validation is simplified
     if (isOpponentTeam) {
-      // For opponent goals, we only need the jersey number of the scorer
-      // but even that is optional
+      // For opponent goals, we only require the jersey number of the scorer
+      if (!opponentJerseyNumbers.scorer) {
+        toast.error("Please enter jersey number for the scorer");
+        return false;
+      }
+      
+      // Players on ice is optional for opponent goals
       return true;
     }
     
-    // For home team, maintain current validation rules
+    // For home team goals, maintain current validation rules
     if (!selectedScorer) {
       toast.error("No scorer selected");
       return false;
@@ -107,7 +114,7 @@ export function usePlayerSelection() {
     return true;
   };
 
-  // New methods for opponent jersey numbers
+  // Methods for opponent jersey numbers
   const handleOpponentJerseyNumber = (type: 'scorer' | 'primaryAssist' | 'secondaryAssist', number: string) => {
     setOpponentJerseyNumbers(prev => ({
       ...prev,

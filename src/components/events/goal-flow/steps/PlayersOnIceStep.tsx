@@ -24,7 +24,7 @@ export function PlayersOnIceStep({
   isOpponentTeam = false
 }: PlayersOnIceStepProps) {
   // Split the process into 2 UI steps
-  const [subStep, setSubStep] = useState<SubStep>("mandatory");
+  const [subStep, setSubStep] = useState<SubStep>("extras"); // Start with extras for opponent goals
   const [mandatoryPlayers, setMandatoryPlayers] = useState<User[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<User[]>([]);
 
@@ -45,11 +45,14 @@ export function PlayersOnIceStep({
       setMandatoryPlayers(uniqueMandatory);
       setSelectedPlayers(uniqueMandatory);
       onPlayersSelect(uniqueMandatory);
-      setSubStep("mandatory");
+      
+      // For opponent teams, skip the mandatory step since there are no mandatory players
+      setSubStep(isOpponentTeam ? "extras" : "mandatory");
+      
       initialized.current = true;
       prevIdsRef.current = newIdList;
     }
-  }, [preSelectedPlayers, onPlayersSelect]);
+  }, [preSelectedPlayers, onPlayersSelect, isOpponentTeam]);
   
   // Player selection logic for extras (cannot remove mandatory)
   const handleExtraPlayerToggle = (player: User) => {
@@ -87,8 +90,7 @@ export function PlayersOnIceStep({
 
   // Confirm selection and complete
   const handleConfirm = () => {
-    // For opponent goals, we don't require any players to be selected,
-    // but we still need to have valid players if any are selected
+    // For opponent goals, we don't require any players to be selected
     if (!isOpponentTeam) {
       if (selectedPlayers.length < mandatoryPlayers.length) {
         toast("All goal-involved players must be included");
@@ -114,6 +116,17 @@ export function PlayersOnIceStep({
     onPlayersSelect(selectedPlayers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlayers]);
+
+  // Debug logging to help track issues with player availability
+  useEffect(() => {
+    if (isOpponentTeam) {
+      console.log("PlayersOnIceStep - Home team for plus/minus:", {
+        teamName: team?.name,
+        playersCount: team?.players?.length || 0,
+        players: team?.players?.map(p => ({ id: p.id, name: p.name }))
+      });
+    }
+  }, [team, isOpponentTeam]);
 
   return (
     <div>
@@ -183,7 +196,7 @@ export function PlayersOnIceStep({
           </div>
           <Card>
             <CardContent className="p-4">
-              {team.players && team.players.length > 0 ? (
+              {team?.players && team?.players?.length > 0 ? (
                 <>
                   <SimplePlayerList
                     players={team.players as User[]}
@@ -191,22 +204,33 @@ export function PlayersOnIceStep({
                     selectedPlayers={selectedPlayers}
                   />
                   <div className="mt-4 flex justify-between">
-                    <Button 
-                      variant="ghost"
-                      onClick={handleBackToMandatory}
-                    >
-                      Back
-                    </Button>
-                    <Button 
-                      onClick={handleConfirm}
-                      disabled={!isOpponentTeam && (selectedPlayers.length < mandatoryPlayers.length || selectedPlayers.length === 0)}
-                    >
-                      Confirm Players
-                    </Button>
+                    {!isOpponentTeam && (
+                      <Button 
+                        variant="ghost"
+                        onClick={handleBackToMandatory}
+                      >
+                        Back
+                      </Button>
+                    )}
+                    <div className={isOpponentTeam ? "w-full flex justify-end" : ""}>
+                      <Button 
+                        onClick={handleConfirm}
+                      >
+                        {isOpponentTeam ? "Confirm Players" : "Continue"}
+                      </Button>
+                    </div>
                   </div>
                 </>
               ) : (
-                <p>No players available for selection</p>
+                <div className="p-4 text-center">
+                  <p className="mb-4">No players available for selection</p>
+                  <Button 
+                    onClick={onComplete}
+                    variant="outline"
+                  >
+                    Continue Without Players
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

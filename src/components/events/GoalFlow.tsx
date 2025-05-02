@@ -131,13 +131,21 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
           />
         );
       case 'players-on-ice':
-        // For opponent team goals, we only need players from the home team for plus/minus
-        const homeTeam = game.homeTeam;
+        // Always use home team for on-ice players when dealing with opponent goals
+        // This ensures we get the correct players for plus/minus
+        const playersTeam = isOpponentTeam ? game.homeTeam : 
+                            (selectedTeam === 'home' ? game.homeTeam : game.awayTeam);
         
-        if (!homeTeam) {
+        console.log("Players on ice step - Using team:", {
+          teamName: playersTeam?.name,
+          isOpponentGoal: isOpponentTeam,
+          playerCount: playersTeam?.players?.length || 0
+        });
+        
+        if (!playersTeam) {
           return (
             <div className="text-center text-red-500 py-4">
-              <p>Error: Home team data not found.</p>
+              <p>Error: Team data not found.</p>
               <p className="text-sm">Please go back and try again.</p>
             </div>
           );
@@ -151,7 +159,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
         
         return (
           <PlayersOnIceStep
-            team={homeTeam}
+            team={playersTeam}
             onPlayersSelect={handlePlayersOnIceSelect}
             preSelectedPlayers={preSelectedPlayers}
             onComplete={handleNextStep}

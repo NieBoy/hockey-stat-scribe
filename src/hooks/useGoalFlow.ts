@@ -4,8 +4,11 @@ import { useLineupData } from './goal-flow/useLineupData';
 import { usePlayerSelection } from './goal-flow/usePlayerSelection';
 import { useFlowNavigation } from './goal-flow/useFlowNavigation';
 import { useGoalSubmission } from './goal-flow/useGoalSubmission';
+import { useState, useEffect } from 'react';
 
 export function useGoalFlow(game: Game, period: number, onComplete: () => void) {
+  const [homeTeamLoadAttempted, setHomeTeamLoadAttempted] = useState(false);
+  
   const {
     hasLoadedLineups,
     isLoadingLineups,
@@ -51,8 +54,15 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     handleTeamSelect(team);
     
     // Different flow for opponent team (away) vs home team
-    if (team === 'away' && !game.awayTeam?.players?.length) {
-      // Opponent team without players - go to opponent goal form
+    if (team === 'away') {
+      // For opponent team, we always need to load home team data for plus/minus
+      if (!homeTeamLoadAttempted) {
+        console.log("Loading home team data for opponent goal");
+        loadLineupData(game, 'home');
+        setHomeTeamLoadAttempted(true);
+      }
+      
+      // Opponent team - go to opponent goal form
       goToOpponentGoalStep();
     } else {
       // Regular team with players - go to scorer selection
@@ -81,6 +91,12 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   
   // Handle opponent goal form completion
   const handleOpponentGoalComplete = () => {
+    // Make sure we load home team data for plus/minus before proceeding
+    if (!homeTeamLoadAttempted) {
+      console.log("Loading home team data before players on ice step");
+      loadLineupData(game, 'home');
+      setHomeTeamLoadAttempted(true);
+    }
     goToPlayersOnIceStep();
   };
   
@@ -106,6 +122,13 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
 
   // Handle refreshing lineups
   const refreshLineups = () => {
+    // For opponent goals, refresh the home team data
+    if (isOpponentTeam) {
+      console.log("Refreshing home team data for opponent goal");
+      setHomeTeamLoadAttempted(false);
+      return handleRefreshLineups(game, 'home');
+    }
+    
     return handleRefreshLineups(game, selectedTeam);
   };
 
