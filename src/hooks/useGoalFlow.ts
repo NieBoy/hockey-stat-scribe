@@ -1,229 +1,93 @@
 
-import { useState } from 'react';
-import { User, Game } from '@/types';
-import { toast } from 'sonner';
-import { recordGoalEvent } from '@/services/events/goalEventService';
-import { getTeamLineup } from '@/services/teams/lineup';
-
-type FlowStep = 'team-select' | 'scorer-select' | 'primary-assist' | 'secondary-assist' | 'players-on-ice' | 'submit';
+import { Game } from '@/types';
+import { useLineupData } from './goal-flow/useLineupData';
+import { usePlayerSelection } from './goal-flow/usePlayerSelection';
+import { useFlowNavigation } from './goal-flow/useFlowNavigation';
+import { useGoalSubmission } from './goal-flow/useGoalSubmission';
 
 export function useGoalFlow(game: Game, period: number, onComplete: () => void) {
-  const [currentStep, setCurrentStep] = useState<FlowStep>('team-select');
-  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away' | null>(null);
-  const [selectedScorer, setSelectedScorer] = useState<User | null>(null);
-  const [primaryAssist, setPrimaryAssist] = useState<User | null>(null);
-  const [secondaryAssist, setSecondaryAssist] = useState<User | null>(null);
-  const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [hasLoadedLineups, setHasLoadedLineups] = useState(false);
-  const [isLoadingLineups, setIsLoadingLineups] = useState(false);
+  const {
+    hasLoadedLineups,
+    isLoadingLineups,
+    loadLineupData,
+    handleRefreshLineups
+  } = useLineupData();
 
-  const loadLineupData = async (teamType: 'home' | 'away') => {
-    try {
-      setIsLoadingLineups(true);
-      const teamToLoad = teamType === 'home' ? game.homeTeam : game.awayTeam;
-      
-      if (!teamToLoad || !teamToLoad.id) {
-        console.error("Cannot load lineup - invalid team data", teamType, game);
-        toast.error("Failed to load team data", {
-          description: "The selected team information is not available."
-        });
-        setIsLoadingLineups(false);
-        return;
-      }
-      
-      console.log("GoalFlow - Loading lineup data for team:", teamToLoad.id);
-      
-      const lineupData = await getTeamLineup(teamToLoad.id);
-      console.log("GoalFlow - Retrieved lineup data:", lineupData);
-      
-      if (lineupData && Array.isArray(lineupData)) {
-        // Create a new copy of the team to avoid mutating the original
-        const updatedTeam = teamType === 'home' 
-          ? { ...game.homeTeam } 
-          : { ...game.awayTeam };
-        
-        if (updatedTeam) {
-          // Map the raw lineup data to the User type expected by the UI
-          updatedTeam.players = lineupData.map(player => ({
-            id: player.id, // Use team_member.id as the primary identifier
-            name: player.name || 'Unknown Player',
-            email: player.email || '',
-            position: player.position || '',
-            lineNumber: player.line_number
-          }));
-          
-          // Update the game object with our modified team
-          if (teamType === 'home') {
-            game.homeTeam = updatedTeam;
-          } else {
-            game.awayTeam = updatedTeam;
-          }
-          
-          console.log(`Updated ${teamType} team players:`, updatedTeam.players.length);
-        }
-      } else {
-        console.warn("GoalFlow - No lineup data returned or unexpected format");
-        toast.warning("No players found", {
-          description: "Try adding players to this team in the team management screen."
-        });
-      }
-      
-      setHasLoadedLineups(true);
-    } catch (error) {
-      console.error("GoalFlow - Error loading lineup data:", error);
-      toast.error("Failed to load team lineup", {
-        description: error instanceof Error ? error.message : "Unknown error"
-      });
-    } finally {
-      setIsLoadingLineups(false);
-    }
+  const {
+    selectedTeam,
+    selectedScorer,
+    primaryAssist,
+    secondaryAssist,
+    playersOnIce,
+    setSelectedTeam,
+    handleTeamSelect,
+    handleScorerSelect,
+    handlePrimaryAssistSelect,
+    handleSecondaryAssistSelect,
+    handlePlayersOnIceSelect,
+    validatePlayers
+  } = usePlayerSelection();
+
+  const {
+    currentStep,
+    isSubmitting,
+    setIsSubmitting,
+    goToScorerStep,
+    goToPrimaryAssistStep,
+    goToSecondaryAssistStep,
+    goToPlayersOnIceStep,
+    goToSubmitStep,
+    handleNextStep
+  } = useFlowNavigation();
+
+  const { handleSubmit: submitGoal } = useGoalSubmission(onComplete);
+
+  // Enhanced team selection handler that loads lineup data
+  const handleTeamSelection = (team: 'home' | 'away') => {
+    handleTeamSelect(team);
+    goToScorerStep();
+    loadLineupData(game, team);
   };
 
-  const handleRefreshLineups = async () => {
-    if (!selectedTeam) {
-      toast.error("No team selected");
-      return;
-    }
-    await loadLineupData(selectedTeam);
+  // Enhanced scorer selection handler
+  const handleScorerSelection = (player: User) => {
+    handleScorerSelect(player);
+    goToPrimaryAssistStep();
   };
 
-  const handleTeamSelect = (team: 'home' | 'away') => {
-    setSelectedTeam(team);
-    setCurrentStep('scorer-select');
-    loadLineupData(team);
+  // Enhanced primary assist selection handler
+  const handlePrimaryAssistSelection = (player: User | null) => {
+    handlePrimaryAssistSelect(player);
+    goToSecondaryAssistStep();
   };
 
-  const handleScorerSelect = (player: User) => {
-    console.log("Selected scorer:", player);
-    setSelectedScorer(player);
-    setCurrentStep('primary-assist');
-  };
-
-  const handlePrimaryAssistSelect = (player: User | null) => {
-    setPrimaryAssist(player);
-    setCurrentStep('secondary-assist');
-  };
-
-  const handleSecondaryAssistSelect = (player: User | null) => {
-    setSecondaryAssist(player);
-    setCurrentStep('players-on-ice');
+  // Enhanced secondary assist selection handler
+  const handleSecondaryAssistSelection = (player: User | null) => {
+    handleSecondaryAssistSelect(player);
+    goToPlayersOnIceStep();
   };
   
-  const handleNextStep = () => {
-    setCurrentStep('submit');
-  };
-
-  const validatePlayers = () => {
-    if (!game) return false;
-    
-    if (!selectedTeam) {
-      toast.error("No team selected");
-      return false;
-    }
-    
-    const teamPlayers = selectedTeam === 'home' 
-      ? (game.homeTeam?.players || []) 
-      : (game.awayTeam?.players || []);
-    
-    const allValidPlayerIds = teamPlayers.map(p => p.id);
-    
-    if (!selectedScorer) {
-      toast.error("No scorer selected");
-      return false;
-    }
-    
-    if (!playersOnIce || playersOnIce.length === 0) {
-      toast.error("No players on ice selected");
-      return false;
-    }
-    
-    // Validate that all players have valid IDs that exist in the team
-    for (const player of playersOnIce) {
-      if (!player || !player.id || !allValidPlayerIds.includes(player.id)) {
-        toast.error("Invalid Player", {
-          description: `Player ${player?.name || 'Unknown'} (${player?.id || 'no ID'}) is not valid in this game.`
-        });
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const handlePlayersOnIceSelect = (players: User[]) => {
-    const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
-    
-    const mandatoryPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
-    
-    const allPlayers = [...uniquePlayers];
-    
-    mandatoryPlayers.forEach(requiredPlayer => {
-      if (requiredPlayer && !allPlayers.some(p => p.id === requiredPlayer.id)) {
-        allPlayers.push(requiredPlayer);
-      }
-    });
-    
-    const limitedPlayers = allPlayers.slice(0, 6);
-    
-    setPlayersOnIce(limitedPlayers);
-  };
-
+  // Wrapper for submitting the goal event
   const handleSubmit = async () => {
-    if (!selectedTeam || !game?.id) {
-      toast.error("Missing Data", {
-        description: "Team or game information is missing"
-      });
+    if (!validatePlayers(game.id)) {
       return;
     }
 
-    if (!validatePlayers()) {
-      return;
-    }
+    await submitGoal(
+      game.id, 
+      period, 
+      selectedTeam, 
+      playersOnIce, 
+      selectedScorer, 
+      primaryAssist, 
+      secondaryAssist,
+      game
+    );
+  };
 
-    setIsSubmitting(true);
-    console.log("Submitting goal with players:", playersOnIce);
-
-    try {
-      const goalData: {
-        gameId: string;
-        period: number;
-        teamType: 'home' | 'away';
-        playersOnIce: string[];
-        scorerId?: string;
-        primaryAssistId?: string;
-        secondaryAssistId?: string;
-      } = {
-        gameId: game.id,
-        period,
-        teamType: selectedTeam,
-        playersOnIce: playersOnIce.map(p => p.id)
-      };
-
-      if (selectedScorer) goalData.scorerId = selectedScorer.id;
-      if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
-      if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
-      
-      console.log("Goal data to be submitted:", goalData);
-      await recordGoalEvent(goalData);
-
-      const teamName = selectedTeam === 'home' 
-        ? game.homeTeam?.name || 'Home team'
-        : game.awayTeam?.name || 'Away team';
-        
-      toast.success("Goal Recorded", {
-        description: `Goal by ${selectedScorer?.name || 'Unknown player'} (${teamName})`
-      });
-
-      onComplete();
-    } catch (error: any) {
-      console.error("Error recording goal:", error);
-      toast.error("Error", {
-        description: error.message || "Failed to record goal event"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  // Handle refreshing lineups
+  const refreshLineups = () => {
+    return handleRefreshLineups(game, selectedTeam);
   };
 
   return {
@@ -236,11 +100,11 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     isSubmitting,
     isLoadingLineups,
     hasLoadedLineups,
-    handleRefreshLineups,
-    handleTeamSelect,
-    handleScorerSelect,
-    handlePrimaryAssistSelect,
-    handleSecondaryAssistSelect,
+    handleRefreshLineups: refreshLineups,
+    handleTeamSelect: handleTeamSelection,
+    handleScorerSelect: handleScorerSelection,
+    handlePrimaryAssistSelect: handlePrimaryAssistSelection,
+    handleSecondaryAssistSelect: handleSecondaryAssistSelection,
     handlePlayersOnIceSelect,
     handleNextStep,
     handleSubmit
