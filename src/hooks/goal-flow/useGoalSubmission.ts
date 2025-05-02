@@ -15,7 +15,13 @@ export function useGoalSubmission(onComplete: () => void) {
     selectedScorer: User | null, 
     primaryAssist: User | null, 
     secondaryAssist: User | null,
-    game: Game
+    game: Game,
+    isOpponentTeam: boolean = false,
+    opponentJerseyNumbers?: {
+      scorer: string;
+      primaryAssist: string;
+      secondaryAssist: string;
+    }
   ) => {
     if (!selectedTeam || !gameId) {
       toast.error("Missing Data", {
@@ -25,8 +31,7 @@ export function useGoalSubmission(onComplete: () => void) {
     }
 
     setIsSubmitting(true);
-    console.log("Submitting goal with players:", playersOnIce);
-
+    
     try {
       const goalData: {
         gameId: string;
@@ -36,6 +41,11 @@ export function useGoalSubmission(onComplete: () => void) {
         scorerId?: string;
         primaryAssistId?: string;
         secondaryAssistId?: string;
+        opponentData?: {
+          scorerJersey?: string;
+          primaryAssistJersey?: string;
+          secondaryAssistJersey?: string;
+        };
       } = {
         gameId,
         period,
@@ -43,9 +53,19 @@ export function useGoalSubmission(onComplete: () => void) {
         playersOnIce: playersOnIce.map(p => p.id)
       };
 
-      if (selectedScorer) goalData.scorerId = selectedScorer.id;
-      if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
-      if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
+      // Handle opponent team differently
+      if (isOpponentTeam && opponentJerseyNumbers) {
+        goalData.opponentData = {
+          scorerJersey: opponentJerseyNumbers.scorer || undefined,
+          primaryAssistJersey: opponentJerseyNumbers.primaryAssist || undefined,
+          secondaryAssistJersey: opponentJerseyNumbers.secondaryAssist || undefined
+        };
+      } else {
+        // Regular team goal
+        if (selectedScorer) goalData.scorerId = selectedScorer.id;
+        if (primaryAssist) goalData.primaryAssistId = primaryAssist.id;
+        if (secondaryAssist) goalData.secondaryAssistId = secondaryAssist.id;
+      }
       
       console.log("Goal data to be submitted:", goalData);
       await recordGoalEvent(goalData);
@@ -54,8 +74,15 @@ export function useGoalSubmission(onComplete: () => void) {
         ? game.homeTeam?.name || 'Home team'
         : game.awayTeam?.name || 'Away team';
         
+      let scorerName = 'Unknown player';
+      if (isOpponentTeam && opponentJerseyNumbers?.scorer) {
+        scorerName = `#${opponentJerseyNumbers.scorer}`;
+      } else if (selectedScorer?.name) {
+        scorerName = selectedScorer.name;
+      }
+
       toast.success("Goal Recorded", {
-        description: `Goal by ${selectedScorer?.name || 'Unknown player'} (${teamName})`
+        description: `Goal by ${scorerName} (${teamName})`
       });
 
       onComplete();

@@ -11,13 +11,18 @@ interface GoalEventData {
   scorerId?: string;
   primaryAssistId?: string;
   secondaryAssistId?: string;
+  opponentData?: {
+    scorerJersey?: string;
+    primaryAssistJersey?: string;
+    secondaryAssistJersey?: string;
+  };
 }
 
 export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean> => {
   try {
     console.log("Recording goal event with data:", goalData);
     
-    // Validate all player IDs before proceeding
+    // Validate player IDs for our team players
     const playerIds = [
       ...goalData.playersOnIce,
       goalData.scorerId,
@@ -25,7 +30,7 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       goalData.secondaryAssistId
     ].filter(Boolean) as string[];
     
-    const arePlayersValid = await validateMultiplePlayers(playerIds);
+    const arePlayersValid = playerIds.length > 0 ? await validateMultiplePlayers(playerIds) : true;
     if (!arePlayersValid) {
       toast.error("Invalid Player Data", {
         description: "One or more players could not be validated"
@@ -38,7 +43,8 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       playersOnIce: goalData.playersOnIce || [],
       playerId: goalData.scorerId,
       primaryAssistId: goalData.primaryAssistId,
-      secondaryAssistId: goalData.secondaryAssistId
+      secondaryAssistId: goalData.secondaryAssistId,
+      opponentData: goalData.opponentData
     };
 
     // Create the goal event
@@ -58,10 +64,10 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       return false;
     }
 
-    // Record individual game stats
+    // Record individual game stats, only for home team players
     const statPromises = [];
     
-    // Record goal for scorer
+    // Record goal for scorer if it's our team's player
     if (goalData.scorerId) {
       statPromises.push(
         supabase.rpc('record_game_stat', {
@@ -103,18 +109,37 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       );
     }
 
-    // Record plus for all players on ice
-    for (const playerId of goalData.playersOnIce) {
-      statPromises.push(
-        supabase.rpc('record_game_stat', {
-          p_game_id: goalData.gameId,
-          p_player_id: playerId,
-          p_stat_type: 'plusMinus',
-          p_period: goalData.period,
-          p_value: 1,
-          p_details: 'plus'
-        })
-      );
+    // Record plus for our team players on ice or minus for home team when opponent scored
+    const isOpponentGoal = goalData.teamType === 'away' && goalData.opponentData;
+    
+    // For opponent goals, record minus for home team players on ice
+    if (isOpponentGoal) {
+      for (const playerId of goalData.playersOnIce) {
+        statPromises.push(
+          supabase.rpc('record_game_stat', {
+            p_game_id: goalData.gameId,
+            p_player_id: playerId,
+            p_stat_type: 'plusMinus',
+            p_period: goalData.period,
+            p_value: -1,
+            p_details: 'minus'
+          })
+        );
+      }
+    } else {
+      // For home team goals, record plus for all players on ice
+      for (const playerId of goalData.playersOnIce) {
+        statPromises.push(
+          supabase.rpc('record_game_stat', {
+            p_game_id: goalData.gameId,
+            p_player_id: playerId,
+            p_stat_type: 'plusMinus',
+            p_period: goalData.period,
+            p_value: 1,
+            p_details: 'plus'
+          })
+        );
+      }
     }
 
     // Execute all stat recording operations

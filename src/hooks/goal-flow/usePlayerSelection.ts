@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { User } from '@/types';
+import { User, Game } from '@/types';
 import { toast } from 'sonner';
 
 export function usePlayerSelection() {
@@ -9,9 +9,30 @@ export function usePlayerSelection() {
   const [primaryAssist, setPrimaryAssist] = useState<User | null>(null);
   const [secondaryAssist, setSecondaryAssist] = useState<User | null>(null);
   const [playersOnIce, setPlayersOnIce] = useState<User[]>([]);
+  const [opponentJerseyNumbers, setOpponentJerseyNumbers] = useState<{
+    scorer: string;
+    primaryAssist: string;
+    secondaryAssist: string;
+  }>({
+    scorer: '',
+    primaryAssist: '',
+    secondaryAssist: ''
+  });
+  const [isOpponentTeam, setIsOpponentTeam] = useState<boolean>(false);
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
+    setIsOpponentTeam(team === 'away');
+    // Reset all selections when team changes
+    setSelectedScorer(null);
+    setPrimaryAssist(null);
+    setSecondaryAssist(null);
+    setPlayersOnIce([]);
+    setOpponentJerseyNumbers({
+      scorer: '',
+      primaryAssist: '',
+      secondaryAssist: ''
+    });
     return team;
   };
 
@@ -58,6 +79,12 @@ export function usePlayerSelection() {
       return false;
     }
     
+    // For opponent team, we don't require full validation
+    if (isOpponentTeam) {
+      return true;
+    }
+    
+    // For home team, maintain current validation rules
     if (!selectedScorer) {
       toast.error("No scorer selected");
       return false;
@@ -71,18 +98,29 @@ export function usePlayerSelection() {
     return true;
   };
 
+  // New methods for opponent jersey numbers
+  const handleOpponentJerseyNumber = (type: 'scorer' | 'primaryAssist' | 'secondaryAssist', number: string) => {
+    setOpponentJerseyNumbers(prev => ({
+      ...prev,
+      [type]: number
+    }));
+  };
+
   return {
     selectedTeam,
     selectedScorer,
     primaryAssist,
     secondaryAssist,
     playersOnIce,
+    isOpponentTeam,
+    opponentJerseyNumbers,
     setSelectedTeam,
     handleTeamSelect,
     handleScorerSelect,
     handlePrimaryAssistSelect,
     handleSecondaryAssistSelect,
     handlePlayersOnIceSelect,
+    handleOpponentJerseyNumber,
     validatePlayers
   };
 }

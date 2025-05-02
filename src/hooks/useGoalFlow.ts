@@ -19,12 +19,15 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     primaryAssist,
     secondaryAssist,
     playersOnIce,
+    isOpponentTeam,
+    opponentJerseyNumbers,
     setSelectedTeam,
     handleTeamSelect,
     handleScorerSelect,
     handlePrimaryAssistSelect,
     handleSecondaryAssistSelect,
     handlePlayersOnIceSelect,
+    handleOpponentJerseyNumber,
     validatePlayers
   } = usePlayerSelection();
 
@@ -37,6 +40,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     goToSecondaryAssistStep,
     goToPlayersOnIceStep,
     goToSubmitStep,
+    goToOpponentGoalStep,
     handleNextStep
   } = useFlowNavigation();
 
@@ -45,8 +49,16 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   // Enhanced team selection handler that loads lineup data
   const handleTeamSelection = (team: 'home' | 'away') => {
     handleTeamSelect(team);
-    goToScorerStep();
-    loadLineupData(game, team);
+    
+    // Different flow for opponent team (away) vs home team
+    if (team === 'away' && !game.awayTeam?.players?.length) {
+      // Opponent team without players - go to opponent goal form
+      goToOpponentGoalStep();
+    } else {
+      // Regular team with players - go to scorer selection
+      goToScorerStep();
+      loadLineupData(game, team);
+    }
   };
 
   // Enhanced scorer selection handler
@@ -67,6 +79,11 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     goToPlayersOnIceStep();
   };
   
+  // Handle opponent goal form completion
+  const handleOpponentGoalComplete = () => {
+    goToPlayersOnIceStep();
+  };
+  
   // Wrapper for submitting the goal event
   const handleSubmit = async () => {
     if (!validatePlayers(game.id)) {
@@ -81,7 +98,9 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
       selectedScorer, 
       primaryAssist, 
       secondaryAssist,
-      game
+      game,
+      isOpponentTeam,
+      opponentJerseyNumbers
     );
   };
 
@@ -100,12 +119,16 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     isSubmitting,
     isLoadingLineups,
     hasLoadedLineups,
+    isOpponentTeam,
+    opponentJerseyNumbers,
     handleRefreshLineups: refreshLineups,
     handleTeamSelect: handleTeamSelection,
     handleScorerSelect: handleScorerSelection,
     handlePrimaryAssistSelect: handlePrimaryAssistSelection,
     handleSecondaryAssistSelect: handleSecondaryAssistSelection,
     handlePlayersOnIceSelect,
+    handleOpponentJerseyNumber,
+    handleOpponentGoalComplete,
     handleNextStep,
     handleSubmit
   };
