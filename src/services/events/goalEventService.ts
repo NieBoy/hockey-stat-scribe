@@ -47,6 +47,16 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       opponentData: goalData.opponentData
     };
 
+    // For opponent goals with unknown jersey, make sure it's properly marked
+    if (goalData.teamType === 'away' && 
+        goalData.opponentData && 
+        (!goalData.opponentData.scorerJersey || goalData.opponentData.scorerJersey === 'Unknown')) {
+      console.log("Setting opponent goal with unknown player");
+      if (details.opponentData) {
+        details.opponentData.scorerJersey = 'Unknown';
+      }
+    }
+
     // Create the goal event
     const { data: eventData, error: eventError } = await supabase.rpc(
       'create_game_event',

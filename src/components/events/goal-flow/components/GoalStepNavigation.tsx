@@ -19,7 +19,11 @@ export function GoalStepNavigation({
     currentStep !== 'players-on-ice' && 
     currentStep !== 'opponent-goal';
 
-  if (!shouldShowActions) {
+  // Always show actions on submit step to ensure the button is visible
+  const isSubmitStep = currentStep === 'submit';
+
+  // Show the actions component if shouldShowActions is true or if it's the submit step
+  if (!shouldShowActions && !isSubmitStep) {
     return null;
   }
 

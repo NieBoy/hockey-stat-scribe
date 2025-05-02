@@ -72,8 +72,10 @@ export function GoalSummaryStep({
                 <p className="text-sm text-muted-foreground">Scorer</p>
                 <p className="font-medium">
                   {opponentJerseyNumbers?.scorer ? 
-                    `Jersey #${opponentJerseyNumbers.scorer}` : 
-                    'Not specified'}
+                    (opponentJerseyNumbers.scorer === 'Unknown' ? 
+                      'Unknown player' : 
+                      `Jersey #${opponentJerseyNumbers.scorer}`) : 
+                    'Unknown player'}
                 </p>
               </div>
               

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
@@ -51,6 +51,7 @@ export function OpponentGoalForm({
   };
 
   const handleSubmit = (values: FormValues) => {
+    // Even if scorer jersey is empty, we proceed
     onJerseyNumberChange('scorer', values.scorerJersey);
     
     if (hasAssists === "yes") {
@@ -80,7 +81,7 @@ export function OpponentGoalForm({
     <div className="space-y-6">
       <h2 className="text-lg font-medium">Opponent Goal Information</h2>
       <p className="text-sm text-muted-foreground">
-        Enter the jersey numbers of the opponent players involved in the goal
+        Enter the jersey numbers of the opponent players involved in the goal (optional)
       </p>
       
       <Form {...form}>
@@ -90,10 +91,10 @@ export function OpponentGoalForm({
             name="scorerJersey"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Scorer Jersey Number (optional)</FormLabel>
+                <FormLabel>Scorer Jersey Number</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Enter jersey number" 
+                    placeholder="Enter jersey number (optional)" 
                     {...field} 
                     onChange={(e) => {
                       field.onChange(e);
@@ -101,6 +102,9 @@ export function OpponentGoalForm({
                     }}
                   />
                 </FormControl>
+                <FormDescription>
+                  Leave blank for unknown player
+                </FormDescription>
               </FormItem>
             )}
           />
@@ -131,10 +135,10 @@ export function OpponentGoalForm({
                 name="primaryAssistJersey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Primary Assist Jersey Number (optional)</FormLabel>
+                    <FormLabel>Primary Assist Jersey Number</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Enter jersey number" 
+                        placeholder="Enter jersey number (optional)" 
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -151,10 +155,10 @@ export function OpponentGoalForm({
                 name="secondaryAssistJersey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Secondary Assist Jersey Number (optional)</FormLabel>
+                    <FormLabel>Secondary Assist Jersey Number</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Enter jersey number" 
+                        placeholder="Enter jersey number (optional)" 
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);

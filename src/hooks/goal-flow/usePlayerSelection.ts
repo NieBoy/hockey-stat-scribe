@@ -90,16 +90,20 @@ export function usePlayerSelection() {
     
     // For opponent team goals, validation is simplified
     if (isOpponentTeam) {
-      // For opponent goals, we only require the jersey number of the scorer
-      if (!opponentJerseyNumbers.scorer) {
-        toast.error("Please enter jersey number for the scorer");
-        return false;
-      }
-      
-      // Make sure we have players on ice for plus/minus (for home team)
+      // For opponent goals, we don't require the jersey number anymore
+      // But we still need players on ice for plus/minus (for home team)
       if (!playersOnIce || playersOnIce.length === 0) {
         toast.error("Please select at least one player on ice");
         return false;
+      }
+      
+      // If no jersey number is provided, we'll use a placeholder
+      if (!opponentJerseyNumbers.scorer) {
+        console.log("No opponent jersey number, using placeholder");
+        setOpponentJerseyNumbers(prev => ({
+          ...prev,
+          scorer: 'Unknown'
+        }));
       }
       
       return true;

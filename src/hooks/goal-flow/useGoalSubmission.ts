@@ -64,8 +64,9 @@ export function useGoalSubmission(onComplete: () => void) {
 
       // Handle opponent team differently
       if (isOpponentTeam && opponentJerseyNumbers) {
+        // Use opponentData even if fields are empty - the backend will handle this
         goalData.opponentData = {
-          scorerJersey: opponentJerseyNumbers.scorer || undefined,
+          scorerJersey: opponentJerseyNumbers.scorer || 'Unknown',
           primaryAssistJersey: opponentJerseyNumbers.primaryAssist || undefined,
           secondaryAssistJersey: opponentJerseyNumbers.secondaryAssist || undefined
         };
@@ -85,7 +86,7 @@ export function useGoalSubmission(onComplete: () => void) {
         
       let scorerName = 'Unknown player';
       if (isOpponentTeam && opponentJerseyNumbers?.scorer) {
-        scorerName = `#${opponentJerseyNumbers.scorer}`;
+        scorerName = opponentJerseyNumbers.scorer === 'Unknown' ? 'Unknown player' : `#${opponentJerseyNumbers.scorer}`;
       } else if (selectedScorer?.name) {
         scorerName = selectedScorer.name;
       }
