@@ -155,6 +155,7 @@ export default function GoalFlow({ game, period, onComplete, onCancel }: GoalFlo
             onPlayersSelect={handlePlayersOnIceSelect}
             preSelectedPlayers={preSelectedPlayers}
             onComplete={handleNextStep}
+            isOpponentTeam={isOpponentTeam}
           />
         );
       case 'submit':

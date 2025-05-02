@@ -13,6 +13,16 @@ export function useFlowNavigation() {
   const goToPlayersOnIceStep = () => setCurrentStep('players-on-ice');
   const goToSubmitStep = () => setCurrentStep('submit');
   const goToOpponentGoalStep = () => setCurrentStep('opponent-goal');
+  
+  // For opponent goals, we may want to skip directly to the submit step
+  // if we don't need to select players on ice
+  const handleNextStep = () => {
+    if (currentStep === 'players-on-ice') {
+      goToSubmitStep();
+    } else {
+      goToSubmitStep();
+    }
+  };
 
   return {
     currentStep,
@@ -24,6 +34,6 @@ export function useFlowNavigation() {
     goToPlayersOnIceStep,
     goToSubmitStep,
     goToOpponentGoalStep,
-    handleNextStep: goToSubmitStep
+    handleNextStep
   };
 }

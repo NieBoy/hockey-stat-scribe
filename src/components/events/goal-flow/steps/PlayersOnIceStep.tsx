@@ -11,6 +11,7 @@ interface PlayersOnIceStepProps {
   onPlayersSelect: (players: User[]) => void;
   preSelectedPlayers: User[];
   onComplete: () => void;
+  isOpponentTeam?: boolean;
 }
 
 type SubStep = "mandatory" | "extras";
@@ -19,7 +20,8 @@ export function PlayersOnIceStep({
   team,
   onPlayersSelect,
   preSelectedPlayers,
-  onComplete
+  onComplete,
+  isOpponentTeam = false
 }: PlayersOnIceStepProps) {
   // Split the process into 2 UI steps
   const [subStep, setSubStep] = useState<SubStep>("mandatory");
@@ -85,18 +87,24 @@ export function PlayersOnIceStep({
 
   // Confirm selection and complete
   const handleConfirm = () => {
-    if (selectedPlayers.length < mandatoryPlayers.length) {
-      toast("All goal-involved players must be included");
-      return;
+    // For opponent goals, we don't require any players to be selected,
+    // but we still need to have valid players if any are selected
+    if (!isOpponentTeam) {
+      if (selectedPlayers.length < mandatoryPlayers.length) {
+        toast("All goal-involved players must be included");
+        return;
+      }
+      if (selectedPlayers.length === 0) {
+        toast("Please select at least one player");
+        return;
+      }
     }
-    if (selectedPlayers.length === 0) {
-      toast("Please select at least one player");
-      return;
-    }
+    
     if (selectedPlayers.length > 6) {
       toast("Impossible state: more than 6 players selected!");
       return;
     }
+    
     onPlayersSelect(selectedPlayers);
     onComplete();
   };
@@ -114,16 +122,25 @@ export function PlayersOnIceStep({
           <div className="mb-3">
             <h3 className="text-lg font-medium">Review Goal-Involved Players</h3>
             <p className="text-sm text-muted-foreground">
-              These players are involved in the goal (scorer/assists) and are required on the ice.
+              {isOpponentTeam 
+                ? "Select home team players on the ice for plus/minus calculation."
+                : "These players are involved in the goal (scorer/assists) and are required on the ice."}
             </p>
           </div>
           <Card>
             <CardContent className="p-4">
-              {mandatoryPlayers.length > 0 ? (
+              {!isOpponentTeam && mandatoryPlayers.length > 0 ? (
                 <SimplePlayerList
                   players={mandatoryPlayers}
                   selectedPlayers={mandatoryPlayers}
                 />
+              ) : isOpponentTeam ? (
+                <div className="p-2">
+                  <p>Select which home team players were on the ice when the opponent scored.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    These players will receive a minus in their plus/minus stats.
+                  </p>
+                </div>
               ) : (
                 <p>No goal-involved players. Please select at least one on the previous step.</p>
               )}
@@ -132,7 +149,7 @@ export function PlayersOnIceStep({
           <div className="mt-4 flex justify-end">
             <Button 
               onClick={handleContinueMandatory}
-              disabled={mandatoryPlayers.length === 0}
+              disabled={!isOpponentTeam && mandatoryPlayers.length === 0}
             >
               Continue
             </Button>
@@ -143,17 +160,25 @@ export function PlayersOnIceStep({
       {subStep === "extras" && (
         <>
           <div className="mb-3">
-            <h3 className="text-lg font-medium">Select Additional Players on Ice</h3>
+            <h3 className="text-lg font-medium">
+              {isOpponentTeam 
+                ? "Select Home Team Players on Ice" 
+                : "Select Additional Players on Ice"}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              Add up to {6 - mandatoryPlayers.length} extra players on the ice (max 6 total with required).
+              {isOpponentTeam 
+                ? "Select which players were on the ice when the opponent scored (up to 6 players)." 
+                : `Add up to ${6 - mandatoryPlayers.length} extra players on the ice (max 6 total with required).`}
             </p>
             <div className="mt-3 mb-4">
               <p className="text-sm font-medium">
                 Selected: {selectedPlayers.length}/6 players
               </p>
-              <p className="text-xs text-amber-600">
-                Players involved in the goal (scorer/assists) are already included and cannot be removed.
-              </p>
+              {!isOpponentTeam && (
+                <p className="text-xs text-amber-600">
+                  Players involved in the goal (scorer/assists) are already included and cannot be removed.
+                </p>
+              )}
             </div>
           </div>
           <Card>
@@ -174,7 +199,7 @@ export function PlayersOnIceStep({
                     </Button>
                     <Button 
                       onClick={handleConfirm}
-                      disabled={selectedPlayers.length < mandatoryPlayers.length || selectedPlayers.length === 0}
+                      disabled={!isOpponentTeam && (selectedPlayers.length < mandatoryPlayers.length || selectedPlayers.length === 0)}
                     >
                       Confirm Players
                     </Button>

@@ -55,20 +55,27 @@ export function usePlayerSelection() {
   const handlePlayersOnIceSelect = (players: User[]) => {
     const uniquePlayers = [...new Map(players.map(p => [p.id, p])).values()];
     
-    const mandatoryPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
-    
-    const allPlayers = [...uniquePlayers];
-    
-    mandatoryPlayers.forEach(requiredPlayer => {
-      if (requiredPlayer && !allPlayers.some(p => p.id === requiredPlayer.id)) {
-        allPlayers.push(requiredPlayer);
-      }
-    });
-    
-    const limitedPlayers = allPlayers.slice(0, 6);
-    
-    setPlayersOnIce(limitedPlayers);
-    return limitedPlayers;
+    // Only add mandatory players if it's not an opponent team goal
+    if (!isOpponentTeam) {
+      const mandatoryPlayers = [selectedScorer, primaryAssist, secondaryAssist].filter(Boolean) as User[];
+      
+      const allPlayers = [...uniquePlayers];
+      
+      mandatoryPlayers.forEach(requiredPlayer => {
+        if (requiredPlayer && !allPlayers.some(p => p.id === requiredPlayer.id)) {
+          allPlayers.push(requiredPlayer);
+        }
+      });
+      
+      const limitedPlayers = allPlayers.slice(0, 6);
+      setPlayersOnIce(limitedPlayers);
+      return limitedPlayers;
+    } else {
+      // For opponent team goals, just use the selected players (up to 6)
+      const limitedPlayers = uniquePlayers.slice(0, 6);
+      setPlayersOnIce(limitedPlayers);
+      return limitedPlayers;
+    }
   };
 
   const validatePlayers = (gameId: string | undefined) => {
@@ -81,6 +88,8 @@ export function usePlayerSelection() {
     
     // For opponent team, we don't require full validation
     if (isOpponentTeam) {
+      // For opponent goals, we only need the jersey number of the scorer
+      // but even that is optional
       return true;
     }
     
