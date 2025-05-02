@@ -1,11 +1,9 @@
 
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Game } from '@/types';
-import { GoalHeader } from './GoalHeader';
-import { GoalActions } from './GoalActions';
 import { useGoalFlow } from '@/hooks/useGoalFlow';
 import { StepRenderer } from './StepRenderer';
+import { GoalFlowLayout } from './components/GoalFlowLayout';
 
 interface GoalFlowContainerProps {
   game: Game;
@@ -29,17 +27,19 @@ export default function GoalFlowContainer({
   } = goalFlow;
 
   return (
-    <Card>
-      <GoalHeader game={game} selectedTeam={selectedTeam} />
+    <GoalFlowLayout
+      game={game}
+      selectedTeam={selectedTeam}
+      currentStep={currentStep}
+      isSubmitting={isSubmitting}
+      onCancel={onCancel}
+    >
       <StepRenderer
         goalFlow={goalFlow}
         game={game}
         onCancel={onCancel}
         period={period}
       />
-      {currentStep !== 'submit' && currentStep !== 'players-on-ice' && currentStep !== 'opponent-goal' && (
-        <GoalActions isSubmitting={isSubmitting} onCancel={onCancel} />
-      )}
-    </Card>
+    </GoalFlowLayout>
   );
 }
