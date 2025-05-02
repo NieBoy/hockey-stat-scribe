@@ -61,29 +61,37 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
             game.awayTeam = updatedTeam;
           }
           
-          console.log(`Updated ${teamType} team players:`, updatedTeam.players);
+          console.log(`Updated ${teamType} team players:`, updatedTeam.players.length);
         }
+      } else {
+        console.warn("GoalFlow - No lineup data returned or unexpected format");
+        toast.warning("No players found", {
+          description: "Try adding players to this team in the team management screen."
+        });
       }
       
       setHasLoadedLineups(true);
     } catch (error) {
       console.error("GoalFlow - Error loading lineup data:", error);
-      toast.error("Failed to load team lineup");
+      toast.error("Failed to load team lineup", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
     } finally {
       setIsLoadingLineups(false);
     }
   };
 
   const handleRefreshLineups = async () => {
-    if (!selectedTeam) return;
+    if (!selectedTeam) {
+      toast.error("No team selected");
+      return;
+    }
     await loadLineupData(selectedTeam);
   };
 
   const handleTeamSelect = (team: 'home' | 'away') => {
     setSelectedTeam(team);
-    
     setCurrentStep('scorer-select');
-    
     loadLineupData(team);
   };
 

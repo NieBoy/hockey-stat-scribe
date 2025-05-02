@@ -24,8 +24,8 @@ export function ScorerSelectionStep({
   // Check if we have valid team and players data
   const hasPlayers = team?.players && team.players.length > 0;
   
-  console.log('ScorerSelectionStep - Team:', team);
-  console.log('ScorerSelectionStep - Players:', team?.players);
+  console.log('ScorerSelectionStep - Team:', team?.id, team?.name);
+  console.log('ScorerSelectionStep - Players count:', team?.players?.length || 0);
   console.log('ScorerSelectionStep - Has Players:', hasPlayers);
   console.log('ScorerSelectionStep - Is Loading:', isLoadingLineups);
 

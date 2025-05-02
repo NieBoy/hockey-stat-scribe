@@ -20,8 +20,7 @@ export const getTeamLineup = async (teamId: string): Promise<any[]> => {
         line_number,
         name,
         email,
-        role,
-        number
+        role
       `)
       .eq('team_id', teamId)
       .eq('role', 'player');

@@ -13,7 +13,6 @@ export async function validatePlayerId(playerId: string): Promise<boolean> {
   }
   
   try {
-    console.log(`Validating team_member.id: ${playerId}`);
     const { count, error } = await supabase
       .from('team_members')
       .select('id', { count: 'exact', head: true })
@@ -25,11 +24,10 @@ export async function validatePlayerId(playerId: string): Promise<boolean> {
     }
     
     if (!count) {
-      console.error(`Invalid player ID: ${playerId} - not found in team_members table`);
+      console.error(`Invalid player ID: ${playerId}`);
       return false;
     }
     
-    console.log(`Successfully validated team_member.id: ${playerId}`);
     return true;
   } catch (error) {
     console.error(`Error in validatePlayerId for ${playerId}:`, error);
@@ -38,52 +36,44 @@ export async function validatePlayerId(playerId: string): Promise<boolean> {
 }
 
 /**
- * Validates a player ID and throws an error if invalid
- * @param playerId The team_member.id to validate
- * @throws Error if the player ID is invalid
- */
-export async function validatePlayer(playerId: string): Promise<void> {
-  console.log(`Validating player with team_member.id: ${playerId}`);
-  if (!(await validatePlayerId(playerId))) {
-    throw new Error(`Player with team_member.id ${playerId} does not exist in team_members table`);
-  }
-}
-
-/**
- * Validates multiple player IDs exist in team_members table
- * @param playerIds Array of team_member.id values to validate
- * @returns Promise<boolean> Whether all IDs are valid
+ * Validates multiple player IDs (all team_member.id)
+ * @param playerIds Array of team_member.id to validate
+ * @returns Promise<boolean> Whether all provided IDs are valid
  */
 export async function validateMultiplePlayers(playerIds: string[]): Promise<boolean> {
-  if (!playerIds.length) {
-    console.error("No player IDs provided for validation");
-    return false;
-  }
-
   try {
-    console.log(`Validating multiple team_member.ids:`, playerIds);
+    // Filter out any empty/null values
+    const validIds = playerIds.filter(id => id);
+    
+    if (validIds.length === 0) {
+      return true; // No IDs to validate, so technically valid
+    }
+    
+    // For performance, do a single query to check all IDs
     const { data, error } = await supabase
       .from('team_members')
       .select('id')
-      .in('id', playerIds);
-
+      .in('id', validIds);
+      
     if (error) {
-      console.error('Error validating multiple players:', error);
+      console.error(`Error validating multiple player IDs:`, error);
       return false;
     }
-
-    const foundIds = new Set(data.map(p => p.id));
-    const missingIds = playerIds.filter(id => !foundIds.has(id));
-
-    if (missingIds.length > 0) {
+    
+    // Create a Set of the returned IDs for fast lookup
+    const foundIds = new Set(data?.map(p => p.id));
+    
+    // Check if all requested IDs were found
+    const allValid = validIds.every(id => foundIds.has(id));
+    
+    if (!allValid) {
+      const missingIds = validIds.filter(id => !foundIds.has(id));
       console.error(`Invalid player IDs: ${missingIds.join(', ')}`);
-      return false;
     }
-
-    console.log(`Successfully validated all player IDs`);
-    return true;
+    
+    return allValid;
   } catch (error) {
-    console.error('Error in validateMultiplePlayers:', error);
+    console.error(`Error in validateMultiplePlayers:`, error);
     return false;
   }
 }
