@@ -14,8 +14,8 @@ export function GoalStepNavigation({
   onCancel
 }: GoalStepNavigationProps) {
   // Only show the actions for certain steps
+  // Note: We need to show actions on the submit step for goal recording 
   const shouldShowActions = 
-    currentStep !== 'submit' && 
     currentStep !== 'players-on-ice' && 
     currentStep !== 'opponent-goal';
 
@@ -23,5 +23,9 @@ export function GoalStepNavigation({
     return null;
   }
 
-  return <GoalActions isSubmitting={isSubmitting} onCancel={onCancel} />;
+  return <GoalActions 
+    isSubmitting={isSubmitting} 
+    onCancel={onCancel} 
+    showSubmit={currentStep === 'submit'} 
+  />;
 }

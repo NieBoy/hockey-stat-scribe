@@ -96,7 +96,12 @@ export function usePlayerSelection() {
         return false;
       }
       
-      // Players on ice is optional for opponent goals
+      // Make sure we have players on ice for plus/minus (for home team)
+      if (!playersOnIce || playersOnIce.length === 0) {
+        toast.error("Please select at least one player on ice");
+        return false;
+      }
+      
       return true;
     }
     

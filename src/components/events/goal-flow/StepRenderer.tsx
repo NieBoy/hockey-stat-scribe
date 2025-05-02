@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CardContent } from '@/components/ui/card';
 import { Game } from '@/types';
