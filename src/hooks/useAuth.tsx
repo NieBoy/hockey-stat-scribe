@@ -21,6 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Track if we've already attempted a navigation to prevent cycles
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
     const handleAuthStateChange = async () => {
@@ -28,23 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Initializing auth state...");
         setLoading(true);
         
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("Session found during initialization");
-          const currentUser = await getCurrentUser();
-          setUser(currentUser);
-          
-          // Only redirect if we're on auth pages and not already redirecting
-          if (location.pathname === '/signin' || location.pathname === '/signup') {
-            const destination = location.state?.from?.pathname || "/";
-            console.log("Auth session found, redirecting to:", destination);
-            navigate(destination, { replace: true });
-          }
-        } else {
-          console.log("No session found during initialization");
-        }
-        
+        // First set up the auth listener before checking session
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             console.log("Auth state changed:", event);
@@ -53,19 +40,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const currentUser = await getCurrentUser();
               setUser(currentUser);
               
-              // Handle navigation on sign-in event
+              // Prevent navigation loops by tracking if we've already navigated
               if (location.pathname === '/signin' || location.pathname === '/signup') {
+                console.log("Auth state change - will navigate away from auth page");
                 const destination = location.state?.from?.pathname || "/";
-                console.log("Auth state change - redirecting to:", destination);
-                navigate(destination, { replace: true });
+                // Use setTimeout to break potential circular dependencies
+                setTimeout(() => {
+                  console.log("Navigating to:", destination);
+                  navigate(destination, { replace: true });
+                }, 0);
               }
             } else if (event === 'SIGNED_OUT') {
               console.log("User signed out, clearing user state");
               setUser(null);
+              setHasNavigated(false); // Reset navigation flag on sign out
             }
           }
         );
-
+        
+        // Then check for existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.log("Session found during initialization");
+          const currentUser = await getCurrentUser();
+          setUser(currentUser);
+          
+          // Only redirect if we're on auth pages and not already navigated
+          if ((location.pathname === '/signin' || location.pathname === '/signup') && !hasNavigated) {
+            setHasNavigated(true);
+            const destination = location.state?.from?.pathname || "/";
+            console.log("Auth session found, redirecting to:", destination);
+            navigate(destination, { replace: true });
+          }
+        } else {
+          console.log("No session found during initialization");
+        }
+        
         return () => {
           console.log("Cleaning up auth listener");
           authListener.subscription.unsubscribe();
@@ -79,13 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     handleAuthStateChange();
-  }, [navigate, location]);
+  }, [navigate, location, hasNavigated]);
 
   const signIn = async (email: string, password: string) => {
     try {
       console.log("Signing in user:", email);
       setLoading(true);
-      const result = await apiSignIn(email, password);
+      
+      // Convert email to lowercase for consistent authentication
+      const normalizedEmail = email.toLowerCase();
+      
+      const result = await apiSignIn(normalizedEmail, password);
       
       if (result.error) {
         console.log("Sign in error:", result.error);
@@ -93,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (result.user) {
         console.log("User signed in successfully:", result.user.id);
         setUser(result.user);
+        setHasNavigated(true); // Mark that we've handled navigation
         toast.success("Signed in successfully");
-        // Important: DO NOT navigate here - let the auth state change handler handle it
+        // Let the auth state change handler manage navigation
       }
       return result;
     } catch (error) {
