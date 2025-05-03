@@ -9,47 +9,48 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
     
-    const setupAuthListener = async () => {
-      try {
-        console.log("Initializing auth state...");
+    // Set up auth listener first
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event);
         
-        // Set up auth listener
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log("Auth state changed:", event);
+        if (event === 'SIGNED_IN' && session) {
+          try {
+            console.log("User signed in, fetching user data");
+            const currentUser = await getCurrentUser();
             
-            if (event === 'SIGNED_IN' && session) {
-              try {
-                const currentUser = await getCurrentUser();
-                if (isMounted) {
-                  setUser(currentUser);
-                  setLoading(false);
-                }
-              } catch (error) {
-                console.error("Error fetching user data:", error);
-                if (isMounted) {
-                  setUser(null);
-                  setLoading(false);
-                }
-              }
-            } else if (event === 'SIGNED_OUT') {
-              if (isMounted) {
-                setUser(null);
-                setLoading(false);
-              }
+            if (mounted) {
+              setUser(currentUser);
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            if (mounted) {
+              setUser(null);
+              setLoading(false);
             }
           }
-        );
-        
-        // Check for existing session
+        } else if (event === 'SIGNED_OUT') {
+          if (mounted) {
+            console.log("User signed out, clearing user state");
+            setUser(null);
+            setLoading(false);
+          }
+        }
+      }
+    );
+    
+    // Check for existing session
+    const checkSession = async () => {
+      try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
           try {
             const currentUser = await getCurrentUser();
-            if (isMounted) {
+            if (mounted) {
               setUser(currentUser);
             }
           } catch (error) {
@@ -57,25 +58,22 @@ export function useAuthState() {
           }
         }
         
-        if (isMounted) {
+        if (mounted) {
           setLoading(false);
         }
-        
-        return () => {
-          authListener.subscription.unsubscribe();
-        };
       } catch (error) {
-        console.error("Auth state initialization error:", error);
-        if (isMounted) {
+        console.error("Error checking session:", error);
+        if (mounted) {
           setLoading(false);
         }
       }
     };
     
-    setupAuthListener();
+    checkSession();
     
     return () => {
-      isMounted = false;
+      mounted = false;
+      authListener.subscription.unsubscribe();
     };
   }, []);
 

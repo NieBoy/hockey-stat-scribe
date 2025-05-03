@@ -12,15 +12,18 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
-  const { signIn } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
+  
+  // Combined loading state to prevent UI flicker
+  const loading = localLoading || authLoading;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setLocalLoading(true);
     setError(null);
 
     try {
@@ -45,7 +48,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
       console.error("Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -66,6 +69,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div className="space-y-2">
@@ -84,6 +88,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
       </div>
@@ -122,6 +127,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             variant="outline" 
             onClick={onShowDemoForm}
             className="w-full mt-2"
+            disabled={loading}
           >
             Create Demo Account
             <ArrowRight className="ml-2 h-4 w-4" />

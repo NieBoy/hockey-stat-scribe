@@ -55,9 +55,26 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       }
     }
     
+    if (!userProfile) {
+      console.error("Failed to get or create user profile");
+      return null;
+    }
+    
     // Get user roles and teams
-    const roles = await getUserRoles(userId);
-    const teams = await getUserTeams(userId);
+    let roles: UserRole[] = [];
+    try {
+      roles = await getUserRoles(userId);
+    } catch (rolesError) {
+      console.error("Error getting user roles:", rolesError);
+      roles = ['player']; // Fallback to player role
+    }
+    
+    let teams = [];
+    try {
+      teams = await getUserTeams(userId);
+    } catch (teamsError) {
+      console.error("Error getting user teams:", teamsError);
+    }
     
     // Construct and return the user object
     const user = {

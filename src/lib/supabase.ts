@@ -10,6 +10,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storageKey: 'hockey-stats-auth-storage'
+    storageKey: 'hockey-stats-auth-storage',
   }
 });
