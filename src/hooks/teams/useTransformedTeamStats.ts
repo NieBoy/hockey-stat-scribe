@@ -64,8 +64,7 @@ export function useTransformedTeamStats(stats: PlayerStat[], teamPlayers: Player
         return;
       }
       
-      // No special handling is needed now since our database now uses actual +/- values
-      // instead of separate plus and minus values with details
+      // Sum up the values - now using the actual values that are stored in the database
       playerStats[playerId].stats[statType] = relevantStats.reduce(
         (sum, stat) => sum + Number(stat.value), 0
       );

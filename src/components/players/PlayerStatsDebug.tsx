@@ -30,6 +30,14 @@ const PlayerStatsDebug = ({ playerId }: PlayerStatsDebugProps) => {
     ]);
   };
 
+  // Format the display of stat values
+  const formatStatValue = (statType: string, value: number): string => {
+    if (statType === 'plusMinus') {
+      return value > 0 ? `+${value}` : `${value}`;
+    }
+    return value.toString();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -50,9 +58,26 @@ const PlayerStatsDebug = ({ playerId }: PlayerStatsDebugProps) => {
           <div>
             <h3 className="font-semibold mb-1">Aggregated Player Stats</h3>
             {stats && stats.length > 0 ? (
-              <pre className="bg-muted p-2 rounded text-xs max-h-24 overflow-y-auto">
-                {JSON.stringify(stats, null, 2)}
-              </pre>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="text-left p-1">Stat Type</th>
+                    <th className="text-right p-1">Value</th>
+                    <th className="text-right p-1">Games</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.map(stat => (
+                    <tr key={stat.statType} className="border-b border-muted">
+                      <td className="p-1">{stat.statType}</td>
+                      <td className={`text-right p-1 ${stat.statType === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}>
+                        {formatStatValue(stat.statType, stat.value)}
+                      </td>
+                      <td className="text-right p-1">{stat.gamesPlayed}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
               <p className="text-muted-foreground text-sm">No aggregated stats found</p>
             )}
@@ -69,9 +94,30 @@ const PlayerStatsDebug = ({ playerId }: PlayerStatsDebugProps) => {
               {expanded ? "Collapse" : "Expand"}
             </Button>
             {rawGameStats && rawGameStats.length > 0 ? (
-              <pre className={`bg-muted p-2 rounded text-xs ${expanded ? "max-h-96" : "max-h-24"} overflow-y-auto`}>
-                {JSON.stringify(rawGameStats, null, 2)}
-              </pre>
+              <div className={`bg-muted p-2 rounded text-xs ${expanded ? "max-h-96" : "max-h-24"} overflow-y-auto`}>
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left p-1">Stat Type</th>
+                      <th className="text-right p-1">Value</th>
+                      <th className="text-left p-1">Details</th>
+                      <th className="text-left p-1">Period</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rawGameStats.map((stat, index) => (
+                      <tr key={index} className="border-b border-muted">
+                        <td className="p-1">{stat.stat_type}</td>
+                        <td className={`text-right p-1 ${stat.stat_type === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}>
+                          {stat.stat_type === 'plusMinus' ? (stat.value > 0 ? `+${stat.value}` : stat.value) : stat.value}
+                        </td>
+                        <td className="p-1">{stat.details || 'N/A'}</td>
+                        <td className="p-1">{stat.period}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-muted-foreground text-sm">No raw game stats found</p>
             )}

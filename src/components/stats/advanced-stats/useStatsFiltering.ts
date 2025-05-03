@@ -57,15 +57,12 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       const playerStat = playerStats.get(key);
 
       if (stat.statType === "goals") {
-        playerStat.goals += stat.value;
+        playerStat.goals += Number(stat.value);
       } else if (stat.statType === "assists") {
-        playerStat.assists += stat.value;
+        playerStat.assists += Number(stat.value);
       } else if (stat.statType === "plusMinus") {
-        if (stat.details === "plus") {
-          playerStat.plusMinus += Number(stat.value);
-        } else if (stat.details === "minus") {
-          playerStat.plusMinus -= Number(stat.value);
-        }
+        // Use the actual recorded plus/minus value directly
+        playerStat.plusMinus += Number(stat.value);
       }
     });
 

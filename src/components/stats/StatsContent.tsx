@@ -33,6 +33,18 @@ export default function StatsContent({ stats }: StatsContentProps) {
     {
       accessorKey: "value",
       header: "Total",
+      cell: ({ row }) => {
+        const { statType, value } = row.original;
+        
+        // Special formatting for plus/minus
+        if (statType === 'plusMinus') {
+          const formattedValue = value > 0 ? `+${value}` : `${value}`;
+          const colorClass = value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : '';
+          return <span className={colorClass}>{formattedValue}</span>;
+        }
+        
+        return value;
+      },
     },
     {
       accessorKey: "gamesPlayed",
@@ -42,10 +54,23 @@ export default function StatsContent({ stats }: StatsContentProps) {
       accessorKey: "average",
       header: "Average",
       cell: ({ row }) => {
-        const average = row.original.gamesPlayed > 0 
-          ? (row.original.value / row.original.gamesPlayed).toFixed(2) 
-          : "0.00";
-        return average;
+        const { statType, value, gamesPlayed } = row.original;
+        const average = gamesPlayed > 0 ? value / gamesPlayed : 0;
+        
+        // Special formatting for plus/minus average
+        if (statType === 'plusMinus') {
+          const formattedAverage = average > 0 
+            ? `+${average.toFixed(2)}` 
+            : average.toFixed(2);
+          const colorClass = average > 0 
+            ? 'text-green-600' 
+            : average < 0 
+              ? 'text-red-600' 
+              : '';
+          return <span className={colorClass}>{formattedAverage}</span>;
+        }
+        
+        return average.toFixed(2);
       },
     },
   ];

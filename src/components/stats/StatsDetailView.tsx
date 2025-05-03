@@ -1,3 +1,4 @@
+
 import React from "react";
 import { PlayerStat, StatType } from "@/types";
 import {
@@ -51,6 +52,14 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
     }
   };
 
+  // Format the value for display, specifically for plus/minus
+  const formatStatValue = (type: StatType, value: number): string => {
+    if (type === 'plusMinus') {
+      return value > 0 ? `+${value}` : `${value}`;
+    }
+    return value.toString();
+  };
+
   return (
     <div className="space-y-8">
       {offensiveStats.length > 0 && (
@@ -59,6 +68,7 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           description="Goals and assists" 
           stats={offensiveStats} 
           formatStatType={formatStatType} 
+          formatStatValue={formatStatValue}
         />
       )}
       
@@ -67,7 +77,8 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           title="Defensive Stats" 
           description="Plus/minus and hits" 
           stats={defensiveStats} 
-          formatStatType={formatStatType} 
+          formatStatType={formatStatType}
+          formatStatValue={formatStatValue}
         />
       )}
       
@@ -76,7 +87,8 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           title="Special Teams" 
           description="Power play and penalty kill statistics" 
           stats={specialTeamsStats} 
-          formatStatType={formatStatType} 
+          formatStatType={formatStatType}
+          formatStatValue={formatStatValue}
         />
       )}
       
@@ -85,7 +97,8 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           title="Faceoffs" 
           description="Faceoff statistics" 
           stats={faceoffStats} 
-          formatStatType={formatStatType} 
+          formatStatType={formatStatType}
+          formatStatValue={formatStatValue}
         />
       )}
 
@@ -94,7 +107,8 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
           title="Other Stats" 
           description="Penalties, saves, and other statistics" 
           stats={otherStats} 
-          formatStatType={formatStatType} 
+          formatStatType={formatStatType}
+          formatStatValue={formatStatValue}
         />
       )}
     </div>
@@ -106,13 +120,15 @@ interface StatCategoryCardProps {
   description: string;
   stats: PlayerStat[];
   formatStatType: (type: StatType) => string;
+  formatStatValue: (type: StatType, value: number) => string;
 }
 
 const StatCategoryCard: React.FC<StatCategoryCardProps> = ({ 
   title, 
   description, 
   stats,
-  formatStatType 
+  formatStatType,
+  formatStatValue
 }) => {
   if (stats.length === 0) {
     return null;
@@ -135,18 +151,33 @@ const StatCategoryCard: React.FC<StatCategoryCardProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {stats.map(stat => (
-              <TableRow key={stat.statType}>
-                <TableCell>{formatStatType(stat.statType)}</TableCell>
-                <TableCell className="text-right">{stat.value}</TableCell>
-                <TableCell className="text-right">{stat.gamesPlayed}</TableCell>
-                <TableCell className="text-right">
-                  {stat.gamesPlayed > 0 
-                    ? (stat.value / stat.gamesPlayed).toFixed(2) 
-                    : "0.00"}
-                </TableCell>
-              </TableRow>
-            ))}
+            {stats.map(stat => {
+              const perGame = stat.gamesPlayed > 0 
+                ? (stat.value / stat.gamesPlayed) 
+                : 0;
+                
+              // For plus/minus, we want to show the sign for the per-game value too
+              const formattedPerGame = stat.statType === 'plusMinus' && perGame !== 0
+                ? (perGame > 0 ? `+${perGame.toFixed(2)}` : perGame.toFixed(2))
+                : perGame.toFixed(2);
+              
+              return (
+                <TableRow key={stat.statType}>
+                  <TableCell>{formatStatType(stat.statType)}</TableCell>
+                  <TableCell 
+                    className={`text-right ${stat.statType === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}
+                  >
+                    {formatStatValue(stat.statType, stat.value)}
+                  </TableCell>
+                  <TableCell className="text-right">{stat.gamesPlayed}</TableCell>
+                  <TableCell 
+                    className={`text-right ${stat.statType === 'plusMinus' ? (perGame > 0 ? 'text-green-600' : perGame < 0 ? 'text-red-600' : '') : ''}`}
+                  >
+                    {formattedPerGame}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
