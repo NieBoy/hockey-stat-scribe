@@ -19,7 +19,7 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
   const [showDebug, setShowDebug] = useState(false);
   
   // Fetch game stats
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ['gameStats', game.id],
     queryFn: () => fetchGameStats(game.id),
   });
