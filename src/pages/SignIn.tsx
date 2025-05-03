@@ -42,7 +42,7 @@ export default function SignIn() {
           setError(result.error);
         }
       }
-      // The redirect is handled in the useAuth hook
+      // No need to navigate here - auth state change will handle it
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       console.error(err);

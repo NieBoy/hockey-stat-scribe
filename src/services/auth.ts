@@ -247,7 +247,7 @@ export const signUp = async (
           .from('users')
           .insert({
             id: data.user.id,
-            email,
+            email: normalizedEmail,
             name
           });
           

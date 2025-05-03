@@ -25,11 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleAuthStateChange = async () => {
       try {
+        console.log("Initializing auth state...");
         setLoading(true);
         
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
+          console.log("Session found during initialization");
           const currentUser = await getCurrentUser();
           setUser(currentUser);
           
@@ -39,21 +41,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log("Auth session found, redirecting to:", destination);
             navigate(destination, { replace: true });
           }
+        } else {
+          console.log("No session found during initialization");
         }
         
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             console.log("Auth state changed:", event);
             if (event === 'SIGNED_IN' && session) {
+              console.log("User signed in, fetching user data");
               const currentUser = await getCurrentUser();
               setUser(currentUser);
+              
+              // Handle navigation on sign-in event
+              if (location.pathname === '/signin' || location.pathname === '/signup') {
+                const destination = location.state?.from?.pathname || "/";
+                console.log("Auth state change - redirecting to:", destination);
+                navigate(destination, { replace: true });
+              }
             } else if (event === 'SIGNED_OUT') {
+              console.log("User signed out, clearing user state");
               setUser(null);
             }
           }
         );
 
         return () => {
+          console.log("Cleaning up auth listener");
           authListener.subscription.unsubscribe();
         };
       } catch (error) {
@@ -70,18 +84,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       console.log("Signing in user:", email);
+      setLoading(true);
       const result = await apiSignIn(email, password);
       
       if (result.error) {
         console.log("Sign in error:", result.error);
         toast.error(result.error);
       } else if (result.user) {
-        setUser(result.user);
         console.log("User signed in successfully:", result.user.id);
+        setUser(result.user);
         toast.success("Signed in successfully");
-        
-        // Fix: Don't navigate here - let the auth state change handler handle it
-        // This prevents navigation loops if there are async timing issues
+        // Important: DO NOT navigate here - let the auth state change handler handle it
       }
       return result;
     } catch (error) {
@@ -89,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Sign in error:", error);
       toast.error(errorMessage);
       return { user: null, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
