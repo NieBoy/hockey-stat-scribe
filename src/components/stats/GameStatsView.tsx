@@ -96,8 +96,13 @@ const GameStatsView: React.FC<GameStatsViewProps> = ({ gameStats, gameEvents, ga
                       <TableRow key={stat.id}>
                         <TableCell className="capitalize">{formatStatType(stat.statType)}</TableCell>
                         <TableCell>{stat.period}</TableCell>
-                        <TableCell className="text-right">{stat.value}</TableCell>
-                        <TableCell>{stat.details || '-'}</TableCell>
+                        <TableCell className={`text-right ${stat.statType === 'plusMinus' ? 
+                          (stat.details === 'plus' ? 'text-green-600' : 'text-red-600') : ''}`}>
+                          {stat.statType === 'plusMinus' ? 
+                            (stat.details === 'plus' ? `+${stat.value}` : `-${stat.value}`) : 
+                            stat.value}
+                        </TableCell>
+                        <TableCell>{formatDetails(stat.statType, stat.details || '-')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -134,6 +139,14 @@ const formatStatType = (type: string): string => {
     case 'faceoff_losses': return 'Faceoff Loss';
     default: return type;
   }
+};
+
+// Helper function to format details for display
+const formatDetails = (statType: string, details: string): string => {
+  if (statType === 'plusMinus') {
+    return details === 'plus' ? 'On ice for team goal' : 'On ice for opponent goal';
+  }
+  return details === '-' ? '-' : details;
 };
 
 export default GameStatsView;

@@ -22,6 +22,7 @@ interface GoalEventData {
 export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean> => {
   try {
     console.log("Recording goal event with data:", goalData);
+    console.log("Is home team scoring:", goalData.isHomeTeamScoring);
     
     // Validate player IDs for our team players
     const playerIds = [

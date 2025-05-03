@@ -25,26 +25,65 @@ export function useTransformedTeamStats(stats: PlayerStat[], teamPlayers: Player
     };
   });
 
-  // Then add stats for players that have them
+  // Process stats for players - group by player first
+  const statsByPlayer: Record<string, PlayerStat[]> = {};
   stats.forEach(stat => {
-    if (!playerStats[stat.playerId]) {
+    if (!statsByPlayer[stat.playerId]) {
+      statsByPlayer[stat.playerId] = [];
+    }
+    statsByPlayer[stat.playerId].push(stat);
+  });
+
+  // Process each player's stats
+  Object.entries(statsByPlayer).forEach(([playerId, playerStats_]) => {
+    if (!playerStats[playerId]) {
       // If player wasn't in the team list (fallback)
-      playerStats[stat.playerId] = {
-        playerId: stat.playerId,
-        playerName: stat.playerName || 'Unknown Player',
-        gamesPlayed: stat.gamesPlayed || 0,
+      playerStats[playerId] = {
+        playerId: playerId,
+        playerName: playerStats_[0]?.playerName || 'Unknown Player',
+        gamesPlayed: playerStats_[0]?.gamesPlayed || 0,
         stats: {} as Record<StatType, number>
       };
     } else {
       // Update games played for existing players
-      playerStats[stat.playerId].gamesPlayed = Math.max(
-        playerStats[stat.playerId].gamesPlayed,
-        stat.gamesPlayed || 0
+      const maxGamesPlayed = Math.max(...playerStats_.map(s => s.gamesPlayed || 0));
+      playerStats[playerId].gamesPlayed = Math.max(
+        playerStats[playerId].gamesPlayed,
+        maxGamesPlayed
       );
     }
 
-    // Add the specific stat
-    playerStats[stat.playerId].stats[stat.statType as StatType] = stat.value;
+    // Process each stat type separately
+    statTypes.forEach(statType => {
+      // Filter stats for this player and this stat type
+      const relevantStats = playerStats_.filter(s => s.statType === statType);
+      
+      if (relevantStats.length === 0) {
+        // No stats of this type
+        playerStats[playerId].stats[statType] = 0;
+        return;
+      }
+      
+      if (statType === 'plusMinus') {
+        // For plus/minus, we need to handle plus and minus separately
+        let plusMinusTotal = 0;
+        
+        relevantStats.forEach(stat => {
+          if (stat.details === 'plus') {
+            plusMinusTotal += Number(stat.value);
+          } else if (stat.details === 'minus') {
+            plusMinusTotal -= Number(stat.value);
+          }
+        });
+        
+        playerStats[playerId].stats[statType] = plusMinusTotal;
+      } else {
+        // For regular stats, just sum the values
+        playerStats[playerId].stats[statType] = relevantStats.reduce(
+          (sum, stat) => sum + Number(stat.value), 0
+        );
+      }
+    });
   });
 
   // Convert to array and ensure all stat types exist (with 0 as default)

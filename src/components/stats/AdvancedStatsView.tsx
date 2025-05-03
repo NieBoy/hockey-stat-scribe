@@ -92,15 +92,16 @@ export default function AdvancedStatsView({ game }: AdvancedStatsViewProps) {
       } else if (stat.statType === "assists") {
         playerStat.assists += stat.value;
       } else if (stat.statType === "plusMinus") {
-        // Handle plus/minus stats correctly based on the details field
+        // Fix plus/minus calculation to add for plus events and subtract for minus events
         if (stat.details === "plus") {
-          playerStat.plusMinus += stat.value; // Add for 'plus' events
+          playerStat.plusMinus += Number(stat.value); // Make sure it's a number and add
         } else if (stat.details === "minus") {
-          playerStat.plusMinus -= stat.value; // Subtract for 'minus' events
+          playerStat.plusMinus -= Number(stat.value); // Make sure it's a number and subtract
         }
       }
     });
 
+    console.log("Aggregated player stats:", Array.from(playerStats.values()));
     return Array.from(playerStats.values());
   }, [filteredStats, game]);
 
