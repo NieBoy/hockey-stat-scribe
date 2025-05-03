@@ -65,10 +65,11 @@ export function useTransformedTeamStats(stats: PlayerStat[], teamPlayers: Player
       }
       
       if (statType === 'plusMinus') {
-        // For plus/minus, we need to handle plus and minus separately
+        // For plus/minus, we need to calculate the actual +/- value
         let plusMinusTotal = 0;
         
         relevantStats.forEach(stat => {
+          // Add for plus events, subtract for minus events
           if (stat.details === 'plus') {
             plusMinusTotal += Number(stat.value);
           } else if (stat.details === 'minus') {
@@ -76,6 +77,7 @@ export function useTransformedTeamStats(stats: PlayerStat[], teamPlayers: Player
           }
         });
         
+        console.log(`Player ${playerId} plusMinusTotal: ${plusMinusTotal}`);
         playerStats[playerId].stats[statType] = plusMinusTotal;
       } else {
         // For regular stats, just sum the values

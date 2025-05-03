@@ -56,7 +56,20 @@ export function TeamStatsTable({ stats, statTypes }: TeamStatsTableProps) {
           </div>
         </Button>
       ),
-      cell: ({ row }) => row.original.stats[type],
+      cell: ({ row }) => {
+        const value = row.original.stats[type];
+        
+        // Format plusMinus values with + sign for positive numbers
+        if (type === 'plusMinus') {
+          return (
+            <span className={`${value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : ''}`}>
+              {value > 0 ? `+${value}` : value}
+            </span>
+          );
+        }
+        
+        return value;
+      }
     })),
     {
       accessorKey: "gamesPlayed",

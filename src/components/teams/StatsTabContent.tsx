@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Team } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
@@ -24,9 +24,24 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     isLoading,
     error,
     isRefreshing,
+    refetch
   } = useTeamStats(team.id);
 
   const { transformedStats, statTypes } = useTransformedTeamStats(stats || [], team.players);
+
+  // Debug logging to check what data we're working with
+  useEffect(() => {
+    if (stats) {
+      console.log("Raw team stats:", stats);
+      // Log specific plusMinus stats
+      const plusMinusStats = stats.filter(s => s.statType === 'plusMinus');
+      console.log("PlusMinus stats:", plusMinusStats);
+    }
+    
+    if (transformedStats) {
+      console.log("Transformed stats:", transformedStats);
+    }
+  }, [stats, transformedStats]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -42,6 +57,11 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
     );
   }
 
+  const handleRefreshStats = async () => {
+    console.log("Manually refreshing team stats");
+    await refetch();
+  };
+
   return (
     <div className="space-y-6">
       <TeamStatsHeader 
@@ -51,8 +71,11 @@ const StatsTabContent = ({ team }: StatsTabContentProps) => {
       />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Team Statistics</CardTitle>
+          <Button variant="outline" onClick={handleRefreshStats} disabled={isRefreshing}>
+            {isRefreshing ? "Refreshing..." : "Refresh Stats"}
+          </Button>
         </CardHeader>
         <CardContent>
           {team.players.length > 0 ? (
