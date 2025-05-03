@@ -69,7 +69,6 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       }
     });
 
-    console.log("Aggregated player stats:", Array.from(playerStats.values()));
     return Array.from(playerStats.values());
   }, [filteredStats, game]);
 
