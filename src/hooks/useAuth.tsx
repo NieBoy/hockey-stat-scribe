@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Prevent multiple navigation attempts
         if (!isNavigating) {
           setIsNavigating(true);
+          navigate("/");
           setTimeout(() => {
-            navigate("/");
             setIsNavigating(false);
           }, 100);
         }
