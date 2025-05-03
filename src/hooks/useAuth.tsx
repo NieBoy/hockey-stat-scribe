@@ -16,22 +16,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, loading, setHasNavigated } = useAuthState();
+  const { user, loading, setUser, setLoading } = useAuthState();
   const navigate = useNavigate();
   
   const signIn = async (email: string, password: string) => {
-    // Reset navigation tracking before attempting sign in
-    setHasNavigated(false);
-    
-    const result = await performSignIn(email, password);
-    
-    // Mark navigation as handled if sign in was successful
-    // This prevents duplicate navigations
-    if (result.user) {
-      setHasNavigated(true);
+    try {
+      setLoading(true);
+      const result = await performSignIn(email, password);
+      
+      if (result.user) {
+        setUser(result.user);
+        navigate("/");
+      }
+      
+      return result;
+    } finally {
+      setLoading(false);
     }
-    
-    return result;
   };
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -48,9 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await performSignOut();
-    setHasNavigated(false); // Reset navigation state
-    navigate("/signin");
+    setLoading(true);
+    try {
+      await performSignOut();
+      setUser(null);
+      navigate("/signin");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

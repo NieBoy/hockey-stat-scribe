@@ -40,16 +40,11 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         } else {
           setError(result.error);
         }
-      } else {
-        console.log("Login successful, awaiting navigation");
-        // If sign-in was successful but we're still here, we might need to force a navigation
-        // This is handled in the useAuth hook, no need to navigate here
       }
     } catch (err) {
       console.error("Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
-      // Always reset loading state
       setLoading(false);
     }
   };
