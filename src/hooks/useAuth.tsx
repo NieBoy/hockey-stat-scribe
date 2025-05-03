@@ -31,13 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("AuthProvider: Sign in successful, setting user and navigating");
         setUser(result.user);
         
-        // Prevent multiple navigation attempts
+        // Prevent multiple navigation attempts but ensure we navigate before resetting the flag
         if (!isNavigating) {
           setIsNavigating(true);
-          navigate("/");
           setTimeout(() => {
-            setIsNavigating(false);
-          }, 100);
+            navigate("/");
+            setTimeout(() => {
+              setIsNavigating(false);
+            }, 100);
+          }, 0);
         }
       } else if (result.error) {
         console.log("AuthProvider: Sign in error:", result.error);

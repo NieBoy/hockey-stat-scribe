@@ -10,6 +10,7 @@ export function useAuthState() {
 
   useEffect(() => {
     let mounted = true;
+    console.log("Setting up auth state listener");
     
     // Set up auth listener first
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -17,8 +18,9 @@ export function useAuthState() {
         console.log("Auth state changed:", event);
         
         if (event === 'SIGNED_IN' && session) {
+          console.log("User signed in, fetching user data");
+          setLoading(true);
           try {
-            console.log("User signed in, fetching user data");
             const currentUser = await getCurrentUser();
             
             if (mounted) {
@@ -45,9 +47,11 @@ export function useAuthState() {
     // Check for existing session
     const checkSession = async () => {
       try {
+        console.log("Checking for existing session");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
+          console.log("Found existing session, fetching user data");
           try {
             const currentUser = await getCurrentUser();
             if (mounted) {
@@ -56,6 +60,8 @@ export function useAuthState() {
           } catch (error) {
             console.error("Error fetching user from session:", error);
           }
+        } else {
+          console.log("No existing session found");
         }
         
         if (mounted) {
@@ -72,6 +78,7 @@ export function useAuthState() {
     checkSession();
     
     return () => {
+      console.log("Cleaning up auth state listener");
       mounted = false;
       authListener.subscription.unsubscribe();
     };
