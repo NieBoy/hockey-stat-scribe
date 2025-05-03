@@ -110,8 +110,8 @@ export default function EventHistory({ gameId, onEventDeleted }: EventHistoryPro
           table: 'game_events',
           filter: `game_id=eq.${gameId}`
         },
-        () => {
-          console.log('Game event changed, refreshing...');
+        (payload) => {
+          console.log('Game event changed, refreshing...', payload);
           fetchEvents();
         }
       )

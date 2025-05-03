@@ -47,13 +47,28 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       opponentData: goalData.opponentData
     };
 
-    // For opponent goals with unknown jersey, make sure it's properly marked
-    if (goalData.teamType === 'away' && 
-        goalData.opponentData && 
-        (!goalData.opponentData.scorerJersey || goalData.opponentData.scorerJersey === 'Unknown')) {
-      console.log("Setting opponent goal with unknown player");
-      if (details.opponentData) {
+    // Ensure opponentData is properly formatted
+    if (goalData.teamType === 'away' && goalData.opponentData) {
+      if (!goalData.opponentData.scorerJersey || goalData.opponentData.scorerJersey === 'Unknown') {
+        console.log("Setting opponent goal with unknown player");
+        if (!details.opponentData) {
+          details.opponentData = {};
+        }
         details.opponentData.scorerJersey = 'Unknown';
+      }
+      
+      // Fix the format of primaryAssistJersey and secondaryAssistJersey
+      if (details.opponentData) {
+        // Convert any undefined or object values to strings or undefined
+        if (details.opponentData.primaryAssistJersey && 
+            typeof details.opponentData.primaryAssistJersey === 'object') {
+          details.opponentData.primaryAssistJersey = undefined;
+        }
+        
+        if (details.opponentData.secondaryAssistJersey && 
+            typeof details.opponentData.secondaryAssistJersey === 'object') {
+          details.opponentData.secondaryAssistJersey = undefined;
+        }
       }
     }
 

@@ -64,7 +64,7 @@ export function useGoalSubmission(onComplete: () => void) {
 
       // Handle opponent team differently
       if (isOpponentTeam && opponentJerseyNumbers) {
-        // Use opponentData even if fields are empty - the backend will handle this
+        // Ensure jersey numbers are strings
         goalData.opponentData = {
           scorerJersey: opponentJerseyNumbers.scorer || 'Unknown',
           primaryAssistJersey: opponentJerseyNumbers.primaryAssist || undefined,

@@ -11,7 +11,7 @@ export const EventsList = ({ events }: EventsListProps) => {
   return (
     <div className="mt-2">
       <p className="text-xs font-medium mb-1">Game Events Being Processed ({events.length})</p>
-      <div className="bg-muted p-2 rounded text-xs overflow-auto max-h-20">
+      <div className="bg-muted p-2 rounded text-xs overflow-auto max-h-60">
         <pre>{JSON.stringify(events, null, 2)}</pre>
       </div>
     </div>

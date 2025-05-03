@@ -1,3 +1,4 @@
+
 import { Game, User } from '@/types';
 import { useLineupData } from './goal-flow/useLineupData';
 import { usePlayerSelection } from './goal-flow/usePlayerSelection';
@@ -109,6 +110,13 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
     setIsSubmitting(true);
     
     try {
+      // Ensure Jersey numbers are properly formatted strings instead of objects
+      const formattedJerseyNumbers = {
+        scorer: opponentJerseyNumbers.scorer || 'Unknown',
+        primaryAssist: typeof opponentJerseyNumbers.primaryAssist === 'string' ? opponentJerseyNumbers.primaryAssist : '',
+        secondaryAssist: typeof opponentJerseyNumbers.secondaryAssist === 'string' ? opponentJerseyNumbers.secondaryAssist : ''
+      };
+
       await submitGoal(
         game.id, 
         period, 
@@ -119,7 +127,7 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
         secondaryAssist,
         game,
         isOpponentTeam,
-        opponentJerseyNumbers
+        formattedJerseyNumbers
       );
       // The onComplete callback is called inside submitGoal
     } catch (error) {
