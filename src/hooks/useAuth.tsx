@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "@/types";
 import { getCurrentUser, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/services/auth";
@@ -32,13 +33,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentUser = await getCurrentUser();
           setUser(currentUser);
           
+          // Only redirect if we're on auth pages and not already redirecting
           if (location.pathname === '/signin' || location.pathname === '/signup') {
-            navigate(location.state?.from?.pathname || "/", { replace: true });
+            const destination = location.state?.from?.pathname || "/";
+            console.log("Auth session found, redirecting to:", destination);
+            navigate(destination, { replace: true });
           }
         }
         
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, session) => {
+            console.log("Auth state changed:", event);
             if (event === 'SIGNED_IN' && session) {
               const currentUser = await getCurrentUser();
               setUser(currentUser);
@@ -75,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("User signed in successfully:", result.user.id);
         toast.success("Signed in successfully");
         
-        const from = location.state?.from?.pathname || "/";
-        navigate(from, { replace: true });
+        // Fix: Don't navigate here - let the auth state change handler handle it
+        // This prevents navigation loops if there are async timing issues
       }
       return result;
     } catch (error) {
