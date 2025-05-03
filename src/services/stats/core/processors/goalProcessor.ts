@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { GameEvent, GameStat } from "@/types";
 import { createGameStat } from "../utils/statsDbUtils";
@@ -40,7 +41,7 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
         
         console.log(`Recording ${plusMinusDetail} (${plusMinusValue}) for player ${playerId}`);
         
-        // Updated to use the actual +/- value instead of absolute value with details
+        // Updated to use the actual +/- value
         statsCreated = await createRawPlusMinus(event.game_id, playerId, event.period, plusMinusValue, plusMinusDetail) || statsCreated;
       }
     }

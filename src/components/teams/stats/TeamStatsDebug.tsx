@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Eye, RefreshCw } from "lucide-react";
+import { RefreshCw, AlertCircle } from "lucide-react";
 import { Team } from "@/types";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { reprocessAllStats } from "@/services/stats/core/statsRefresh";
+import { supabase } from "@/lib/supabase";
 
 interface TeamStatsDebugProps {
   team: Team;
@@ -17,66 +20,89 @@ const TeamStatsDebug = ({
   team,
   refreshStatus,
   onReprocessAllStats,
-  isReprocessing,
+  isReprocessing
 }: TeamStatsDebugProps) => {
+  const [isFixing, setIsFixing] = useState(false);
+  
+  const fixPlusMinusValues = async () => {
+    setIsFixing(true);
+    try {
+      const playerIds = team.players.map(player => player.id);
+      console.log(`Fixing plus/minus values for ${playerIds.length} players`);
+      
+      // For each player, refresh their stats
+      for (const playerId of playerIds) {
+        try {
+          const { error } = await supabase.rpc('refresh_player_stats', {
+            player_id: playerId
+          });
+          
+          if (error) throw error;
+        } catch (playerError) {
+          console.error(`Error refreshing stats for player ${playerId}:`, playerError);
+        }
+      }
+      
+      toast.success("Player plus/minus values have been recalculated");
+    } catch (error) {
+      console.error("Error fixing plus/minus values:", error);
+      toast.error("Failed to fix plus/minus values");
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" />
-          Stats Debug Controls
-        </CardTitle>
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Stats Debug Tools</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <Alert>
-            <AlertDescription>
-              These tools are for debugging and managing team statistics. Use with caution.
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={onReprocessAllStats}
-              disabled={isReprocessing}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {isReprocessing ? "Reprocessing..." : "Reprocess All Stats"}
-            </Button>
-          </div>
-
-          {Object.keys(refreshStatus).length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Player Refresh Status:</h3>
-              <div className="border rounded divide-y text-sm">
-                {Object.entries(refreshStatus).map(([playerId, status]) => {
-                  const player = team.players.find((p) => p.id === playerId);
-                  const statusColor =
-                    status === "Success"
-                      ? "text-green-500"
-                      : status === "Failed"
-                      ? "text-red-500"
-                      : "text-blue-500";
-
-                  return (
-                    <div
-                      key={playerId}
-                      className="flex justify-between items-center px-3 py-1"
-                    >
-                      <span>
-                        {player?.name || "Unknown"} ({playerId.substring(0, 8)}...)
-                      </span>
-                      <span className={statusColor}>{status}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+      <CardContent className="space-y-4">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            These tools help diagnose and fix issues with player statistics. Use them with caution.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            disabled={isReprocessing || isFixing}
+            onClick={onReprocessAllStats}
+          >
+            <RefreshCw className={`h-4 w-4 ${isReprocessing ? 'animate-spin' : ''}`} />
+            Reprocess All Stats
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            disabled={isReprocessing || isFixing}
+            onClick={fixPlusMinusValues}
+          >
+            <RefreshCw className={`h-4 w-4 ${isFixing ? 'animate-spin' : ''}`} />
+            Fix Plus/Minus Calculations
+          </Button>
         </div>
+        
+        {Object.keys(refreshStatus).length > 0 && (
+          <div className="mt-4 bg-muted p-2 rounded text-xs overflow-auto max-h-32">
+            <p className="font-semibold mb-1">Processing Status:</p>
+            {Object.entries(refreshStatus).map(([playerId, status]) => {
+              const player = team.players.find(p => p.id === playerId);
+              return (
+                <div key={playerId} className="flex justify-between">
+                  <span>{player?.name || playerId}</span>
+                  <span>{status}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

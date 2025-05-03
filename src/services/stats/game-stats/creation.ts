@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { GameStat } from "@/types";
 import { validateMultiplePlayers, validatePlayerId } from "@/services/events/shared/validatePlayer";
@@ -61,8 +60,12 @@ export const recordPlusMinusStats = async (
       throw new Error(`One or more invalid player IDs provided`);
     }
     
-    const value = 1; // Always 1 for plus/minus, the sign is in the details
+    // Use the actual +1/-1 value directly, not always 1 with different details
+    const value = isPlus ? 1 : -1;
+    // Keep details for backward compatibility
     const details = isPlus ? 'plus' : 'minus';
+    
+    console.log(`Recording plus/minus (${value}) for ${playerIds.length} players`);
     
     // Create plus/minus stats for each player
     const promises = playerIds.map(playerId => 
@@ -71,7 +74,7 @@ export const recordPlusMinusStats = async (
         player_id: playerId,
         stat_type: 'plusMinus',
         period,
-        value,
+        value, // Use actual +1 or -1 value
         details
       })
     );
