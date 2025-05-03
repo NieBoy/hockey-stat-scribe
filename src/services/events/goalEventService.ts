@@ -138,14 +138,14 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
     }
 
     // Handle plus/minus for players on ice
-    // This is the key change for tracking plus/minus correctly
-    const isHomeTeamScoring = goalData.isHomeTeamScoring || goalData.teamType === 'home';
-    
+    // KEY CHANGE: We're now recording +1/-1 directly in the database
+    // for plus/minus instead of always using positive values with details
     for (const playerId of goalData.playersOnIce) {
       // For home team goals, record +1 for all players on ice
       // For opponent goals, record -1 for all players on ice
-      const plusMinusValue = isHomeTeamScoring ? 1 : -1;
-      const plusMinusDetail = isHomeTeamScoring ? 'plus' : 'minus';
+      const isPlus = goalData.isHomeTeamScoring;
+      const plusMinusValue = isPlus ? 1 : -1; // Directly use +1/-1
+      const plusMinusDetail = isPlus ? 'plus' : 'minus'; // Still keep the detail for backup
       
       console.log(`Recording ${plusMinusDetail} (${plusMinusValue}) for player ${playerId}`);
       
@@ -155,8 +155,8 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
           p_player_id: playerId,
           p_stat_type: 'plusMinus',
           p_period: goalData.period,
-          p_value: Math.abs(plusMinusValue), // Always store positive value with details
-          p_details: plusMinusDetail
+          p_value: plusMinusValue, // Use the actual +1/-1 value
+          p_details: plusMinusDetail // Keep the detail for compatibility
         })
       );
     }

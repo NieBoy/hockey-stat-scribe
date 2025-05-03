@@ -64,26 +64,11 @@ export function useTransformedTeamStats(stats: PlayerStat[], teamPlayers: Player
         return;
       }
       
-      if (statType === 'plusMinus') {
-        // For plus/minus, we need to calculate the actual +/- value
-        let plusMinusTotal = 0;
-        
-        relevantStats.forEach(stat => {
-          // Add for plus events, subtract for minus events
-          if (stat.details === 'plus') {
-            plusMinusTotal += Number(stat.value);
-          } else if (stat.details === 'minus') {
-            plusMinusTotal -= Number(stat.value);
-          }
-        });
-        
-        playerStats[playerId].stats[statType] = plusMinusTotal;
-      } else {
-        // For regular stats, just sum the values
-        playerStats[playerId].stats[statType] = relevantStats.reduce(
-          (sum, stat) => sum + Number(stat.value), 0
-        );
-      }
+      // No special handling is needed now since our database now uses actual +/- values
+      // instead of separate plus and minus values with details
+      playerStats[playerId].stats[statType] = relevantStats.reduce(
+        (sum, stat) => sum + Number(stat.value), 0
+      );
     });
   });
 
