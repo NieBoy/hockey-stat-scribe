@@ -172,9 +172,13 @@ export const signIn = async (
   password: string
 ): Promise<{ user: User | null; error: string | null }> => {
   try {
+    // Ensure email is lowercase for consistent auth handling
+    const normalizedEmail = email.toLowerCase();
+    console.log("Signing in with normalized email:", normalizedEmail);
+    
     // Sign in with Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password,
     });
 
@@ -208,11 +212,13 @@ export const signUp = async (
   name: string
 ): Promise<{ success: boolean; error: string | null }> => {
   try {
-    console.log("Attempting to sign up user:", email);
+    // Ensure email is lowercase for consistent auth handling
+    const normalizedEmail = email.toLowerCase();
+    console.log("Attempting to sign up user:", normalizedEmail);
     
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: { name }

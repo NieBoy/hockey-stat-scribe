@@ -27,7 +27,11 @@ export default function SignIn() {
     setError(null);
 
     try {
-      const result = await signIn(email, password);
+      // Convert email to lowercase before signing in
+      const lowercaseEmail = email.toLowerCase();
+      console.log("Signing in with normalized email:", lowercaseEmail);
+      
+      const result = await signIn(lowercaseEmail, password);
       if (result.error) {
         // Display more helpful error message
         if (result.error.includes("Email not confirmed")) {
@@ -59,11 +63,14 @@ export default function SignIn() {
     setError(null);
     
     try {
+      // Convert email to lowercase before creating demo account
+      const lowercaseEmail = email.toLowerCase();
+      
       // First check if there's a team member with this email that we can link to
       const { data: teamMemberData } = await supabase
         .from("team_members")
         .select("id")
-        .eq("email", email)
+        .eq("email", lowercaseEmail)
         .maybeSingle();
       
       const teamMemberId = teamMemberData?.id || null;
@@ -71,7 +78,7 @@ export default function SignIn() {
       // Call the edge function to create a demo user with pre-confirmed email
       const { data, error } = await supabase.functions.invoke('create-demo-user', {
         body: {
-          email,
+          email: lowercaseEmail,
           password,
           name: demoName,
           teamMemberId
@@ -110,8 +117,8 @@ export default function SignIn() {
         }
       }
       
-      // Sign in with the account credentials
-      const result = await signIn(email, password);
+      // Sign in with the account credentials (using lowercase email)
+      const result = await signIn(lowercaseEmail, password);
       if (result.error) {
         setError("Account exists but couldn't sign in automatically: " + result.error);
       }
