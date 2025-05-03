@@ -12,15 +12,18 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
-  const { signIn } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Combined loading state to prevent UI flicker
+  const loading = localLoading || authLoading;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setLocalLoading(true);
     setError(null);
 
     try {
@@ -40,13 +43,12 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         } else {
           setError(result.error);
         }
-        setLoading(false);
       }
-      // Note: Don't set loading to false on success as the page will redirect
     } catch (err) {
       console.error("Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
-      setLoading(false);
+    } finally {
+      setLocalLoading(false);
     }
   };
 

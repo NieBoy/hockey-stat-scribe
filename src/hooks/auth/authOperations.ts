@@ -14,7 +14,6 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     
     if (result.error) {
       console.log("Sign in error:", result.error);
-      // Don't show toast here, let the UI component handle displaying the error
       return result;
     } 
     
@@ -27,13 +26,11 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     // This should not happen but handling just in case
     console.error("Sign in returned neither user nor error");
     const errorMessage = "An unexpected error occurred during sign in";
-    // Don't show toast here, let the UI component handle displaying the error
     return { user: null, error: errorMessage };
     
   } catch (error: any) {
     const errorMessage = error?.message || "Failed to sign in";
     console.error("Sign in error:", error);
-    // Don't show toast here, let the UI component handle displaying the error
     return { user: null, error: errorMessage };
   }
 }
