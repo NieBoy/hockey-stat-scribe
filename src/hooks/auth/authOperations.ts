@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export async function performSignIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
-    console.log("Signing in user:", email);
+    console.log("Performing sign in for user:", email);
     
     // Convert email to lowercase for consistent authentication
     const normalizedEmail = email.toLowerCase();
@@ -15,13 +15,23 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     if (result.error) {
       console.log("Sign in error:", result.error);
       toast.error(result.error);
-    } else if (result.user) {
+      return result;
+    } 
+    
+    if (result.user) {
       console.log("User signed in successfully:", result.user.id);
       toast.success("Signed in successfully");
+      return result;
     }
-    return result;
-  } catch (error) {
-    const errorMessage = "Failed to sign in";
+    
+    // This should not happen but handling just in case
+    console.error("Sign in returned neither user nor error");
+    const errorMessage = "An unexpected error occurred during sign in";
+    toast.error(errorMessage);
+    return { user: null, error: errorMessage };
+    
+  } catch (error: any) {
+    const errorMessage = error?.message || "Failed to sign in";
     console.error("Sign in error:", error);
     toast.error(errorMessage);
     return { user: null, error: errorMessage };

@@ -26,10 +26,12 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
     try {
       // Convert email to lowercase before signing in
       const lowercaseEmail = email.toLowerCase();
-      console.log("Signing in with normalized email:", lowercaseEmail);
+      console.log("Handling form submission, signing in with:", lowercaseEmail);
       
       const result = await signIn(lowercaseEmail, password);
+      
       if (result.error) {
+        console.log("Login form received error:", result.error);
         // Display more helpful error message
         if (result.error.includes("Email not confirmed")) {
           setError("Your email hasn't been confirmed. Please check your inbox or use the demo account option below.");
@@ -38,12 +40,16 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         } else {
           setError(result.error);
         }
+      } else {
+        console.log("Login successful, awaiting navigation");
+        // If sign-in was successful but we're still here, we might need to force a navigation
+        // This is handled in the useAuth hook, no need to navigate here
       }
-      // No need to navigate here - auth state change will handle it
     } catch (err) {
+      console.error("Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
-      console.error(err);
     } finally {
+      // Always reset loading state
       setLoading(false);
     }
   };

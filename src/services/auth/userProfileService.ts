@@ -5,6 +5,8 @@ import { User, UserRole } from "@/types";
 // Get complete user profile including roles and teams
 export const getUserProfile = async (userId: string): Promise<User | null> => {
   try {
+    console.log("Fetching user profile for:", userId);
+    
     // Get user profile data from the users table
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -20,28 +22,37 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
     // If user doesn't exist in the users table yet, create a minimal profile
     let userProfile = userData;
     if (!userProfile) {
-      console.log("Creating new user profile for:", userId);
+      console.log("No user profile found, attempting to create one for:", userId);
       
-      // Get auth user data to fill in profile
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return null;
-      
-      const { data: newUserData, error: createError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-        })
-        .select()
-        .single();
+      try {
+        // Get auth user data to fill in profile
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          console.error("No auth user found for profile creation");
+          return null;
+        }
         
-      if (createError) {
-        console.error("Error creating user profile:", createError);
+        const { data: newUserData, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: authUser.email || '',
+            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error("Error creating user profile:", createError);
+          return null;
+        }
+        
+        console.log("Created new user profile successfully");
+        userProfile = newUserData;
+      } catch (createError) {
+        console.error("Error in profile creation process:", createError);
         return null;
       }
-      
-      userProfile = newUserData;
     }
     
     // Get user roles and teams
@@ -49,7 +60,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
     const teams = await getUserTeams(userId);
     
     // Construct and return the user object
-    return {
+    const user = {
       id: userProfile.id,
       name: userProfile.name || '',
       email: userProfile.email,
@@ -57,6 +68,9 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       teams,
       isAdmin: roles.includes('admin')
     };
+    
+    console.log("Completed user profile:", user.id, "with roles:", user.role);
+    return user;
   } catch (error) {
     console.error("Error in getUserProfile:", error);
     return null;

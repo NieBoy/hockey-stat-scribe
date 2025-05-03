@@ -20,25 +20,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   
   const signIn = async (email: string, password: string) => {
+    // Reset navigation tracking before attempting sign in
+    setHasNavigated(false);
+    
     const result = await performSignIn(email, password);
+    
+    // Mark navigation as handled if sign in was successful
+    // This prevents duplicate navigations
     if (result.user) {
-      setHasNavigated(true); // Mark that we've handled navigation
+      setHasNavigated(true);
     }
+    
     return result;
   };
 
   const signUp = async (email: string, password: string, name: string) => {
     const result = await performSignUp(email, password, name);
+    
     if (result.success) {
+      // Navigate after a short delay for better UX
       setTimeout(() => {
         navigate("/signin");
       }, 1500);
     }
+    
     return result;
   };
 
   const signOut = async () => {
     await performSignOut();
+    setHasNavigated(false); // Reset navigation state
     navigate("/signin");
   };
 

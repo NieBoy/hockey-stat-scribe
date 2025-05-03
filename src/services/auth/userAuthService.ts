@@ -8,7 +8,10 @@ export const getCurrentUser = async (): Promise<User | null> => {
     // Get the current user from Supabase Auth
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!authUser) return null;
+    if (!authUser) {
+      console.log("No auth user found");
+      return null;
+    }
     
     // Get complete user profile using helper function
     const user = await getUserProfile(authUser.id);
@@ -42,18 +45,24 @@ export const signIn = async (
     }
     
     if (!data.user) {
+      console.error("Sign in returned no user data");
       return { user: null, error: 'Failed to sign in' };
     }
     
     // Get complete user profile
-    const user = await getCurrentUser();
-    if (!user) {
-      console.error("Could not retrieve user profile after sign in");
-      return { user: null, error: 'User profile not found' };
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        console.error("Could not retrieve user profile after sign in");
+        return { user: null, error: 'User profile not found' };
+      }
+      
+      console.log("User signed in successfully:", user.id);
+      return { user, error: null };
+    } catch (profileError) {
+      console.error("Error retrieving user profile:", profileError);
+      return { user: null, error: 'Error retrieving user profile' };
     }
-    
-    console.log("User signed in successfully:", user.id);
-    return { user, error: null };
   } catch (error: any) {
     console.error("Sign in error:", error);
     return { user: null, error: error?.message || 'An unexpected error occurred' };

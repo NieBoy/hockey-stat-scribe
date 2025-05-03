@@ -31,10 +31,12 @@ export function useAuthState() {
   };
 
   useEffect(() => {
+    let isMounted = true; // Flag to prevent state updates after unmount
+    
     const handleAuthStateChange = async () => {
       try {
         console.log("Initializing auth state...");
-        updateState({ loading: true });
+        if (isMounted) updateState({ loading: true });
         
         // Set up the auth listener before checking session
         const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -43,25 +45,35 @@ export function useAuthState() {
             
             if (event === 'SIGNED_IN' && session) {
               console.log("User signed in, fetching user data");
-              const currentUser = await getCurrentUser();
-              updateState({ user: currentUser });
-              
-              // Prevent navigation loops by tracking if we've already navigated
-              if ((location.pathname === '/signin' || location.pathname === '/signup') && !state.hasNavigated) {
-                console.log("Auth state change - will navigate away from auth page");
-                const destination = location.state?.from?.pathname || "/";
+              try {
+                const currentUser = await getCurrentUser();
+                if (isMounted) updateState({ user: currentUser });
                 
-                // Use setTimeout to break potential circular dependencies
-                setTimeout(() => {
-                  console.log("Navigating to:", destination);
-                  navigate(destination, { replace: true });
-                  setHasNavigated(true);
-                }, 0);
+                // Prevent navigation loops by tracking if we've already navigated
+                if ((location.pathname === '/signin' || location.pathname === '/signup') && !state.hasNavigated) {
+                  console.log("Auth state change - will navigate away from auth page");
+                  const destination = location.state?.from?.pathname || "/";
+                  
+                  // Use setTimeout to break potential circular dependencies
+                  setTimeout(() => {
+                    if (isMounted) {
+                      console.log("Navigating to:", destination);
+                      navigate(destination, { replace: true });
+                      setHasNavigated(true);
+                    }
+                  }, 0);
+                }
+              } catch (error) {
+                console.error("Error fetching user after sign in:", error);
+                if (isMounted) updateState({ user: null, loading: false });
               }
             } else if (event === 'SIGNED_OUT') {
               console.log("User signed out, clearing user state");
-              updateState({ user: null, hasNavigated: false });
+              if (isMounted) updateState({ user: null, hasNavigated: false });
             }
+            
+            // Always update loading state when auth events complete
+            if (isMounted) updateState({ loading: false });
           }
         );
         
@@ -70,18 +82,26 @@ export function useAuthState() {
         
         if (session) {
           console.log("Session found during initialization");
-          const currentUser = await getCurrentUser();
-          updateState({ user: currentUser });
-          
-          // Only redirect if we're on auth pages and not already navigated
-          if ((location.pathname === '/signin' || location.pathname === '/signup') && !state.hasNavigated) {
-            setHasNavigated(true);
-            const destination = location.state?.from?.pathname || "/";
-            console.log("Auth session found, redirecting to:", destination);
-            navigate(destination, { replace: true });
+          try {
+            const currentUser = await getCurrentUser();
+            if (isMounted) updateState({ user: currentUser });
+            
+            // Only redirect if we're on auth pages and not already navigated
+            if ((location.pathname === '/signin' || location.pathname === '/signup') && !state.hasNavigated) {
+              setHasNavigated(true);
+              const destination = location.state?.from?.pathname || "/";
+              console.log("Auth session found, redirecting to:", destination);
+              navigate(destination, { replace: true });
+            }
+          } catch (error) {
+            console.error("Error fetching user from session:", error);
+            if (isMounted) updateState({ user: null });
+          } finally {
+            if (isMounted) updateState({ loading: false });
           }
         } else {
           console.log("No session found during initialization");
+          if (isMounted) updateState({ loading: false });
         }
         
         return () => {
@@ -90,14 +110,16 @@ export function useAuthState() {
         };
       } catch (error) {
         console.error('Auth state change error:', error);
-        updateState({ user: null });
-      } finally {
-        updateState({ loading: false });
+        if (isMounted) updateState({ user: null, loading: false });
       }
     };
 
     handleAuthStateChange();
-  }, [navigate, location, state.hasNavigated]);
+    
+    return () => {
+      isMounted = false; // Prevent state updates after component unmounts
+    };
+  }, [navigate, location]);
 
   return { 
     user: state.user,
