@@ -55,11 +55,13 @@ export function useGoalSubmission(onComplete: () => void) {
           primaryAssistJersey?: string;
           secondaryAssistJersey?: string;
         };
+        isHomeTeamScoring: boolean;
       } = {
         gameId,
         period,
         teamType: selectedTeam,
-        playersOnIce: playersOnIce.map(p => p.id)
+        playersOnIce: playersOnIce.map(p => p.id),
+        isHomeTeamScoring: selectedTeam === 'home'
       };
 
       // Handle opponent team differently

@@ -11,6 +11,7 @@ interface GoalEventData {
   scorerId?: string;
   primaryAssistId?: string;
   secondaryAssistId?: string;
+  isHomeTeamScoring: boolean;
   opponentData?: {
     scorerJersey?: string;
     primaryAssistJersey?: string;
@@ -44,7 +45,8 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       playerId: goalData.scorerId,
       primaryAssistId: goalData.primaryAssistId,
       secondaryAssistId: goalData.secondaryAssistId,
-      opponentData: goalData.opponentData
+      opponentData: goalData.opponentData,
+      isHomeTeamScoring: goalData.isHomeTeamScoring
     };
 
     // Ensure opponentData is properly formatted
@@ -134,37 +136,28 @@ export const recordGoalEvent = async (goalData: GoalEventData): Promise<boolean>
       );
     }
 
-    // Record plus for our team players on ice or minus for home team when opponent scored
-    const isOpponentGoal = goalData.teamType === 'away' && goalData.opponentData;
+    // Handle plus/minus for players on ice
+    // This is the key change for tracking plus/minus correctly
+    const isHomeTeamScoring = goalData.isHomeTeamScoring || goalData.teamType === 'home';
     
-    // For opponent goals, record minus for home team players on ice
-    if (isOpponentGoal) {
-      for (const playerId of goalData.playersOnIce) {
-        statPromises.push(
-          supabase.rpc('record_game_stat', {
-            p_game_id: goalData.gameId,
-            p_player_id: playerId,
-            p_stat_type: 'plusMinus',
-            p_period: goalData.period,
-            p_value: -1,
-            p_details: 'minus'
-          })
-        );
-      }
-    } else {
-      // For home team goals, record plus for all players on ice
-      for (const playerId of goalData.playersOnIce) {
-        statPromises.push(
-          supabase.rpc('record_game_stat', {
-            p_game_id: goalData.gameId,
-            p_player_id: playerId,
-            p_stat_type: 'plusMinus',
-            p_period: goalData.period,
-            p_value: 1,
-            p_details: 'plus'
-          })
-        );
-      }
+    for (const playerId of goalData.playersOnIce) {
+      // For home team goals, record +1 for all players on ice
+      // For opponent goals, record -1 for all players on ice
+      const plusMinusValue = isHomeTeamScoring ? 1 : -1;
+      const plusMinusDetail = isHomeTeamScoring ? 'plus' : 'minus';
+      
+      console.log(`Recording ${plusMinusDetail} (${plusMinusValue}) for player ${playerId}`);
+      
+      statPromises.push(
+        supabase.rpc('record_game_stat', {
+          p_game_id: goalData.gameId,
+          p_player_id: playerId,
+          p_stat_type: 'plusMinus',
+          p_period: goalData.period,
+          p_value: Math.abs(plusMinusValue), // Always store positive value with details
+          p_details: plusMinusDetail
+        })
+      );
     }
 
     // Execute all stat recording operations
