@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isNavigating, setIsNavigating] = useState(false);
   
   const signIn = async (email: string, password: string) => {
-    setLoading(true);
     try {
       console.log("AuthProvider: Starting sign in");
       const result = await performSignIn(email, password);
@@ -31,15 +30,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("AuthProvider: Sign in successful, setting user and navigating");
         setUser(result.user);
         
-        // Prevent multiple navigation attempts but ensure we navigate before resetting the flag
+        // Prevent multiple navigation attempts
         if (!isNavigating) {
           setIsNavigating(true);
+          // Use a short timeout to ensure we don't trigger navigation during React state updates
           setTimeout(() => {
             navigate("/");
+            // Wait to reset the navigating flag
             setTimeout(() => {
               setIsNavigating(false);
             }, 100);
-          }, 0);
+          }, 10);
         }
       } else if (result.error) {
         console.log("AuthProvider: Sign in error:", result.error);
