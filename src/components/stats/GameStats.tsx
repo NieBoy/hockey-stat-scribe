@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getGameById } from "@/services/games";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import AdvancedStatsView from "./AdvancedStatsView";
+import AdvancedStatsView from "./advanced-stats/AdvancedStatsView";
 
 interface GameStatsProps {
   gameId: string;
