@@ -13,13 +13,12 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
-    // Special handling for plus/minus
+    // Special handling for plus/minus - use the actual value directly
     if (statType === 'plusMinus') {
-      if (stat.details === 'plus') {
-        currentStat.value += stat.value; // Add for 'plus' events
-      } else if (stat.details === 'minus') {
-        currentStat.value -= stat.value; // Subtract for 'minus' events
-      }
+      // Simply add the value - it will already be positive for plus events
+      // and negative for minus events
+      currentStat.value += Number(stat.value);
+      console.log(`Adding ${stat.value} to plusMinus total (now ${currentStat.value})`);
     } else {
       currentStat.value += stat.value; // Normal addition for other stat types
     }
@@ -59,11 +58,9 @@ export const calculateAggregateValue = (gameStats: any[], statType: string): num
     if (stat.stat_type !== statType) return;
     
     if (statType === 'plusMinus') {
-      if (stat.details === 'plus') {
-        total += stat.value;
-      } else if (stat.details === 'minus') {
-        total -= stat.value;
-      }
+      // Add the value directly - it should already be correct (positive or negative)
+      total += Number(stat.value);
+      console.log(`[Aggregate] Adding ${stat.value} to plusMinus total (now ${total})`);
     } else {
       total += stat.value;
     }
