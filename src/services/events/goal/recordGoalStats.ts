@@ -71,12 +71,12 @@ export async function recordGoalStats({
   if (playersOnIce.length > 0) {
     console.log("Recording plus/minus for players (team_member.ids):", playersOnIce);
     try {
-      // Record the appropriate value (+1 for team that scored, -1 for other team)
+      // Record plus/minus stats with the correct sign (+1 or -1)
       await recordPlusMinusStats(
         gameId,
         playersOnIce,
         period,
-        isHomeScoringTeam // This will be true for players on scoring team, false for others
+        isHomeScoringTeam // This determines if it's a plus or minus
       );
     } catch (plusMinusError) {
       console.error("Error recording plus/minus stats:", plusMinusError);

@@ -33,6 +33,8 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
     if (details && details.playersOnIce && Array.isArray(details.playersOnIce)) {
       if (details.playersOnIce.includes(playerId)) {
         console.log(`Player ${playerId} was on ice for this goal`);
+        
+        // Determine if this is a plus or minus for the player
         const isPlus = await isPlusForPlayer(event, playerId, details);
         
         // Create the plus/minus stat with actual +1/-1 value
@@ -41,7 +43,7 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
         
         console.log(`Recording ${plusMinusDetail} (${plusMinusValue}) for player ${playerId}`);
         
-        // Updated to use the actual +/- value
+        // Record the correct plus/minus value directly
         statsCreated = await createRawPlusMinus(event.game_id, playerId, event.period, plusMinusValue, plusMinusDetail) || statsCreated;
       }
     }
@@ -68,6 +70,8 @@ const isPlusForPlayer = async (event: any, playerId: string, details: any): Prom
     const isHomeTeam = playerTeam.team_id === game.home_team_id;
     const isHomeTeamGoal = event.team_type === 'home';
     
+    console.log(`isPlusForPlayer - Player team: ${isHomeTeam ? 'home' : 'away'}, Goal by: ${event.team_type} team`);
+    
     // If a player is on the home team and the home team scored, it's a plus
     // Or if a player is on the away team and the away team scored, it's a plus
     // Otherwise, it's a minus
@@ -87,6 +91,8 @@ const createRawPlusMinus = async (
   details: string // 'plus' or 'minus' for compatibility
 ): Promise<boolean> => {
   try {
+    console.log(`Recording plusMinus: ${value} for player ${playerId}`);
+    
     const { data, error } = await supabase.rpc('record_game_stat', {
       p_game_id: gameId,
       p_player_id: playerId,
