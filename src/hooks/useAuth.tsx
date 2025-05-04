@@ -1,7 +1,7 @@
 
-import { createContext, useContext, ReactNode, useState } from "react";
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { User } from "@/types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthState } from "@/hooks/auth/useAuthState";
 import { performSignIn, performSignUp, performSignOut } from "@/hooks/auth/authOperations";
 import { toast } from "sonner";
@@ -19,32 +19,50 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, loading, setUser, setLoading } = useAuthState();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Handle automatic redirects based on auth state
+  useEffect(() => {
+    // Skip redirect during initial loading
+    if (loading) return;
+    
+    // If user is authenticated and on a login/signup page, redirect to home
+    if (user && ["/signin", "/signup"].includes(location.pathname)) {
+      console.log("AuthProvider: User authenticated, redirecting from auth page to home");
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, location.pathname, navigate]);
   
   const signIn = async (email: string, password: string) => {
     console.log("AuthProvider: Starting sign in process");
-    // Set loading state at the provider level
     setLoading(true);
     
     try {
       const result = await performSignIn(email, password);
-      console.log("AuthProvider: Sign in result received", result.user ? "User found" : "No user", result.error ? `Error: ${result.error}` : "No error");
+      console.log("AuthProvider: Sign in result received", result);
       
       if (result.user) {
-        // Set user first so UI can update
+        console.log("AuthProvider: Sign in successful, setting user and redirecting");
         setUser(result.user);
-        console.log("AuthProvider: User set, navigating to home");
-        // Navigate immediately, no timeouts
-        navigate("/");
+        
+        // Immediate navigate on success
+        navigate("/", { replace: true });
+        
+        // Signal completion without waiting for navigation
+        return result;
+      }
+      
+      // Only for error cases, we reset loading here
+      if (result.error) {
+        console.log("AuthProvider: Sign in error, resetting loading state");
+        setLoading(false);
       }
       
       return result;
     } catch (error) {
       console.error("AuthProvider: Unexpected error in signIn:", error);
-      return { user: null, error: "An unexpected error occurred" };
-    } finally {
-      console.log("AuthProvider: Sign in process complete, resetting loading state");
-      // Always reset loading state, regardless of outcome
       setLoading(false);
+      return { user: null, error: "An unexpected error occurred" };
     }
   };
 
@@ -55,16 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (result.success) {
         // Navigate immediately after success
-        navigate("/signin");
+        navigate("/signin", { replace: true });
       }
       
+      setLoading(false);
       return result;
     } catch (error) {
       console.error("AuthProvider: Unexpected error in signUp:", error);
+      setLoading(false);
       toast.error("Failed to create account");
       return { success: false, error: "An unexpected error occurred" };
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -73,12 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await performSignOut();
       setUser(null);
-      navigate("/signin");
+      navigate("/signin", { replace: true });
+      setLoading(false);
     } catch (error) {
       console.error("AuthProvider: Error during sign out:", error);
-      toast.error("Failed to sign out");
-    } finally {
       setLoading(false);
+      toast.error("Failed to sign out");
     }
   };
 

@@ -28,9 +28,12 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
       const lowercaseEmail = email.toLowerCase();
       console.log("LoginForm: Signing in with:", lowercaseEmail);
       
+      // Call signIn and await its result without further manipulation
+      // Let the auth hook handle navigation and state management
       const result = await signIn(lowercaseEmail, password);
       console.log("LoginForm: Sign in result received", result);
       
+      // Only set error if there's an actual error
       if (result.error) {
         console.log("LoginForm: Error received:", result.error);
         // Display more helpful error message
@@ -41,15 +44,18 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         } else {
           setError(result.error);
         }
+        // Reset loading state on error
+        setFormLoading(false);
       }
+      // Don't reset loading here for successful login - navigation will occur
+      // and component will unmount, managed by AuthProvider
+      
     } catch (err) {
       console.error("LoginForm: Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
-    } finally {
-      // Always reset loading state, regardless of what happened
-      console.log("LoginForm: Resetting loading state");
       setFormLoading(false);
     }
+    // Note: We don't reset formLoading on success, as navigation should unmount this component
   };
 
   return (
