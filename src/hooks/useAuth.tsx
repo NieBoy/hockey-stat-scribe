@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const signIn = async (email: string, password: string) => {
     console.log("AuthProvider: Starting sign in process");
+    // Set loading state at the provider level
     setLoading(true);
     
     try {
@@ -29,8 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("AuthProvider: Sign in result received", result.user ? "User found" : "No user", result.error ? `Error: ${result.error}` : "No error");
       
       if (result.user) {
+        // Set user first so UI can update
         setUser(result.user);
         console.log("AuthProvider: User set, navigating to home");
+        // Navigate immediately, no timeouts
         navigate("/");
       }
       
@@ -40,19 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { user: null, error: "An unexpected error occurred" };
     } finally {
       console.log("AuthProvider: Sign in process complete, resetting loading state");
+      // Always reset loading state, regardless of outcome
       setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
+    setLoading(true);
     try {
       const result = await performSignUp(email, password, name);
       
       if (result.success) {
-        // Navigate after a short delay for better UX
-        setTimeout(() => {
-          navigate("/signin");
-        }, 1500);
+        // Navigate immediately after success
+        navigate("/signin");
       }
       
       return result;
@@ -60,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("AuthProvider: Unexpected error in signUp:", error);
       toast.error("Failed to create account");
       return { success: false, error: "An unexpected error occurred" };
+    } finally {
+      setLoading(false);
     }
   };
 

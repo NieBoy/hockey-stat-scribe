@@ -15,17 +15,16 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("LoginForm: Form submitted, setting loading state");
-    setLoading(true);
+    setFormLoading(true);
     setError(null);
 
     try {
-      // Convert email to lowercase before signing in
       const lowercaseEmail = email.toLowerCase();
       console.log("LoginForm: Signing in with:", lowercaseEmail);
       
@@ -47,8 +46,9 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
       console.error("LoginForm: Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
+      // Always reset loading state, regardless of what happened
       console.log("LoginForm: Resetting loading state");
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -69,7 +69,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={loading}
+            disabled={formLoading}
           />
         </div>
         <div className="space-y-2">
@@ -88,7 +88,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={loading}
+            disabled={formLoading}
           />
         </div>
       </div>
@@ -96,9 +96,9 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={loading}
+          disabled={formLoading}
         >
-          {loading ? (
+          {formLoading ? (
             <>
               <span className="animate-spin mr-2">○</span>
               Signing in...
@@ -127,7 +127,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             variant="outline" 
             onClick={onShowDemoForm}
             className="w-full mt-2"
-            disabled={loading}
+            disabled={formLoading}
           >
             Create Demo Account
             <ArrowRight className="ml-2 h-4 w-4" />

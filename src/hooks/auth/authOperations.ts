@@ -10,23 +10,25 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     // Convert email to lowercase for consistent authentication
     const normalizedEmail = email.toLowerCase();
     
+    // Perform the actual sign in request
     const result = await apiSignIn(normalizedEmail, password);
     
     if (result.error) {
       console.log("AuthOperations: Sign in error:", result.error);
+      // Don't toast errors here, let the UI handle them
       return result;
     } 
     
     if (result.user) {
       console.log("AuthOperations: User signed in successfully:", result.user.id);
+      // Show success toast only after successful login
       toast.success("Signed in successfully");
       return result;
     }
     
-    // This should not happen but handling just in case
+    // Fallback error handling
     console.error("AuthOperations: Sign in returned neither user nor error");
-    const errorMessage = "An unexpected error occurred during sign in";
-    return { user: null, error: errorMessage };
+    return { user: null, error: "An unexpected error occurred during sign in" };
     
   } catch (error: any) {
     const errorMessage = error?.message || "Failed to sign in";
