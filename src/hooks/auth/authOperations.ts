@@ -1,3 +1,4 @@
+
 import { User } from "@/types";
 import { signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/services/auth";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     
     if (result.user) {
       console.log("AuthOperations: User signed in successfully:", result.user.id);
-      // Show success toast on successful login, but don't block the flow
+      // Show success toast but don't block the flow - use setTimeout
       setTimeout(() => toast.success("Signed in successfully"), 100);
       return result;
     }

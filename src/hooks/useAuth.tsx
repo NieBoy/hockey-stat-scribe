@@ -21,10 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   
+  console.log(`AuthProvider: Current state - user: ${user?.id || 'null'}, loading: ${loading}, path: ${location.pathname}`);
+  
   // Handle automatic redirects based on auth state
   useEffect(() => {
     // Skip redirect during initial loading
-    if (loading) return;
+    if (loading) {
+      console.log("AuthProvider: Skip redirect during loading");
+      return;
+    }
     
     // If user is authenticated and on a login/signup page, redirect to home
     if (user && ["/signin", "/signup"].includes(location.pathname)) {
@@ -45,10 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("AuthProvider: Sign in successful, setting user and redirecting");
         setUser(result.user);
         
-        // Immediate navigate on success
+        // Immediately navigate on success
         navigate("/", { replace: true });
         
-        // Signal completion without waiting for navigation
+        // Return the result
         return result;
       }
       
