@@ -21,17 +21,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   
   const signIn = async (email: string, password: string) => {
+    console.log("AuthProvider: Starting sign in process");
     setLoading(true);
+    
     try {
-      console.log("AuthProvider: Starting sign in");
       const result = await performSignIn(email, password);
+      console.log("AuthProvider: Sign in result received", result.user ? "User found" : "No user", result.error ? `Error: ${result.error}` : "No error");
       
       if (result.user) {
-        console.log("AuthProvider: Sign in successful, setting user and navigating");
         setUser(result.user);
+        console.log("AuthProvider: User set, navigating to home");
         navigate("/");
-      } else if (result.error) {
-        console.log("AuthProvider: Sign in error:", result.error);
       }
       
       return result;
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("AuthProvider: Unexpected error in signIn:", error);
       return { user: null, error: "An unexpected error occurred" };
     } finally {
+      console.log("AuthProvider: Sign in process complete, resetting loading state");
       setLoading(false);
     }
   };

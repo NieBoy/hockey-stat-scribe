@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export async function performSignIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
-    console.log("Performing sign in for user:", email);
+    console.log("AuthOperations: Performing sign in for user:", email);
     
     // Convert email to lowercase for consistent authentication
     const normalizedEmail = email.toLowerCase();
@@ -13,43 +13,43 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     const result = await apiSignIn(normalizedEmail, password);
     
     if (result.error) {
-      console.log("Sign in error:", result.error);
+      console.log("AuthOperations: Sign in error:", result.error);
       return result;
     } 
     
     if (result.user) {
-      console.log("User signed in successfully:", result.user.id);
+      console.log("AuthOperations: User signed in successfully:", result.user.id);
       toast.success("Signed in successfully");
       return result;
     }
     
     // This should not happen but handling just in case
-    console.error("Sign in returned neither user nor error");
+    console.error("AuthOperations: Sign in returned neither user nor error");
     const errorMessage = "An unexpected error occurred during sign in";
     return { user: null, error: errorMessage };
     
   } catch (error: any) {
     const errorMessage = error?.message || "Failed to sign in";
-    console.error("Sign in error:", error);
+    console.error("AuthOperations: Sign in error:", error);
     return { user: null, error: errorMessage };
   }
 }
 
 export async function performSignUp(email: string, password: string, name: string): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log("Signing up user:", email);
+    console.log("AuthOperations: Signing up user:", email);
     const result = await apiSignUp(email, password, name);
     
     if (result.error) {
-      console.log("Sign up error:", result.error);
+      console.log("AuthOperations: Sign up error:", result.error);
       toast.error(result.error);
     } else if (result.success) {
-      console.log("User signed up successfully");
+      console.log("AuthOperations: User signed up successfully");
       toast.success("Account created! Please sign in");
     }
     return result;
   } catch (error) {
-    console.error("Sign up error:", error);
+    console.error("AuthOperations: Sign up error:", error);
     const errorMessage = "Failed to create account";
     toast.error(errorMessage);
     return { success: false, error: errorMessage };
@@ -61,7 +61,7 @@ export async function performSignOut(): Promise<void> {
     await apiSignOut();
     toast.success("Signed out successfully");
   } catch (error) {
-    console.error("Sign out error:", error);
+    console.error("AuthOperations: Sign out error:", error);
     toast.error("Failed to sign out");
   }
 }

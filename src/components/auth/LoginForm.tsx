@@ -12,29 +12,28 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
-  const { signIn, loading: authLoading } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [localLoading, setLocalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Combined loading state to prevent UI flicker
-  const loading = localLoading || authLoading;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLocalLoading(true);
+    console.log("LoginForm: Form submitted, setting loading state");
+    setLoading(true);
     setError(null);
 
     try {
       // Convert email to lowercase before signing in
       const lowercaseEmail = email.toLowerCase();
-      console.log("Handling form submission, signing in with:", lowercaseEmail);
+      console.log("LoginForm: Signing in with:", lowercaseEmail);
       
       const result = await signIn(lowercaseEmail, password);
+      console.log("LoginForm: Sign in result received", result);
       
       if (result.error) {
-        console.log("Login form received error:", result.error);
+        console.log("LoginForm: Error received:", result.error);
         // Display more helpful error message
         if (result.error.includes("Email not confirmed")) {
           setError("Your email hasn't been confirmed. Please check your inbox or use the demo account option below.");
@@ -45,10 +44,11 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         }
       }
     } catch (err) {
-      console.error("Unexpected error during login:", err);
+      console.error("LoginForm: Unexpected error during login:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
-      setLocalLoading(false);
+      console.log("LoginForm: Resetting loading state");
+      setLoading(false);
     }
   };
 
