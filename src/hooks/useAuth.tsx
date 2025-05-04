@@ -20,23 +20,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, loading, setUser, setLoading } = useAuthState();
   const navigate = useNavigate();
   const location = useLocation();
+  const [navigating, setNavigating] = useState(false);
   
-  console.log(`AuthProvider: Current state - user: ${user?.id || 'null'}, loading: ${loading}, path: ${location.pathname}`);
+  console.log(`AuthProvider: Current state - user: ${user?.id || 'null'}, loading: ${loading}, path: ${location.pathname}, navigating: ${navigating}`);
   
   // Handle automatic redirects based on auth state
   useEffect(() => {
-    // Skip redirect during initial loading
-    if (loading) {
-      console.log("AuthProvider: Skip redirect during loading");
+    // Skip redirect during initial loading or when already navigating
+    if (loading || navigating) {
+      console.log(`AuthProvider: Skip redirect - loading: ${loading}, navigating: ${navigating}`);
       return;
     }
     
     // If user is authenticated and on a login/signup page, redirect to home
     if (user && ["/signin", "/signup"].includes(location.pathname)) {
       console.log("AuthProvider: User authenticated, redirecting from auth page to home");
+      setNavigating(true);
       navigate("/", { replace: true });
+      // Reset navigating flag after navigation completes
+      setTimeout(() => setNavigating(false), 50);
     }
-  }, [user, loading, location.pathname, navigate]);
+  }, [user, loading, location.pathname, navigate, navigating]);
   
   const signIn = async (email: string, password: string) => {
     console.log("AuthProvider: Starting sign in process");
@@ -47,11 +51,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("AuthProvider: Sign in result received", result);
       
       if (result.user) {
-        console.log("AuthProvider: Sign in successful, setting user and redirecting");
+        console.log("AuthProvider: Sign in successful, setting user");
         setUser(result.user);
         
-        // Immediately navigate on success
-        navigate("/", { replace: true });
+        // Immediately flag we're navigating to prevent useEffect redirect race conditions
+        setNavigating(true);
+        
+        // Schedule navigation with minimal delay to ensure it happens after state updates
+        setTimeout(() => {
+          console.log("AuthProvider: Navigating to home after successful sign in");
+          navigate("/", { replace: true });
+          // Loading state will be managed by useAuthState after navigation
+          setTimeout(() => setNavigating(false), 50);
+        }, 10);
         
         // Return the result
         return result;
@@ -77,8 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await performSignUp(email, password, name);
       
       if (result.success) {
-        // Navigate immediately after success
-        navigate("/signin", { replace: true });
+        // Set navigating flag to prevent redirect race conditions
+        setNavigating(true);
+        
+        // Schedule navigation
+        setTimeout(() => {
+          navigate("/signin", { replace: true });
+          setTimeout(() => setNavigating(false), 50);
+        }, 10);
       }
       
       setLoading(false);
@@ -96,8 +114,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await performSignOut();
       setUser(null);
-      navigate("/signin", { replace: true });
-      setLoading(false);
+      
+      // Set navigating flag to prevent redirect race conditions
+      setNavigating(true);
+      
+      // Schedule navigation
+      setTimeout(() => {
+        navigate("/signin", { replace: true });
+        setTimeout(() => {
+          setNavigating(false);
+          setLoading(false);
+        }, 50);
+      }, 10);
     } catch (error) {
       console.error("AuthProvider: Error during sign out:", error);
       setLoading(false);

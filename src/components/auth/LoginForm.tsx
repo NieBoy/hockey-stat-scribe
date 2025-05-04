@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,35 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
-  const { signIn } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Safety cleanup to prevent stuck loading state
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    // If formLoading is true but authLoading becomes false, we need to reset
+    if (formLoading && !authLoading) {
+      console.log("LoginForm: Auth loading completed, syncing form loading state");
+      timeoutId = setTimeout(() => setFormLoading(false), 100);
+    }
+    
+    // Safety timeout to prevent permanently stuck spinner
+    if (formLoading) {
+      console.log("LoginForm: Setting safety timeout for loading state");
+      timeoutId = setTimeout(() => {
+        console.log("LoginForm: Safety timeout triggered, resetting loading state");
+        setFormLoading(false);
+      }, 8000);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [formLoading, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,7 +67,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         }
         setFormLoading(false);
       }
-      // Do not reset formLoading on success - the component will be unmounted
+      // Do not reset formLoading on success - either component will unmount or safety timeout will handle it
       
     } catch (err) {
       console.error("LoginForm: Unexpected error during login:", err);
@@ -51,6 +75,8 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
       setFormLoading(false);
     }
   };
+
+  const isLoading = formLoading || authLoading;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -69,7 +95,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={formLoading}
+            disabled={isLoading}
           />
         </div>
         <div className="space-y-2">
@@ -88,7 +114,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={formLoading}
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -96,9 +122,9 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={formLoading}
+          disabled={isLoading}
         >
-          {formLoading ? (
+          {isLoading ? (
             <>
               <span className="animate-spin mr-2">○</span>
               Signing in...
@@ -127,7 +153,7 @@ export const LoginForm = ({ onShowDemoForm }: LoginFormProps) => {
             variant="outline" 
             onClick={onShowDemoForm}
             className="w-full mt-2"
-            disabled={formLoading}
+            disabled={isLoading}
           >
             Create Demo Account
             <ArrowRight className="ml-2 h-4 w-4" />

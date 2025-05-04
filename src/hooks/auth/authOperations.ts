@@ -20,8 +20,9 @@ export async function performSignIn(email: string, password: string): Promise<{ 
     
     if (result.user) {
       console.log("AuthOperations: User signed in successfully:", result.user.id);
-      // Show success toast but don't block the flow - use setTimeout
-      setTimeout(() => toast.success("Signed in successfully"), 100);
+      // Show success toast but don't block the flow with await
+      // Don't use setTimeout as it can interfere with loading states
+      toast.success("Signed in successfully");
       return result;
     }
     
