@@ -13,12 +13,18 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
-    // Special handling for plus/minus - use the actual value directly
+    // Special handling for plus/minus
     if (statType === 'plusMinus') {
-      // Simply add the value - it will already be positive for plus events
-      // and negative for minus events
-      currentStat.value += Number(stat.value);
-      console.log(`Adding ${stat.value} to plusMinus total (now ${currentStat.value})`);
+      const value = Number(stat.value);
+      // 'plus' events add to the total, 'minus' events subtract
+      if (stat.details === 'plus') {
+        currentStat.value += value;
+        console.log(`Adding +${value} for plus event to plusMinus total (now ${currentStat.value})`);
+      } else if (stat.details === 'minus') {
+        // Minus events should subtract from the total
+        currentStat.value -= value; 
+        console.log(`Subtracting ${value} for minus event from plusMinus total (now ${currentStat.value})`);
+      }
     } else {
       currentStat.value += stat.value; // Normal addition for other stat types
     }
@@ -58,9 +64,15 @@ export const calculateAggregateValue = (gameStats: any[], statType: string): num
     if (stat.stat_type !== statType) return;
     
     if (statType === 'plusMinus') {
-      // Add the value directly - it should already be correct (positive or negative)
-      total += Number(stat.value);
-      console.log(`[Aggregate] Adding ${stat.value} to plusMinus total (now ${total})`);
+      const value = Number(stat.value);
+      // Handle plus/minus events properly
+      if (stat.details === 'plus') {
+        total += value;
+        console.log(`[Aggregate] Adding +${value} for plus event to plusMinus total (now ${total})`);
+      } else if (stat.details === 'minus') {
+        total -= value;
+        console.log(`[Aggregate] Subtracting ${value} for minus event from plusMinus total (now ${total})`);
+      }
     } else {
       total += stat.value;
     }

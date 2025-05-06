@@ -61,9 +61,14 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       } else if (stat.statType === "assists") {
         playerStat.assists += Number(stat.value);
       } else if (stat.statType === "plusMinus") {
-        // Use the actual value directly - will be +1 for plus and -1 for minus
-        playerStat.plusMinus += Number(stat.value);
-        console.log(`[Filter] Player ${player.name} plusMinus update: ${stat.value} (total: ${playerStat.plusMinus})`);
+        // Handle plusMinus properly based on the details
+        if (stat.details === 'plus') {
+          playerStat.plusMinus += Number(stat.value);
+          console.log(`[Filter] Player ${player.name} plusMinus update for plus event: +${stat.value} (total: ${playerStat.plusMinus})`);
+        } else if (stat.details === 'minus') {
+          playerStat.plusMinus -= Number(stat.value);
+          console.log(`[Filter] Player ${player.name} plusMinus update for minus event: -${stat.value} (total: ${playerStat.plusMinus})`);
+        }
       }
     });
 
