@@ -44,7 +44,6 @@ export default function GameStatsList({ gameStats, game, onDelete }: GameStatsLi
                 <th className="text-left pb-2">Stat</th>
                 <th className="text-left pb-2">Period</th>
                 <th className="text-left pb-2">Value</th>
-                <th className="text-left pb-2">Details</th>
                 <th className="text-left pb-2">Actions</th>
               </tr>
             </thead>
@@ -61,7 +60,6 @@ export default function GameStatsList({ gameStats, game, onDelete }: GameStatsLi
                     <td className={`py-2 ${getValueClass(stat.statType, stat.value)}`}>
                       {formatStatValue(stat.statType, stat.value)}
                     </td>
-                    <td className="py-2">{stat.details || '-'}</td>
                     <td className="py-2">
                       <Button 
                         variant="ghost" 

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { GameEvent, GameStat } from "@/types";
 import { createGameStat } from "../utils/statsDbUtils";
@@ -39,12 +38,11 @@ export const processGoalEvent = async (event: any, playerId: string, details: an
         
         // Create the plus/minus stat with actual +1/-1 value
         const plusMinusValue = isPlus ? 1 : -1;
-        const plusMinusDetail = isPlus ? 'plus' : 'minus';
         
-        console.log(`Recording ${plusMinusDetail} (${plusMinusValue}) for player ${playerId}`);
+        console.log(`Recording ${isPlus ? 'plus' : 'minus'} (${plusMinusValue}) for player ${playerId}`);
         
         // Record the correct plus/minus value directly
-        statsCreated = await createRawPlusMinus(event.game_id, playerId, event.period, plusMinusValue, plusMinusDetail) || statsCreated;
+        statsCreated = await createRawPlusMinus(event.game_id, playerId, event.period, plusMinusValue) || statsCreated;
       }
     }
     
@@ -87,8 +85,7 @@ const createRawPlusMinus = async (
   gameId: string, 
   playerId: string, 
   period: number,
-  value: number, // This will be +1 or -1 now
-  details: string // 'plus' or 'minus' for compatibility
+  value: number // This will be +1 or -1
 ): Promise<boolean> => {
   try {
     console.log(`Recording plusMinus: ${value} for player ${playerId}`);
@@ -98,8 +95,7 @@ const createRawPlusMinus = async (
       p_player_id: playerId,
       p_stat_type: 'plusMinus',
       p_period: period,
-      p_value: value, // Use the actual +1/-1 value
-      p_details: details
+      p_value: value // Use the actual +1/-1 value
     });
     
     if (error) {

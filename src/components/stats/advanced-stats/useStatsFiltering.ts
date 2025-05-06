@@ -61,7 +61,7 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       } else if (stat.statType === "assists") {
         playerStat.assists += Number(stat.value);
       } else if (stat.statType === "plusMinus") {
-        // Simply add the numeric value, no need to check details anymore
+        // Simply add the numeric value
         playerStat.plusMinus += Number(stat.value);
         console.log(`[Filter] Player ${player.name} plusMinus update: ${stat.value} (total: ${playerStat.plusMinus})`);
       }

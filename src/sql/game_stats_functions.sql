@@ -6,8 +6,7 @@ CREATE OR REPLACE FUNCTION public.record_game_stat(
   p_player_id UUID,  -- This is now the team_member.id
   p_stat_type TEXT,
   p_period INTEGER,
-  p_value INTEGER,
-  p_details TEXT DEFAULT ''
+  p_value INTEGER
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -29,7 +28,6 @@ BEGIN
     stat_type,
     period,
     value,
-    details,
     timestamp
   )
   VALUES (
@@ -38,7 +36,6 @@ BEGIN
     p_stat_type,
     p_period,
     p_value,
-    p_details,
     now()
   )
   RETURNING id INTO new_stat_id;
@@ -55,4 +52,3 @@ BEGIN
   RETURN result;
 END;
 $$;
-

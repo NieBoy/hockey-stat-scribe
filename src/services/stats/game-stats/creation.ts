@@ -26,8 +26,7 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>): 
       p_player_id: playerId,
       p_stat_type: statType,
       p_period: stat.period,
-      p_value: stat.value,
-      p_details: stat.details || ''
+      p_value: stat.value
     });
     
     if (error) throw error;
@@ -61,7 +60,7 @@ export const recordPlusMinusStats = async (
       throw new Error(`One or more invalid player IDs provided`);
     }
     
-    // Use the actual +1/-1 value directly, not always 1 with different details
+    // Use the actual +1/-1 value directly
     const value = isPlus ? 1 : -1;
     
     console.log(`Recording plus/minus (${value}) for ${playerIds.length} players`);
@@ -73,8 +72,7 @@ export const recordPlusMinusStats = async (
         player_id: playerId,
         stat_type: 'plusMinus',
         period,
-        value,
-        details: ''
+        value
       })
     );
     
