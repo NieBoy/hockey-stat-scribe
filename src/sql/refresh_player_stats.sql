@@ -23,35 +23,16 @@ BEGIN
   ) LOOP
     BEGIN
       -- Count total value for this stat type and count distinct games
-      -- Special handling for plusMinus stat type
-      IF stat_type_val = 'plusMinus' THEN
-        SELECT 
-          COALESCE(SUM(CASE 
-            WHEN gs.details = 'plus' THEN gs.value
-            WHEN gs.details = 'minus' THEN -gs.value  -- Explicitly negate the value for minus events
-            ELSE 0
-          END), 0) as total_value,
-          COUNT(DISTINCT gs.game_id) as games_count
-        INTO stat_count, games_count
-        FROM game_stats gs
-        WHERE 
-          gs.player_id = refresh_player_stats.player_id AND
-          gs.stat_type = stat_type_val;
+      -- No special handling needed for plusMinus anymore - just sum the values
+      SELECT 
+        COALESCE(SUM(gs.value), 0) as total_value,
+        COUNT(DISTINCT gs.game_id) as games_count
+      INTO stat_count, games_count
+      FROM game_stats gs
+      WHERE 
+        gs.player_id = refresh_player_stats.player_id AND
+        gs.stat_type = stat_type_val;
           
-        RAISE NOTICE 'PlusMinus calculation: found % events with total value % across % games', 
-          stat_type_val, stat_count, games_count;
-      ELSE
-        -- For all other stat types, use standard counting
-        SELECT 
-          COALESCE(SUM(gs.value), 0) as total_value,
-          COUNT(DISTINCT gs.game_id) as games_count
-        INTO stat_count, games_count
-        FROM game_stats gs
-        WHERE 
-          gs.player_id = refresh_player_stats.player_id AND
-          gs.stat_type = stat_type_val;
-      END IF;
-        
       RAISE NOTICE 'Found stat type % with total value % across % games', 
         stat_type_val, stat_count, games_count;
         

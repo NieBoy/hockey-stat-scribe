@@ -13,20 +13,12 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
-    // Special handling for plus/minus
+    // Simply add the value, regardless of the stat type
+    // For plusMinus, the value will already be +1 or -1
+    currentStat.value += Number(stat.value);
+    
     if (statType === 'plusMinus') {
-      const value = Number(stat.value);
-      // 'plus' events add to the total, 'minus' events subtract
-      if (stat.details === 'plus') {
-        currentStat.value += value;
-        console.log(`Adding +${value} for plus event to plusMinus total (now ${currentStat.value})`);
-      } else if (stat.details === 'minus') {
-        // Minus events should subtract from the total
-        currentStat.value -= value; 
-        console.log(`Subtracting ${value} for minus event from plusMinus total (now ${currentStat.value})`);
-      }
-    } else {
-      currentStat.value += stat.value; // Normal addition for other stat types
+      console.log(`Adding ${stat.value} to plusMinus total (now ${currentStat.value})`);
     }
     
     currentStat.games.add(stat.game_id);
@@ -63,18 +55,11 @@ export const calculateAggregateValue = (gameStats: any[], statType: string): num
   gameStats.forEach(stat => {
     if (stat.stat_type !== statType) return;
     
+    // Simply add the value for all stat types including plusMinus
+    total += Number(stat.value);
+    
     if (statType === 'plusMinus') {
-      const value = Number(stat.value);
-      // Handle plus/minus events properly
-      if (stat.details === 'plus') {
-        total += value;
-        console.log(`[Aggregate] Adding +${value} for plus event to plusMinus total (now ${total})`);
-      } else if (stat.details === 'minus') {
-        total -= value;
-        console.log(`[Aggregate] Subtracting ${value} for minus event from plusMinus total (now ${total})`);
-      }
-    } else {
-      total += stat.value;
+      console.log(`[Aggregate] Adding ${stat.value} to plusMinus total (now ${total})`);
     }
   });
   

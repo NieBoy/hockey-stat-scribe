@@ -14,23 +14,18 @@ export default function GameStatsList({ gameStats, game, onDelete }: GameStatsLi
   if (gameStats.length === 0) return null;
 
   // Format the display of stat values
-  const formatStatValue = (statType: string, value: number, details?: string): string => {
+  const formatStatValue = (statType: string, value: number): string => {
     if (statType === 'plusMinus') {
-      // For plusMinus, format based on the details (plus or minus event)
-      if (details === 'plus') {
-        return `+${value}`;
-      } else if (details === 'minus') {
-        return `-${value}`;
-      }
-      return value.toString();
+      // For plusMinus, format based on the actual value
+      return value > 0 ? `+${value}` : `${value}`;
     }
     return value.toString();
   };
 
   // Get the CSS class for the value display
-  const getValueClass = (statType: string, details?: string): string => {
+  const getValueClass = (statType: string, value: number): string => {
     if (statType === 'plusMinus') {
-      return details === 'plus' ? 'text-green-600' : details === 'minus' ? 'text-red-600' : '';
+      return value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : '';
     }
     return '';
   };
@@ -63,8 +58,8 @@ export default function GameStatsList({ gameStats, game, onDelete }: GameStatsLi
                     <td className="py-2">{player?.name || 'Unknown Player'}</td>
                     <td className="py-2 capitalize">{stat.statType}</td>
                     <td className="py-2">{stat.period}</td>
-                    <td className={`py-2 ${getValueClass(stat.statType, stat.details)}`}>
-                      {formatStatValue(stat.statType, stat.value, stat.details)}
+                    <td className={`py-2 ${getValueClass(stat.statType, stat.value)}`}>
+                      {formatStatValue(stat.statType, stat.value)}
                     </td>
                     <td className="py-2">{stat.details || '-'}</td>
                     <td className="py-2">
