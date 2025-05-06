@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { GameStat } from "@/types";
 import { validateMultiplePlayers, validatePlayerId } from "@/services/events/shared/validatePlayer";
@@ -62,8 +63,6 @@ export const recordPlusMinusStats = async (
     
     // Use the actual +1/-1 value directly, not always 1 with different details
     const value = isPlus ? 1 : -1;
-    // Keep details for backward compatibility
-    const details = isPlus ? 'plus' : 'minus';
     
     console.log(`Recording plus/minus (${value}) for ${playerIds.length} players`);
     
@@ -74,8 +73,8 @@ export const recordPlusMinusStats = async (
         player_id: playerId,
         stat_type: 'plusMinus',
         period,
-        value, // Use actual +1 or -1 value
-        details
+        value,
+        details: ''
       })
     );
     

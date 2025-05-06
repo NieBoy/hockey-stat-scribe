@@ -14,7 +14,6 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
     // Simply add the value, regardless of the stat type
-    // For plusMinus, the value will already be +1 or -1
     currentStat.value += Number(stat.value);
     
     if (statType === 'plusMinus') {

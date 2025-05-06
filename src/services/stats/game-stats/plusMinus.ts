@@ -30,7 +30,13 @@ export const calculatePlusMinus = async (gameId: string, playerId: string, teamT
     const isHomeTeam = playerTeam.team_id === game.home_team_id;
     const isHomeTeamGoal = teamType === 'home';
     
-    return isHomeTeam === isHomeTeamGoal; // Returns true for plus, false for minus
+    console.log(`calculatePlusMinus - Player team: ${isHomeTeam ? 'home' : 'away'}, Goal by: ${teamType}`);
+    
+    // Returns true for plus (player's team scored), false for minus (opponent team scored)
+    const isPlusEvent = isHomeTeam === isHomeTeamGoal;
+    console.log(`calculatePlusMinus result: ${isPlusEvent ? 'plus' : 'minus'} event`);
+    
+    return isPlusEvent;
   } catch (error) {
     console.error("Error calculating plus/minus:", error);
     throw error;
