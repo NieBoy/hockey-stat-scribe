@@ -1,183 +1,111 @@
 
-import { Button } from "@/components/ui/button";
-import { UserPlus, Trash2 } from "lucide-react";
-import { User } from "@/types";
-import { useState, useEffect, useCallback } from "react";
-import ParentPlayerManager from "@/components/teams/ParentPlayerManager";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { getUserInitials } from "@/utils/nameUtils";
-import { Link } from "react-router-dom";
-import { deleteTeamMember } from "@/services/teams";
+import { User } from "@/types";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { UserPlus } from "lucide-react";
 
 interface PlayerParentsProps {
-  player: User;
+  playerId: string;
 }
 
-export default function PlayerParents({ player }: PlayerParentsProps) {
-  const [showAddParent, setShowAddParent] = useState(false);
+export default function PlayerParents({ playerId }: PlayerParentsProps) {
   const [parents, setParents] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadParents = useCallback(async () => {
-    if (!player.id) return;
-    
-    setLoading(true);
-    try {
-      // Get parent-player relationships
-      const { data: relationships, error: relError } = await supabase
-        .from('player_parents')
-        .select('parent_id')
-        .eq('player_id', player.id);
-        
-      if (relError) throw relError;
-      
-      if (relationships && relationships.length > 0) {
-        const parentIds = relationships.map(rel => rel.parent_id);
-        
-        // Get parent details
-        const { data: parentData, error: parentError } = await supabase
-          .from('team_members')
-          .select('id, name, email, role')
-          .in('id', parentIds)
-          .eq('role', 'parent');
-          
-        if (parentError) throw parentError;
-        
-        const parentUsers = (parentData || []).map(parent => ({
-          id: parent.id,
-          name: parent.name || 'Unknown Parent',
-          email: parent.email,
-          role: ['parent'] as ['parent'],
-          children: [{ // Add the current player as a child
-            id: player.id,
-            name: player.name,
-            role: ['player'] as ['player']
-          }]
-        }));
-        
-        setParents(parentUsers);
-      } else {
-        setParents([]);
-      }
-    } catch (error) {
-      console.error('Error loading parents:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [player.id]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadParents();
-  }, [loadParents]);
-
-  const handleParentAdded = () => {
-    setShowAddParent(false);
-    loadParents();
-  };
-  
-  const handleRemoveParent = async (parent: User) => {
-    try {
-      // First delete the parent-player relationship
-      const { error: relationError } = await supabase
-        .from('player_parents')
-        .delete()
-        .eq('parent_id', parent.id)
-        .eq('player_id', player.id);
+    const fetchParents = async () => {
+      setIsLoading(true);
       
-      if (relationError) {
-        console.error("Error removing parent-player relationship:", relationError);
-        throw relationError;
+      try {
+        // Fetch the player's parents
+        const { data, error } = await supabase
+          .from('player_parents')
+          .select(`
+            parent_id,
+            parent:parent_id (
+              id,
+              name,
+              email
+            )
+          `)
+          .eq('player_id', playerId);
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Get parent user IDs
+          const parentIds = data.map(item => item.parent_id);
+          
+          // Fetch parent user roles
+          const { data: rolesData, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('user_id, role')
+            .in('user_id', parentIds)
+            .eq('role', 'parent');
+            
+          if (rolesError) throw rolesError;
+          
+          // Map data to parent objects
+          const parentsList = data.map(item => {
+            // Find parent role
+            const parentRole = rolesData?.find(role => role.user_id === item.parent_id)?.role || 'parent';
+            
+            return {
+              id: item.parent.id,
+              name: item.parent.name,
+              email: item.parent.email,
+              role: [parentRole] as Role[],
+              avatar_url: null // Add required property to match User type
+            };
+          });
+          
+          setParents(parentsList);
+        }
+      } catch (error) {
+        console.error('Error fetching parents:', error);
+        toast.error('Failed to load parents');
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Then delete the team member
-      const success = await deleteTeamMember(parent.id);
-      if (success) {
-        toast.success(`${parent.name} has been removed as a parent`);
-        loadParents();
-      }
-    } catch (error) {
-      console.error("Error removing parent:", error);
-      toast.error("Failed to remove parent");
+    };
+    
+    if (playerId) {
+      fetchParents();
     }
-  };
-
+  }, [playerId]);
+  
   return (
-    <>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">Parents</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-1"
-          onClick={() => setShowAddParent(!showAddParent)}
-        >
-          <UserPlus className="h-3 w-3" /> 
-          {showAddParent ? 'Hide' : 'Add Parent'}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-xl">Parents</CardTitle>
+        <Button variant="outline" size="sm">
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add Parent
         </Button>
-      </div>
-      
-      {showAddParent && (
-        <div className="mb-4">
-          <ParentPlayerManager 
-            player={player} 
-            onParentAdded={handleParentAdded}
-          />
-        </div>
-      )}
-      
-      {loading ? (
-        <div className="flex justify-center p-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
-        </div>
-      ) : parents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {parents.map(parent => (
-            <Card key={parent.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getUserInitials(parent.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1 flex-1">
-                    <div className="flex justify-between items-center">
-                      <Link 
-                        to={`/players/${parent.id}`}
-                        className="text-lg font-medium hover:underline"
-                      >
-                        {parent.name}
-                      </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0 text-destructive"
-                        onClick={() => handleRemoveParent(parent)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Parent</div>
-                    {parent.email && (
-                      <div className="text-sm text-muted-foreground">{parent.email}</div>
-                    )}
-                    <div className="text-sm">
-                      Parent of: {player.name}
-                    </div>
-                  </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-4">Loading parents...</div>
+        ) : parents.length > 0 ? (
+          <div className="space-y-4">
+            {parents.map((parent) => (
+              <div key={parent.id} className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{parent.name}</div>
+                  <div className="text-sm text-muted-foreground">{parent.email}</div>
                 </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-center py-4">
-          No parents associated with this player yet.
-        </p>
-      )}
-    </>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-4">
+            No parents associated with this player.
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

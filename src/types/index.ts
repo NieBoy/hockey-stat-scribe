@@ -1,3 +1,4 @@
+
 export type Role = "admin" | "user";
 export type Theme = "light" | "dark" | "system";
 export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus";
@@ -12,6 +13,11 @@ export interface User {
   email: string;
   avatar_url: string | null;
   role: Role;
+  // Added fields needed by components
+  position?: string;
+  number?: string;
+  teams?: Team[];
+  isAdmin?: boolean;
 }
 
 /**
@@ -30,6 +36,9 @@ export interface Team {
   name: string;
   organization_id: string;
   logo_url?: string;
+  // Added fields used in components
+  players?: Player[];
+  lines?: any[];
 }
 
 /**
@@ -60,6 +69,9 @@ export interface Game {
   homeTeam: TeamDetails;
   awayTeam: TeamDetails;
   statTrackers: StatTracker[];
+  // Added field needed by components
+  opponent_name?: string;
+  isActive?: boolean;
 }
 
 /**
@@ -70,6 +82,8 @@ export interface TeamDetails {
   name: string;
   logo_url?: string;
   players: Player[];
+  // Add organization_id to match Team interface
+  organization_id?: string;
 }
 
 /**
@@ -109,6 +123,8 @@ export interface PlayerStat {
   value: number;
   games_played: number;
   playerName?: string;
+  // Add alias properties to accommodate both naming conventions
+  statType?: string;
 }
 
 /**
@@ -122,3 +138,33 @@ export interface GameEvent {
   team_type: string;
   timestamp: string;
 }
+
+/**
+ * Game Form State
+ */
+export interface GameFormState {
+  date: Date;
+  homeTeam: string;
+  opponentName?: string;
+  awayTeam?: string;
+  location: string;
+  periods: number;
+}
+
+/**
+ * Invitation
+ */
+export interface Invitation {
+  id: string;
+  email: string;
+  role: UserRole;
+  team_id?: string;
+  created_at: string;
+  expires_at: string;
+  status: 'pending' | 'accepted' | 'expired';
+}
+
+/**
+ * User Role
+ */
+export type UserRole = 'admin' | 'coach' | 'player' | 'parent';
