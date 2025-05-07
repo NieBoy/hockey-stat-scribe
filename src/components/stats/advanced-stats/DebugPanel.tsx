@@ -39,8 +39,7 @@ export default function DebugPanel({
             playerId: stat.player_id || stat.playerId || "", 
             statType: stat.stat_type || stat.statType || "goals",
             value: stat.value,
-            gamesPlayed: 1,
-            details: stat.details || ""
+            gamesPlayed: 1
           }))}
           onRefresh={refetchAll}
         />

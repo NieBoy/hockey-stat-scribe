@@ -100,7 +100,6 @@ const PlayerStatsDebug = ({ playerId }: PlayerStatsDebugProps) => {
                     <tr>
                       <th className="text-left p-1">Stat Type</th>
                       <th className="text-right p-1">Value</th>
-                      <th className="text-left p-1">Details</th>
                       <th className="text-left p-1">Period</th>
                     </tr>
                   </thead>
@@ -111,7 +110,6 @@ const PlayerStatsDebug = ({ playerId }: PlayerStatsDebugProps) => {
                         <td className={`text-right p-1 ${stat.stat_type === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}>
                           {stat.stat_type === 'plusMinus' ? (stat.value > 0 ? `+${stat.value}` : stat.value) : stat.value}
                         </td>
-                        <td className="p-1">{stat.details || 'N/A'}</td>
                         <td className="p-1">{stat.period}</td>
                       </tr>
                     ))}
