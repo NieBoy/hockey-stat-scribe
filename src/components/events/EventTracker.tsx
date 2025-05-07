@@ -5,7 +5,7 @@ import GameControls from './GameControls';
 import EventHistory from './EventHistory';
 import { useGameControl } from '@/hooks/useGameControl';
 import { useQuery } from '@tanstack/react-query';
-import { getGameById } from '@/services/games';
+import { getGameById, ensureGameCompatibility } from '@/services/games';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import GoalFlow from './GoalFlow';
 import PenaltyFlow from './PenaltyFlow';
@@ -37,11 +37,14 @@ export default function EventTracker() {
     handleFlowCancel
   } = useEventSelection();
 
-  const { data: game, isLoading } = useQuery({
+  const { data: gameData, isLoading } = useQuery({
     queryKey: ['games', gameId],
     queryFn: () => gameId ? getGameById(gameId) : null,
     enabled: !!gameId
   });
+  
+  // Ensure the game data conforms to the Game interface
+  const game = ensureGameCompatibility(gameData);
 
   if (isLoading) {
     return (

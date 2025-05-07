@@ -25,7 +25,6 @@ export function PlayersOnIceStep({
       console.log("PlayersOnIceStep - Home team for plus/minus:", {
         teamName: team?.name,
         playersCount: team?.players?.length || 0,
-        players: team?.players?.map(p => ({ id: p.id, name: p.name }))
       });
     }
   }, [team, isOpponentTeam]);

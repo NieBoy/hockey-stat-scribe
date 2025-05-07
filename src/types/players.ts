@@ -1,2 +1,2 @@
 
-export type Role = "admin" | "coach" | "player" | "parent" | "user";
+export type PlayerRole = "admin" | "coach" | "player" | "parent" | "user";

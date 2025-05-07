@@ -6,6 +6,7 @@ import { Game, User } from '@/types';
 import { PlayerSelect } from './goal-flow/PlayerSelect';
 import { recordHitEvent } from '@/services/events/hits/hitsEventService';
 import { toast } from 'sonner';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 interface HitsFlowProps {
   game: Game;
@@ -44,11 +45,14 @@ export default function HitsFlow({ game, period, onComplete, onCancel }: HitsFlo
     }
   };
 
+  // Convert TeamDetails to Team for compatibility
+  const homeTeam = ensureTeamCompatibility(game.homeTeam);
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
         <PlayerSelect
-          team={game.homeTeam}
+          team={homeTeam}
           title="Select Player Who Made the Hit"
           onPlayerSelect={handlePlayerSelect}
           selectedPlayers={selectedPlayer ? [selectedPlayer] : []}

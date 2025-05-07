@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Team, User } from '@/types';
+import { Team, User, Player } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import SimplePlayerList from '@/components/teams/SimplePlayerList';
+import { convertPlayersToUsers } from '@/utils/typeConversions';
 
 interface AssistSelectionStepProps {
   team: Team;
@@ -22,11 +23,23 @@ export function AssistSelectionStep({
   isPrimary,
   onSkip
 }: AssistSelectionStepProps) {
-  // Filter out excluded players
-  const eligiblePlayers = {
-    ...team,
-    players: team.players.filter(p => !excludedPlayers.some(excluded => excluded.id === p.id))
+  // Convert players to User type if needed
+  const getPlayers = (): User[] => {
+    if (!team.players) return [];
+    
+    // Check if players are already User type or need conversion
+    if (team.players.length > 0 && 'email' in team.players[0]) {
+      return team.players as User[];
+    } else {
+      return convertPlayersToUsers(team.players as Player[]);
+    }
   };
+
+  // Get and filter players
+  const allPlayers = getPlayers();
+  const eligiblePlayers = allPlayers.filter(
+    p => !excludedPlayers.some(excluded => excluded.id === p.id)
+  );
 
   return (
     <div>
@@ -39,7 +52,7 @@ export function AssistSelectionStep({
       <Card>
         <CardContent className="p-4">
           <SimplePlayerList
-            players={eligiblePlayers.players}
+            players={eligiblePlayers}
             onPlayerSelect={onPlayerSelect}
             selectedPlayers={selectedAssist ? [selectedAssist] : []}
           />

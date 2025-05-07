@@ -1,6 +1,7 @@
 
 import { Game } from '@/types';
 import { TeamOption } from './TeamOption';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 interface TeamOptionsProps {
   game: Game;
@@ -8,14 +9,18 @@ interface TeamOptionsProps {
 }
 
 export function TeamOptions({ game, onTeamSelect }: TeamOptionsProps) {
+  // Convert TeamDetails to Team type
+  const homeTeam = ensureTeamCompatibility(game.homeTeam);
+  const awayTeam = ensureTeamCompatibility(game.awayTeam);
+  
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <TeamOption 
-        team={game.homeTeam}
+        team={homeTeam}
         onClick={() => onTeamSelect('home')}
       />
       <TeamOption 
-        team={game.awayTeam}
+        team={awayTeam}
         onClick={() => onTeamSelect('away')}
       />
     </div>

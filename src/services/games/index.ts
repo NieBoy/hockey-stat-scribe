@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { queries } from './queries';
 
@@ -101,6 +100,17 @@ const extractTeamData = (teamData: any) => {
   return {
     id: '',
     name: 'Unknown Team'
+  };
+};
+
+// Add this helper function to ensure compatibility with the Game interface
+export const ensureGameCompatibility = (game: any): Game => {
+  if (!game) return game;
+  
+  return {
+    ...game,
+    home_team_id: game.home_team_id || game.homeTeam?.id || '',
+    away_team_id: game.away_team_id || game.awayTeam?.id || '',
   };
 };
 

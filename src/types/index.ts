@@ -1,7 +1,7 @@
 
-export type Role = "admin" | "user";
+export type Role = "admin" | "user" | "coach" | "player" | "parent";
 export type Theme = "light" | "dark" | "system";
-export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus";
+export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus" | "faceoffs" | "hits";
 export type TeamType = "home" | "away";
 
 /**
@@ -37,8 +37,9 @@ export interface Team {
   organization_id: string;
   logo_url?: string;
   // Added fields used in components
-  players?: Player[];
+  players?: Player[] | User[];
   lines?: any[];
+  coaches?: User[];
 }
 
 /**
@@ -52,6 +53,8 @@ export interface Player {
   position?: string;
   line_number?: number;
   name?: string;
+  email?: string;
+  avatar_url?: string | null;
 }
 
 /**
@@ -82,8 +85,9 @@ export interface TeamDetails {
   name: string;
   logo_url?: string;
   players: Player[];
-  // Add organization_id to match Team interface
-  organization_id?: string;
+  // Make organization_id required to match Team interface
+  organization_id: string;
+  lines?: any[];
 }
 
 /**
@@ -125,6 +129,8 @@ export interface PlayerStat {
   playerName?: string;
   // Add alias properties to accommodate both naming conventions
   statType?: string;
+  playerId?: string;
+  gamesPlayed?: number;
 }
 
 /**
@@ -167,4 +173,4 @@ export interface Invitation {
 /**
  * User Role
  */
-export type UserRole = 'admin' | 'coach' | 'player' | 'parent';
+export type UserRole = 'admin' | 'coach' | 'player' | 'parent' | 'user';

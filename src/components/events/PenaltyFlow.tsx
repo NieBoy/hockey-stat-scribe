@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Game, User } from '@/types';
@@ -7,6 +8,7 @@ import { usePenaltyFlow, PenaltyType } from '@/hooks/usePenaltyFlow';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { PlayerSelect } from './goal-flow/PlayerSelect';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 const PENALTY_TYPES: PenaltyType[] = [
   'hooking',
@@ -52,7 +54,9 @@ export default function PenaltyFlow({ game, period, onComplete, onCancel }: Pena
         
       case 'player-select':
         if (!selectedTeam) return null;
-        const team = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const teamDetails = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const team = ensureTeamCompatibility(teamDetails);
+        
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Select Penalized Player</h3>

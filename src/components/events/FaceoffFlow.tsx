@@ -5,6 +5,7 @@ import { Game, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { useFaceoffFlow } from '@/hooks/useFaceoffFlow';
 import { PlayerSelect } from './goal-flow/PlayerSelect';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 interface FaceoffFlowProps {
   game: Game;
@@ -51,7 +52,9 @@ export default function FaceoffFlow({ game, period, onComplete, onCancel }: Face
 
       case 'player-select':
         if (!selectedTeam) return null;
-        const team = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const teamDetails = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const team = ensureTeamCompatibility(teamDetails);
+        
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-medium">

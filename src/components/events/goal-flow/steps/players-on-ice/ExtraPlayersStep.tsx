@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { User, Team } from '@/types';
+import { User, Team, Player } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import SimplePlayerList from '@/components/teams/SimplePlayerList';
 import { toast } from 'sonner';
+import { convertPlayersToUsers } from '@/utils/typeConversions';
 
 interface ExtraPlayersStepProps {
   team: Team;
@@ -43,6 +44,20 @@ export function ExtraPlayersStep({
     onPlayerToggle(player);
   };
 
+  // Convert players array to User array for SimplePlayerList
+  const getPlayersList = (): User[] => {
+    if (!team.players) return [];
+    
+    // Check if players are already User type or need conversion
+    if (team.players.length > 0 && 'email' in team.players[0]) {
+      return team.players as User[];
+    } else {
+      return convertPlayersToUsers(team.players as Player[]);
+    }
+  };
+  
+  const playersList = getPlayersList();
+
   return (
     <>
       <div className="mb-3">
@@ -69,10 +84,10 @@ export function ExtraPlayersStep({
       </div>
       <Card>
         <CardContent className="p-4">
-          {team?.players && team?.players?.length > 0 ? (
+          {playersList.length > 0 ? (
             <>
               <SimplePlayerList
-                players={team.players as User[]}
+                players={playersList}
                 onPlayerSelect={handleExtraPlayerToggle}
                 selectedPlayers={selectedPlayers}
               />

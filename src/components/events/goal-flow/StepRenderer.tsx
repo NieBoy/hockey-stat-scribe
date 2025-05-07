@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { CardContent } from '@/components/ui/card';
 import { Game } from '@/types';
@@ -7,6 +8,7 @@ import { AssistSelectionStep } from './steps/AssistSelectionStep';
 import { PlayersOnIceStep } from './steps/PlayersOnIceStep';
 import { GoalSummaryStep } from './steps/GoalSummaryStep';
 import { OpponentGoalForm } from './steps/OpponentGoalForm';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 interface StepRendererProps {
   goalFlow: any; // Using any here to avoid redefining the whole useGoalFlow return type
@@ -61,8 +63,9 @@ export function StepRenderer({
       case 'scorer-select':
         if (!selectedTeam) return null;
         
-        // Get the appropriate team based on the selection
+        // Get the appropriate team based on the selection and convert to Team type
         const teamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const compatibleTeam = ensureTeamCompatibility(teamData);
         
         // Ensure teamData exists before passing it
         if (!teamData) {
@@ -76,7 +79,7 @@ export function StepRenderer({
         
         return (
           <ScorerSelectionStep
-            team={teamData}
+            team={compatibleTeam}
             onPlayerSelect={handleScorerSelect}
             selectedScorer={selectedScorer}
             isLoadingLineups={isLoadingLineups}
@@ -85,9 +88,10 @@ export function StepRenderer({
         );
       case 'primary-assist':
         if (!selectedTeam) return null;
-        const assistTeam = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const assistTeamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const assistTeam = ensureTeamCompatibility(assistTeamData);
         
-        if (!assistTeam) {
+        if (!assistTeamData) {
           return (
             <div className="text-center text-red-500 py-4">
               <p>Error: Team data not found.</p>
@@ -108,9 +112,10 @@ export function StepRenderer({
         );
       case 'secondary-assist':
         if (!selectedTeam) return null;
-        const secondaryAssistTeam = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const secondaryAssistTeamData = selectedTeam === 'home' ? game.homeTeam : game.awayTeam;
+        const secondaryAssistTeam = ensureTeamCompatibility(secondaryAssistTeamData);
         
-        if (!secondaryAssistTeam) {
+        if (!secondaryAssistTeamData) {
           return (
             <div className="text-center text-red-500 py-4">
               <p>Error: Team data not found.</p>
@@ -132,8 +137,9 @@ export function StepRenderer({
       case 'players-on-ice':
         // Always use home team for on-ice players when dealing with opponent goals
         // This ensures we get the correct players for plus/minus
-        const playersTeam = isOpponentTeam ? game.homeTeam : 
+        const playersTeamData = isOpponentTeam ? game.homeTeam : 
                             (selectedTeam === 'home' ? game.homeTeam : game.awayTeam);
+        const playersTeam = ensureTeamCompatibility(playersTeamData);
         
         console.log("Players on ice step - Using team:", {
           teamName: playersTeam?.name,
@@ -141,7 +147,7 @@ export function StepRenderer({
           playerCount: playersTeam?.players?.length || 0
         });
         
-        if (!playersTeam) {
+        if (!playersTeamData) {
           return (
             <div className="text-center text-red-500 py-4">
               <p>Error: Team data not found.</p>

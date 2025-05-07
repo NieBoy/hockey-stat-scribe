@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { User } from "@/types";
+import { User, Role } from "@/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
@@ -53,13 +53,16 @@ export default function PlayerParents({ playerId }: PlayerParentsProps) {
             // Find parent role
             const parentRole = rolesData?.find(role => role.user_id === item.parent_id)?.role || 'parent';
             
-            return {
+            // Create a properly typed User object
+            const parent: User = {
               id: item.parent.id,
               name: item.parent.name,
               email: item.parent.email,
-              role: [parentRole] as Role[],
-              avatar_url: null // Add required property to match User type
+              role: parentRole as Role,
+              avatar_url: null
             };
+            
+            return parent;
           });
           
           setParents(parentsList);

@@ -5,6 +5,7 @@ import { Game } from '@/types';
 import { Button } from '@/components/ui/button';
 import { useShotsFlow } from '@/hooks/useShotsFlow';
 import { PlayerSelect } from './goal-flow/PlayerSelect';
+import { ensureTeamCompatibility } from '@/utils/typeConversions';
 
 interface ShotsFlowProps {
   game: Game;
@@ -50,7 +51,9 @@ export default function ShotsFlow({ game, period, onComplete, onCancel }: ShotsF
 
       case 'player-select':
         if (!selectedTeam) return null;
-        const team = isForUs ? game.homeTeam : game.awayTeam;
+        const teamDetails = isForUs ? game.homeTeam : game.awayTeam;
+        const team = ensureTeamCompatibility(teamDetails);
+        
         const title = isForUs ? "Select Player Who Took Shot" : "Select Goalie";
         return (
           <div className="space-y-4">
