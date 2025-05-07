@@ -28,7 +28,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Invitation, UserRole, Team } from "@/types";
+import { Invitation, Team } from "@/types";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 
@@ -58,9 +58,8 @@ export default function InviteUserForm({ teams, onInvite }: InviteUserFormProps)
   const onSubmit = (values: InvitationFormValues) => {
     const invitation: Partial<Invitation> = {
       email: values.email,
-      role: values.role as UserRole,
+      role: values.role as any,
       team_id: values.teamId,
-      invitedBy: "1", // Currently logged in user ID
       status: "pending",
       created_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now

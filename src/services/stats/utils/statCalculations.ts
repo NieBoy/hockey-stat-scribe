@@ -33,11 +33,13 @@ export const createPlayerStatsFromSummary = (
   playerId: string,
   playerName: string,
   statsSummary: Map<string, { value: number, games: Set<string> }>
-): Partial<PlayerStat>[] => {
+): PlayerStat[] => {
   return Array.from(statsSummary.entries()).map(([statType, data]) => ({
+    id: `stat-${playerId}-${statType}`, // Generated temporary ID
     playerId,
+    player_id: playerId,
     statType: statType as StatType,
-    stat_type: statType as string,
+    stat_type: statType,
     value: data.value,
     gamesPlayed: data.games.size,
     games_played: data.games.size,

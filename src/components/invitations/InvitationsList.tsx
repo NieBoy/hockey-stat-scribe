@@ -1,5 +1,5 @@
 
-import { Invitation, UserRole } from "@/types";
+import { Invitation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function InvitationsList({
   onCancel,
   showActions = false 
 }: InvitationsListProps) {
-  const getRoleBadgeColor = (role: UserRole) => {
+  const getRoleBadgeColor = (role: string) => {
     switch(role) {
       case 'admin': return "bg-red-100 text-red-800";
       case 'coach': return "bg-blue-100 text-blue-800";
@@ -79,7 +79,7 @@ export default function InvitationsList({
               <div className="flex items-center text-sm text-muted-foreground">
                 <Clock className="h-3 w-3 mr-1" />
                 <span>
-                  {formatDistanceToNow(new Date(invitation.created_at || invitation.createdAt || ''), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(invitation.created_at), { addSuffix: true })}
                 </span>
               </div>
             </div>

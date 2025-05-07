@@ -49,7 +49,7 @@ export default function PlayerParents({ playerId }: PlayerParentsProps) {
           if (rolesError) throw rolesError;
           
           // Map data to parent objects
-          const parentsList = data.map(item => {
+          const parentsList: User[] = data.map(item => {
             // Find parent role
             const parentRole = rolesData?.find(role => role.user_id === item.parent_id)?.role || 'parent';
             

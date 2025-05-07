@@ -3,6 +3,7 @@ export type Role = "admin" | "user" | "coach" | "player" | "parent";
 export type Theme = "light" | "dark" | "system";
 export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus" | "faceoffs" | "hits";
 export type TeamType = "home" | "away";
+export type UserRole = "admin" | "user" | "coach" | "player" | "parent";
 
 /**
  * User
@@ -12,7 +13,7 @@ export interface User {
   name: string;
   email: string;
   avatar_url: string | null;
-  role: Role;
+  role: Role | Role[];
   // Added fields needed by components
   position?: string;
   number?: string;
@@ -40,6 +41,7 @@ export interface Team {
   players?: Player[] | User[];
   lines?: Lines;
   coaches?: User[];
+  specialTeams?: SpecialTeams;
 }
 
 /**
@@ -52,8 +54,8 @@ export interface Player {
   role: string;
   position?: string;
   line_number?: number;
-  name?: string;
-  email?: string;
+  name: string;
+  email: string;
   avatar_url?: string | null;
   number?: string;
 }
@@ -115,6 +117,7 @@ export interface GameStat {
   period: number;
   value: number;
   timestamp: string;
+  details?: string;
 }
 
 /**
@@ -163,11 +166,12 @@ export interface GameFormState {
 export interface Invitation {
   id: string;
   email: string;
-  role: Role;
+  role: UserRole;
   team_id?: string;
   created_at: string;
   expires_at: string;
   status: 'pending' | 'accepted' | 'expired';
+  invitedBy?: string;
 }
 
 /**
@@ -195,10 +199,20 @@ export interface DefenseLine {
 }
 
 /**
+ * Special teams configuration
+ */
+export interface SpecialTeams {
+  powerPlay?: any[];
+  penaltyKill?: any[];
+}
+
+/**
  * Lines for team lineup management
  */
 export interface Lines {
   forwards: ForwardLine[];
   defense: DefenseLine[];
   goalies: (Player | User | null)[];
+  specialTeams?: SpecialTeams;
 }
+

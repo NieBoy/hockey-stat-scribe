@@ -12,7 +12,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { UserRole } from '@/types';
+import { Role } from '@/types';
 
 export default function RoleManager() {
   const { user } = useAuth();
@@ -20,16 +20,16 @@ export default function RoleManager() {
   
   if (!user) return null;
   
-  const availableRoles: UserRole[] = ['admin', 'coach', 'player', 'parent'];
+  const availableRoles: Role[] = ['admin', 'coach', 'player', 'parent'];
   
-  const handleToggleRole = async (role: UserRole) => {
+  const handleToggleRole = async (role: Role) => {
     if (!user.id) return;
     
     setIsLoading(prev => ({ ...prev, [role]: true }));
     try {
       let result;
       
-      if (user.role.includes(role)) {
+      if (Array.isArray(user.role) && user.role.includes(role)) {
         // Remove role (only if they have other roles to avoid leaving user without any role)
         if (user.role.length > 1) {
           result = await removeRoleFromUser(user.id, role);
@@ -70,11 +70,15 @@ export default function RoleManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2 mb-4">
-          {user.role.map(role => (
+          {Array.isArray(user.role) ? user.role.map(role => (
             <Badge key={role} variant="default">
               {role.charAt(0).toUpperCase() + role.slice(1)}
             </Badge>
-          ))}
+          )) : (
+            <Badge variant="default">
+              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            </Badge>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -83,10 +87,10 @@ export default function RoleManager() {
               key={role}
               onClick={() => handleToggleRole(role)} 
               disabled={isLoading[role]}
-              variant={user.role.includes(role) ? "destructive" : "outline"}
+              variant={Array.isArray(user.role) && user.role.includes(role) ? "destructive" : "outline"}
               className="flex justify-between items-center"
             >
-              <span>{isLoading[role] ? 'Processing...' : user.role.includes(role) ? `Remove ${role} Role` : `Add ${role} Role`}</span>
+              <span>{isLoading[role] ? 'Processing...' : (Array.isArray(user.role) && user.role.includes(role)) ? `Remove ${role} Role` : `Add ${role} Role`}</span>
             </Button>
           ))}
         </div>
