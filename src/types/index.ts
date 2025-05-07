@@ -1,169 +1,124 @@
+export type Role = "admin" | "user";
+export type Theme = "light" | "dark" | "system";
+export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus";
+export type TeamType = "home" | "away";
 
-export type TeamBasic = {
+/**
+ * User
+ */
+export interface User {
   id: string;
   name: string;
-};
+  email: string;
+  avatar_url: string | null;
+  role: Role;
+}
 
-export type Player = {
+/**
+ * Organization
+ */
+export interface Organization {
   id: string;
   name: string;
+}
+
+/**
+ * Team
+ */
+export interface Team {
+  id: string;
+  name: string;
+  organization_id: string;
+  logo_url?: string;
+}
+
+/**
+ * Player
+ */
+export interface Player {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: string;
   position?: string;
-  number?: string;
-  email?: string;
-  lineNumber?: number;
-  teams?: TeamBasic[];
-};
+  line_number?: number;
+  name?: string;
+}
 
-// Position type definition
-export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G';
-
-export type User = {
+/**
+ * Game
+ */
+export interface Game {
   id: string;
-  name: string;
-  email?: string;
-  role?: UserRole[];
-  position?: string;
-  number?: string;
-  teams?: TeamBasic[];
-  children?: User[];
-  isAdmin?: boolean; // Add isAdmin property
-  lineNumber?: number;
-};
-
-export type UserRole = 'admin' | 'coach' | 'parent' | 'player';
-
-export type Team = TeamBasic & {
-  players: Player[];
-  coaches?: User[];
-  parents?: User[]; // Add parents property
-  lines?: Lines; // Add lines property
-};
-
-// Define Lines type
-export type Lines = {
-  forwards: ForwardLine[];
-  defense: DefensePair[];
-  goalies: User[];
-  specialTeams?: {
-    powerPlay: Record<string, User | null>;
-    penaltyKill: Record<string, User | null>;
-  };
-};
-
-export type ForwardLine = {
-  lineNumber: number;
-  leftWing: User | null;
-  center: User | null;
-  rightWing: User | null;
-};
-
-// Rename to match actual usage
-export type DefensePair = {
-  lineNumber: number;
-  leftDefense: User | null;
-  rightDefense: User | null;
-};
-
-// Alias for DefensePair to match imports
-export type DefenseLine = DefensePair;
-
-export type Game = {
-  id: string;
+  home_team_id: string;
+  away_team_id: string;
   date: string;
   location: string;
   periods: number;
   current_period: number;
   is_active: boolean;
-  isActive?: boolean; // Alias for is_active for compatibility
-  homeTeam: Team;
-  awayTeam: Team | null;
-  opponent_name?: string;
-  statTrackers?: StatTracker[];
-};
+  homeTeam: TeamDetails;
+  awayTeam: TeamDetails;
+  statTrackers: StatTracker[];
+}
 
-export type StatTracker = {
+/**
+ * Team Details
+ */
+export interface TeamDetails {
+  id: string;
+  name: string;
+  logo_url?: string;
+  players: Player[];
+}
+
+/**
+ * Stat Tracker
+ */
+export interface StatTracker {
+  id: string;
+  game_id: string;
+  user_id: string;
+  statTypes: string[];
   user: User;
-  statTypes: StatType[];
-};
+}
 
-export type GameEventType = 
-  | 'goal'
-  | 'penalty'
-  | 'faceoff'
-  | 'shot'
-  | 'hit'
-  | 'hits'
-  | 'stoppage'
-  | 'period-end'
-  | 'period-start';
-
-export type StatType = 
-  | 'goals'
-  | 'assists' 
-  | 'plusMinus' 
-  | 'savesAgainst' 
-  | 'penalties'
-  | 'pim'
-  | 'faceoffs'
-  | 'hits'
-  | 'saves';
-
-export type TeamType = 'home' | 'away';
-
-export type GameEvent = {
+/**
+ * Game stat
+ */
+export interface GameStat {
   id: string;
-  game_id: string;
-  gameId?: string; // Alias for game_id
-  event_type: GameEventType;
+  gameId?: string;
+  game_id?: string;
+  playerId?: string;
+  player_id?: string;
+  statType?: string;
+  stat_type?: string;
   period: number;
-  team_type: TeamType;
+  value: number;
   timestamp: string;
-  details?: any;
-};
+}
 
-export type GameStat = {
+/**
+ * Player stat
+ */
+export interface PlayerStat {
   id: string;
-  game_id: string;
-  gameId?: string; // Alias for game_id for compatibility
   player_id: string;
-  playerId?: string; // Alias for player_id for compatibility
-  stat_type: StatType;
-  statType?: StatType; // Alias for stat_type for compatibility
-  period: number;
+  stat_type: string;
   value: number;
-  details?: string;
-  timestamp: string;
-};
-
-export type PlayerStat = {
-  id?: string;
-  playerId: string;
+  games_played: number;
   playerName?: string;
-  statType: StatType;
-  value: number;
-  gamesPlayed: number;
-  details?: string;
-};
+}
 
-export type Invitation = {
+/**
+ * Game event
+ */
+export interface GameEvent {
   id: string;
-  email: string;
-  team_id?: string;
-  teamId?: string; // Alias for team_id
-  team_name?: string;
-  role: UserRole;
-  created_at: string;
-  createdAt?: string; // Alias for created_at
-  expires_at?: string;
-  status: 'pending' | 'accepted' | 'declined';
-  invitedBy?: string;
-};
-
-// Update GameFormState type
-export type GameFormState = {
-  date: Date;
-  homeTeam: string;
-  opponentName: string;
-  location: string;
-  periods: number;
-};
+  game_id: string;
+  event_type: string;
+  period: number;
+  team_type: string;
+  timestamp: string;
+}
