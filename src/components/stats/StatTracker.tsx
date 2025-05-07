@@ -1,9 +1,10 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Game, StatType, GameStat } from "@/types";
+import { Game, StatType, GameStat, User } from "@/types";
 import PeriodSelector from "./PeriodSelector";
 import TeamStats from "./TeamStats";
+import { convertPlayersToUsers } from "@/utils/typeConversions";
 
 interface StatTrackerProps {
   game: Game;
@@ -20,7 +21,10 @@ export default function StatTracker({
 }: StatTrackerProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
 
-  const allPlayers = [...game.homeTeam.players, ...game.awayTeam.players];
+  // Convert all players to User type
+  const homeTeamPlayers = convertPlayersToUsers(game.homeTeam.players);
+  const awayTeamPlayers = convertPlayersToUsers(game.awayTeam.players);
+  const allPlayers = [...homeTeamPlayers, ...awayTeamPlayers];
 
   const getTeamName = (playerId: string): string => {
     const homePlayer = game.homeTeam.players.find(p => p.id === playerId);
@@ -38,8 +42,7 @@ export default function StatTracker({
       player_id: playerId,
       stat_type: statType,
       period: selectedPeriod,
-      value,
-      details: ""
+      value
     };
     
     onStatRecorded(newStat);

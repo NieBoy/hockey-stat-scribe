@@ -14,15 +14,16 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
 
     return stats.filter(stat => {
       const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-        p => p.id === stat.playerId
+        p => p.id === stat.playerId || p.id === stat.player_id
       );
       
       const playerName = player?.name || "";
       const matchesSearch = playerName.toLowerCase().includes(search.toLowerCase());
-      const matchesStatType = statTypeFilter === "all" || stat.statType === statTypeFilter;
+      const statType = stat.statType || stat.stat_type;
+      const matchesStatType = statTypeFilter === "all" || statType === statTypeFilter;
       const matchesPeriod = periodFilter === "all" || stat.period.toString() === periodFilter;
       
-      const isHomeTeam = game.homeTeam.players.some(p => p.id === stat.playerId);
+      const isHomeTeam = game.homeTeam.players.some(p => p.id === (stat.playerId || stat.player_id));
       const matchesTeam = teamFilter === "all" || 
         (teamFilter === "home" && isHomeTeam) || 
         (teamFilter === "away" && !isHomeTeam);
@@ -36,12 +37,12 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
 
     filteredStats.forEach(stat => {
       const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-        p => p.id === stat.playerId
+        p => p.id === (stat.playerId || stat.player_id)
       );
       
       if (!player) return;
 
-      const isHomeTeam = game.homeTeam.players.some(p => p.id === stat.playerId);
+      const isHomeTeam = game.homeTeam.players.some(p => p.id === (stat.playerId || stat.player_id));
       const key = player.id;
 
       if (!playerStats.has(key)) {
@@ -55,15 +56,17 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       }
 
       const playerStat = playerStats.get(key);
+      const statType = stat.statType || stat.stat_type;
+      const value = Number(stat.value);
 
-      if (stat.statType === "goals") {
-        playerStat.goals += Number(stat.value);
-      } else if (stat.statType === "assists") {
-        playerStat.assists += Number(stat.value);
-      } else if (stat.statType === "plusMinus") {
-        // Simply add the numeric value
-        playerStat.plusMinus += Number(stat.value);
-        console.log(`[Filter] Player ${player.name} plusMinus update: ${stat.value} (total: ${playerStat.plusMinus})`);
+      if (statType === "goals") {
+        playerStat.goals += value;
+      } else if (statType === "assists") {
+        playerStat.assists += value;
+      } else if (statType === "plusMinus") {
+        // Add the numeric value directly (can be positive or negative)
+        playerStat.plusMinus += value;
+        console.log(`[Filter] Player ${player.name} plusMinus update: ${value} (total: ${playerStat.plusMinus})`);
       }
     });
 

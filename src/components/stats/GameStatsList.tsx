@@ -50,15 +50,17 @@ export default function GameStatsList({ gameStats, game, onDelete }: GameStatsLi
             <tbody>
               {gameStats.map((stat) => {
                 const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-                  p => p.id === stat.playerId
+                  p => p.id === stat.playerId || p.id === stat.player_id
                 );
+                const statType = stat.statType || stat.stat_type;
+                const value = stat.value;
                 return (
                   <tr key={stat.id} className="border-b">
                     <td className="py-2">{player?.name || 'Unknown Player'}</td>
-                    <td className="py-2 capitalize">{stat.statType}</td>
+                    <td className="py-2 capitalize">{statType}</td>
                     <td className="py-2">{stat.period}</td>
-                    <td className={`py-2 ${getValueClass(stat.statType, stat.value)}`}>
-                      {formatStatValue(stat.statType, stat.value)}
+                    <td className={`py-2 ${getValueClass(statType, value)}`}>
+                      {formatStatValue(statType, value)}
                     </td>
                     <td className="py-2">
                       <Button 

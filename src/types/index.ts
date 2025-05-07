@@ -38,7 +38,7 @@ export interface Team {
   logo_url?: string;
   // Added fields used in components
   players?: Player[] | User[];
-  lines?: any[];
+  lines?: Lines;
   coaches?: User[];
 }
 
@@ -55,6 +55,7 @@ export interface Player {
   name?: string;
   email?: string;
   avatar_url?: string | null;
+  number?: string;
 }
 
 /**
@@ -85,9 +86,8 @@ export interface TeamDetails {
   name: string;
   logo_url?: string;
   players: Player[];
-  // Make organization_id required to match Team interface
-  organization_id: string;
-  lines?: any[];
+  organization_id?: string;
+  lines?: Lines;
 }
 
 /**
@@ -163,7 +163,7 @@ export interface GameFormState {
 export interface Invitation {
   id: string;
   email: string;
-  role: UserRole;
+  role: Role;
   team_id?: string;
   created_at: string;
   expires_at: string;
@@ -171,6 +171,34 @@ export interface Invitation {
 }
 
 /**
- * User Role
+ * Position type for lineup management
  */
-export type UserRole = 'admin' | 'coach' | 'player' | 'parent' | 'user';
+export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G' | '';
+
+/**
+ * Forward line for lineup management
+ */
+export interface ForwardLine {
+  lineNumber: number;
+  leftWing: Player | User | null;
+  center: Player | User | null;
+  rightWing: Player | User | null;
+}
+
+/**
+ * Defense pair for lineup management
+ */
+export interface DefenseLine {
+  lineNumber: number;
+  leftDefense: Player | User | null;
+  rightDefense: Player | User | null;
+}
+
+/**
+ * Lines for team lineup management
+ */
+export interface Lines {
+  forwards: ForwardLine[];
+  defense: DefenseLine[];
+  goalies: (Player | User | null)[];
+}

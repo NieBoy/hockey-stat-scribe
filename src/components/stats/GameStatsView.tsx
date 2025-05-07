@@ -25,14 +25,17 @@ const GameStatsView: React.FC<GameStatsViewProps> = ({ gameStats, gameEvents, ga
   // Filter stats by selected game
   const filteredStats = selectedGame === "all" 
     ? gameStats 
-    : gameStats.filter(stat => stat.gameId === selectedGame);
+    : gameStats.filter(stat => stat.gameId === selectedGame || stat.game_id === selectedGame);
 
   // Group stats by game for display
   const statsByGame = filteredStats.reduce((acc, stat) => {
-    if (!acc[stat.gameId]) {
-      acc[stat.gameId] = [];
+    const gameId = stat.gameId || stat.game_id;
+    if (!gameId) return acc;
+    
+    if (!acc[gameId]) {
+      acc[gameId] = [];
     }
-    acc[stat.gameId].push(stat);
+    acc[gameId].push(stat);
     return acc;
   }, {} as Record<string, GameStat[]>);
 
@@ -88,23 +91,24 @@ const GameStatsView: React.FC<GameStatsViewProps> = ({ gameStats, gameEvents, ga
                       <TableHead>Stat Type</TableHead>
                       <TableHead>Period</TableHead>
                       <TableHead className="text-right">Value</TableHead>
-                      <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {statsByGame[gameId].map(stat => (
-                      <TableRow key={stat.id}>
-                        <TableCell className="capitalize">{formatStatType(stat.statType)}</TableCell>
-                        <TableCell>{stat.period}</TableCell>
-                        <TableCell className={`text-right ${stat.statType === 'plusMinus' ? 
-                          (stat.details === 'plus' ? 'text-green-600' : 'text-red-600') : ''}`}>
-                          {stat.statType === 'plusMinus' ? 
-                            (stat.details === 'plus' ? `+${stat.value}` : `-${stat.value}`) : 
-                            stat.value}
-                        </TableCell>
-                        <TableCell>{formatDetails(stat.statType, stat.details || '-')}</TableCell>
-                      </TableRow>
-                    ))}
+                    {statsByGame[gameId].map(stat => {
+                      const statType = stat.statType || stat.stat_type || '';
+                      return (
+                        <TableRow key={stat.id}>
+                          <TableCell className="capitalize">{formatStatType(statType)}</TableCell>
+                          <TableCell>{stat.period}</TableCell>
+                          <TableCell className={`text-right ${statType === 'plusMinus' ? 
+                            (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}>
+                            {statType === 'plusMinus' ? 
+                              (stat.value > 0 ? `+${stat.value}` : stat.value) : 
+                              stat.value}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -139,14 +143,6 @@ const formatStatType = (type: string): string => {
     case 'faceoff_losses': return 'Faceoff Loss';
     default: return type;
   }
-};
-
-// Helper function to format details for display
-const formatDetails = (statType: string, details: string): string => {
-  if (statType === 'plusMinus') {
-    return details === 'plus' ? 'On ice for team goal' : 'On ice for opponent goal';
-  }
-  return details === '-' ? '-' : details;
 };
 
 export default GameStatsView;

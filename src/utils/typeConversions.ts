@@ -21,7 +21,8 @@ export function convertPlayerToUser(player: Player): User {
     email: player.email || '',
     avatar_url: player.avatar_url || null,
     role: player.role as any,
-    position: player.position
+    position: player.position,
+    number: player.number
   };
 }
 

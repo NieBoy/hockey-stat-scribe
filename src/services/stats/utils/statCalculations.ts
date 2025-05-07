@@ -13,11 +13,12 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
-    // Simply add the value, regardless of the stat type
-    currentStat.value += Number(stat.value);
+    // Simply add the numeric value for all stats including plusMinus
+    const numericValue = Number(stat.value);
+    currentStat.value += numericValue;
     
     if (statType === 'plusMinus') {
-      console.log(`Adding ${stat.value} to plusMinus total (now ${currentStat.value})`);
+      console.log(`Adding ${numericValue} to plusMinus total (now ${currentStat.value})`);
     }
     
     currentStat.games.add(stat.game_id);
@@ -36,8 +37,10 @@ export const createPlayerStatsFromSummary = (
   return Array.from(statsSummary.entries()).map(([statType, data]) => ({
     playerId,
     statType: statType as StatType,
+    stat_type: statType as string,
     value: data.value,
     gamesPlayed: data.games.size,
+    games_played: data.games.size,
     playerName
   }));
 };
@@ -54,11 +57,14 @@ export const calculateAggregateValue = (gameStats: any[], statType: string): num
   gameStats.forEach(stat => {
     if (stat.stat_type !== statType) return;
     
-    // Simply add the value for all stat types including plusMinus
-    total += Number(stat.value);
+    // Ensure we're working with a numeric value
+    const numericValue = Number(stat.value);
+    
+    // Add the numeric value directly
+    total += numericValue;
     
     if (statType === 'plusMinus') {
-      console.log(`[Aggregate] Adding ${stat.value} to plusMinus total (now ${total})`);
+      console.log(`[Aggregate] Adding ${numericValue} to plusMinus total (now ${total})`);
     }
   });
   
