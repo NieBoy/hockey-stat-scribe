@@ -20,11 +20,7 @@ export const recordShotEvent = async (data: ShotEventData) => {
         p_game_id: data.gameId,
         p_event_type: 'shot',
         p_period: data.period,
-        p_team_type: data.teamType,
-        p_details: {
-          playerId: data.playerId,
-          isForUs: data.isForUs
-        }
+        p_team_type: data.teamType
       });
 
     if (eventError) throw eventError;

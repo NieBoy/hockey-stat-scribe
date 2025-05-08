@@ -20,13 +20,7 @@ export const recordPenaltyEvent = async (data: PenaltyEventData) => {
         p_game_id: data.gameId,
         p_event_type: 'penalty',
         p_period: data.period,
-        p_team_type: data.teamType,
-        p_details: {
-          playerId: data.playerId,
-          penaltyType: data.penaltyType,
-          duration: data.duration,
-          additionalPenalty: data.additionalPenalty
-        }
+        p_team_type: data.teamType
       });
 
     if (eventError) throw eventError;

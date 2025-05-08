@@ -20,8 +20,7 @@ export const recordHitEvent = async (data: HitEventData) => {
         p_game_id: data.gameId,
         p_event_type: 'hits',
         p_period: data.period,
-        p_team_type: data.teamType,
-        p_details: { playerId: data.playerId }
+        p_team_type: data.teamType
       });
 
     if (eventError) {

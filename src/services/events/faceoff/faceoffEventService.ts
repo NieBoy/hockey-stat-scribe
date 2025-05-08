@@ -20,11 +20,7 @@ export const recordFaceoffEvent = async (data: FaceoffEventData) => {
         p_game_id: data.gameId,
         p_event_type: 'faceoff',
         p_period: data.period,
-        p_team_type: data.teamType,
-        p_details: {
-          playerId: data.playerId,
-          isWon: data.isWon
-        }
+        p_team_type: data.teamType
       });
 
     if (eventError) throw eventError;

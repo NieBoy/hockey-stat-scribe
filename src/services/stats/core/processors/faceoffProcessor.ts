@@ -15,7 +15,7 @@ export const processFaceoffEvent = async (event: any, playerId: string, details:
         playerId,
         'faceoffs',
         event.period,
-        won ? 'won' : 'lost'
+        won ? 1 : 0
       );
     }
     return false;

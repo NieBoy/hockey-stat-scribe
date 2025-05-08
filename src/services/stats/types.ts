@@ -24,7 +24,6 @@ export interface PlayerStatWithMetadata {
   statType: string;       // Type of statistic (goals, assists, etc)
   value: number;          // Numerical value of the stat
   gamesPlayed: number;    // Number of games this stat covers
-  details?: string;       // Optional additional details
 }
 
 /**
@@ -47,7 +46,6 @@ export interface GameStatRecord {
   period: number;         // Game period when this stat occurred
   value: number;          // Value of the stat
   timestamp: string;      // When the stat was recorded
-  details?: string;       // Optional additional details
 }
 
 /**

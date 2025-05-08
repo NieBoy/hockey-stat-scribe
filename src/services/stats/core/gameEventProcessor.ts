@@ -45,7 +45,7 @@ export const processEventsToStats = async (playerId: string, events: any[]): Pro
         
         // Process plus/minus for players on ice
         if (Array.isArray(details.playersOnIce) && details.playersOnIce.includes(playerId)) {
-          await recordStat(event.game_id, playerId, 'plusMinus', event.period, 1, 'plus');
+          await recordStat(event.game_id, playerId, 'plusMinus', event.period, 1);
           processedCount++;
         }
       }
@@ -78,7 +78,7 @@ export const processEventsToStats = async (playerId: string, events: any[]): Pro
         
         // Process faceoff win
         if (details.winnerId === playerId) {
-          await recordStat(event.game_id, playerId, 'faceoffs', event.period, 1, 'win');
+          await recordStat(event.game_id, playerId, 'faceoffs', event.period, 1);
           processedCount++;
         }
       }
@@ -117,15 +117,13 @@ export const createGameStatsFromEvents = async (playerId: string, events: any[])
  * @param statType Type of stat
  * @param period Game period
  * @param value Stat value
- * @param details Optional details
  */
 async function recordStat(
   gameId: string, 
   playerId: string, 
   statType: string, 
   period: number, 
-  value: number, 
-  details: string = ''
+  value: number
 ): Promise<void> {
   try {
     const { data, error } = await supabase.rpc('record_game_stat', {
@@ -133,8 +131,7 @@ async function recordStat(
       p_player_id: playerId,
       p_stat_type: statType,
       p_period: period,
-      p_value: value,
-      p_details: details
+      p_value: value
     });
     
     if (error) {
