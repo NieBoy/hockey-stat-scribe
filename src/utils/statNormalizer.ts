@@ -12,7 +12,8 @@ export function normalizeGameStat(stat: GameStat): GameStat {
     playerId: stat.playerId || stat.player_id,
     player_id: stat.player_id || stat.playerId || '',
     statType: stat.statType || stat.stat_type,
-    stat_type: stat.stat_type || stat.statType || ''
+    stat_type: stat.stat_type || stat.statType || '',
+    details: stat.details || ''
   };
 }
 
@@ -29,7 +30,8 @@ export function normalizePlayerStat(stat: Partial<PlayerStat>): PlayerStat {
     playerId: stat.playerId || stat.player_id || '',
     statType: stat.statType || stat.stat_type || '',
     gamesPlayed: stat.gamesPlayed || stat.games_played || 0,
-    playerName: stat.playerName || ''
+    playerName: stat.playerName || '',
+    details: stat.details || ''
   };
 }
 

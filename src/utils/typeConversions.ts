@@ -1,34 +1,80 @@
 
-import { Team, TeamDetails, User, Player } from "@/types";
+import { User, Player, Team, Role, TeamDetails } from '@/types';
 
 /**
- * Convert TeamDetails to conform to Team interface
+ * Converts a Player object to a User object
  */
-export function ensureTeamCompatibility(teamDetails: TeamDetails): Team {
-  return {
-    ...teamDetails,
-    organization_id: teamDetails.organization_id || '',
-  };
-}
-
-/**
- * Convert Player to User
- */
-export function convertPlayerToUser(player: Player): User {
+export function playerToUser(player: Player): User {
+  // Convert string role to Role type when needed
+  const roleValue: Role | Role[] = typeof player.role === 'string' 
+    ? player.role as Role 
+    : (player.role as Role[]);
+    
   return {
     id: player.id,
-    name: player.name || '',
-    email: player.email || '',
-    avatar_url: player.avatar_url || null,
-    role: player.role as any,
+    name: player.name,
+    email: player.email,
+    avatar_url: player.avatar_url,
+    role: roleValue,
     position: player.position,
-    number: player.number
+    number: player.number,
+    lineNumber: player.lineNumber,
+    teams: player.teams
   };
 }
 
 /**
- * Convert array of Players to Users
+ * Converts an array of Player objects to User objects
  */
 export function convertPlayersToUsers(players: Player[]): User[] {
-  return players.map(convertPlayerToUser);
+  return players.map(playerToUser);
+}
+
+/**
+ * Ensures a team object has the right shape for components expecting Team type
+ */
+export function ensureTeamCompatibility(teamData: any): Team {
+  if (!teamData) return null;
+  
+  // Make sure players exists and is an array
+  const players = Array.isArray(teamData.players) ? teamData.players : [];
+  
+  return {
+    id: teamData.id || '',
+    name: teamData.name || '',
+    players: players,
+    coaches: Array.isArray(teamData.coaches) ? teamData.coaches : [],
+    parents: Array.isArray(teamData.parents) ? teamData.parents : [],
+    organization_id: teamData.organization_id || ''
+  };
+}
+
+/**
+ * Ensures a team details object has the right shape
+ */
+export function ensureTeamDetailsCompatibility(teamData: any): TeamDetails {
+  if (!teamData) return null;
+  
+  return {
+    id: teamData.id || '',
+    name: teamData.name || '',
+    players: Array.isArray(teamData.players) ? teamData.players : [],
+    coaches: Array.isArray(teamData.coaches) ? teamData.coaches : [],
+    organization_id: teamData.organization_id || ''
+  };
+}
+
+/**
+ * Ensures a Game object has the required properties
+ */
+export function ensureGameCompatibility(gameData: any): any {
+  if (!gameData) return null;
+  
+  return {
+    ...gameData,
+    home_team_id: gameData.home_team_id || (gameData.homeTeam?.id || ''),
+    away_team_id: gameData.away_team_id || (gameData.awayTeam?.id || ''),
+    homeTeam: ensureTeamDetailsCompatibility(gameData.homeTeam),
+    awayTeam: ensureTeamDetailsCompatibility(gameData.awayTeam)
+  };
 }

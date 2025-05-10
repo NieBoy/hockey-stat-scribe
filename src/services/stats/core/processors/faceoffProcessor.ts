@@ -1,4 +1,3 @@
-
 import { createGameStat } from '../utils/statsDbUtils';
 
 export const processFaceoffEvent = async (event: any, playerId: string, details: any): Promise<boolean> => {
@@ -15,7 +14,7 @@ export const processFaceoffEvent = async (event: any, playerId: string, details:
         playerId,
         'faceoffs',
         event.period,
-        won ? 1 : 0
+        won ? "1" : "0"
       );
     }
     return false;

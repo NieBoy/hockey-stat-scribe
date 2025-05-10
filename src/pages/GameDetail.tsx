@@ -1,93 +1,245 @@
-
-import { Link } from "react-router-dom";
-import MainLayout from "@/components/layout/MainLayout";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getGameById } from "@/services/games";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { useGameDetail } from "@/hooks/useGameDetail";
-import { GameInformation } from "@/components/games/GameInformation";
-import { GameActions } from "@/components/games/GameActions";
-import { GameTabs } from "@/components/games/GameTabs";
+import GameStats from "@/components/stats/GameStats";
+import { Game } from "@/types";
+import { useGameStats } from "@/hooks/useGameStats";
+import GameStatsList from "@/components/stats/GameStatsList";
+import StatTracker from "@/components/stats/StatTracker";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { useGameTrackers } from "@/hooks/useGameTrackers";
+import { useGameEvents } from "@/hooks/useGameEvents";
+import GameEventsTimeline from "@/components/events/GameEventsTimeline";
+import GameEventButtons from "@/components/events/GameEventButtons";
+import { useGamePeriods } from "@/hooks/useGamePeriods";
+import { useGameStatus } from "@/hooks/useGameStatus";
+import GameStatusControls from "@/components/games/GameStatusControls";
+import GameScoreDisplay from "@/components/games/GameScoreDisplay";
+import { useGameScore } from "@/hooks/useGameScore";
+import AdvancedStatsView from "@/components/stats/advanced-stats/AdvancedStatsView";
 
 export default function GameDetail() {
-  const {
-    game,
-    isLoading,
-    error,
-    isStatTracker,
-    assignedStatTypes,
-    isCoach,
-    id
-  } = useGameDetail();
+  const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [statType, setStatType] = useState<"basic" | "advanced">("basic");
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["games", gameId],
+    queryFn: () => getGameById(gameId || ""),
+    enabled: !!gameId,
+  });
+
+  const { gameStats, handleStatRecorded, handleStatDeleted } = useGameStats(gameId || "");
+  const { isTracker, statTypes } = useGameTrackers(gameId || "", user?.id);
+  const { events, addEvent } = useGameEvents(gameId || "");
+  const { currentPeriod, setCurrentPeriod } = useGamePeriods(data);
+  const { isActive, toggleGameStatus } = useGameStatus(gameId || "", data?.is_active);
+  const { homeScore, awayScore } = useGameScore(gameId || "");
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load game details");
+    }
+  }, [error]);
 
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!data) {
     return (
-      <MainLayout>
-        <div className="container mx-auto p-4 flex items-center justify-center h-64">
-          <LoadingSpinner />
-        </div>
-      </MainLayout>
+      <Card>
+        <CardContent className="pt-6">
+          <p>Game not found</p>
+          <Button onClick={() => navigate("/games")} className="mt-4">
+            Back to Games
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  if (error || !game) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4">
-          <div className="flex flex-col items-center justify-center h-64 space-y-4">
-            <h2 className="text-2xl font-bold">Game not found</h2>
-            <p className="text-muted-foreground">
-              The game you're looking for doesn't exist or there was an error loading it.
-            </p>
-            <Button asChild>
-              <Link to="/games">Return to Games</Link>
-            </Button>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
+  // Ensure the game data has all required fields
+  const gameData: Game = {
+    ...data,
+    home_team_id: data.home_team_id || data.homeTeam?.id,
+    away_team_id: data.away_team_id || data.awayTeam?.id,
+    homeTeam: data.homeTeam,
+    awayTeam: data.awayTeam
+  };
 
-  // Display team name or opponent name based on what's available
-  const awayTeamOrOpponentName = game.opponent_name || 
-    (game.awayTeam ? game.awayTeam.name : "Unknown Opponent");
+  const handleGoBack = () => {
+    navigate("/games");
+  };
+
+  const handlePeriodChange = (period: number) => {
+    setCurrentPeriod(period);
+  };
+
+  const handleToggleGameStatus = async () => {
+    const success = await toggleGameStatus();
+    if (success) {
+      refetch();
+    }
+  };
+
+  const formattedDate = data.date ? format(new Date(data.date), "MMMM d, yyyy") : "Unknown date";
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="mb-6">
-          <Button variant="ghost" className="gap-1 mb-4" asChild>
-            <Link to="/games">
-              <ChevronLeft className="h-4 w-4" /> Back to Games
-            </Link>
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-1">Game Details</h1>
-              <p className="text-muted-foreground">
-                {game.homeTeam.name} vs {awayTeamOrOpponentName}
-              </p>
+    <div className="container py-6">
+      <div className="mb-6">
+        <Button variant="ghost" onClick={handleGoBack} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Games
+        </Button>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {data.homeTeam.name} vs {data.awayTeam.name || data.opponent_name}
+            </h1>
+            <div className="flex items-center gap-4 text-muted-foreground mt-1">
+              <div className="flex items-center">
+                <Calendar className="mr-1 h-4 w-4" />
+                {formattedDate}
+              </div>
+              {data.location && (
+                <div className="flex items-center">
+                  <MapPin className="mr-1 h-4 w-4" />
+                  {data.location}
+                </div>
+              )}
             </div>
-            <GameActions
-              gameId={id!}
-              isCoach={isCoach}
-              isStatTracker={isStatTracker}
-              assignedStatTypes={assignedStatTypes}
-            />
           </div>
-        </div>
 
-        <GameInformation game={game} />
-
-        <div className="mt-6">
-          <GameTabs
-            gameId={id!}
-            isCoach={isCoach}
-            isStatTracker={isStatTracker}
-            assignedStatTypes={assignedStatTypes}
+          <GameScoreDisplay
+            homeTeam={data.homeTeam.name}
+            awayTeam={data.awayTeam.name || data.opponent_name || "Opponent"}
+            homeScore={homeScore}
+            awayScore={awayScore}
           />
         </div>
+
+        <GameStatusControls
+          isActive={isActive}
+          currentPeriod={currentPeriod}
+          totalPeriods={data.periods || 3}
+          onPeriodChange={handlePeriodChange}
+          onToggleStatus={handleToggleGameStatus}
+        />
       </div>
-    </MainLayout>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
+          <TabsTrigger value="events">Events</TabsTrigger>
+          {isTracker && <TabsTrigger value="track">Track Stats</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Game Overview</CardTitle>
+              <CardDescription>
+                {data.homeTeam.name} vs {data.awayTeam.name || data.opponent_name}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-medium mb-2">Home Team</h3>
+                  <p>{data.homeTeam.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {data.homeTeam.players?.length || 0} players
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-medium mb-2">Away Team</h3>
+                  <p>{data.awayTeam.name || data.opponent_name || "Unknown Opponent"}</p>
+                  {data.awayTeam.players && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {data.awayTeam.players?.length || 0} players
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <GameEventsTimeline events={events} game={gameData} />
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <div className="mb-4">
+            <div className="flex space-x-2">
+              <Button
+                variant={statType === "basic" ? "default" : "outline"}
+                onClick={() => setStatType("basic")}
+              >
+                Basic Stats
+              </Button>
+              <Button
+                variant={statType === "advanced" ? "default" : "outline"}
+                onClick={() => setStatType("advanced")}
+              >
+                Advanced Stats
+              </Button>
+            </div>
+          </div>
+
+          {statType === "basic" ? (
+            <GameStats gameId={gameId || ""} />
+          ) : (
+            <AdvancedStatsView game={gameData} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="events">
+          <Card>
+            <CardHeader>
+              <CardTitle>Game Events</CardTitle>
+              <CardDescription>Record goals and other game events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GameEventButtons
+                game={gameData}
+                period={currentPeriod}
+                onEventAdded={addEvent}
+              />
+            </CardContent>
+          </Card>
+
+          <GameEventsTimeline events={events} game={gameData} />
+        </TabsContent>
+
+        {isTracker && (
+          <TabsContent value="track">
+            <StatTracker
+              game={gameData}
+              statTypes={statTypes}
+              onStatRecorded={handleStatRecorded}
+              existingStats={gameStats}
+            />
+
+            <GameStatsList
+              gameStats={gameStats}
+              game={gameData}
+              onDelete={handleStatDeleted}
+            />
+          </TabsContent>
+        )}
+      </Tabs>
+    </div>
   );
 }

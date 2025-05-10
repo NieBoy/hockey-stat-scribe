@@ -1,147 +1,83 @@
+import React from 'react';
+import { Invitation } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCheck, MailWarning } from 'lucide-react';
 
-import { useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import InviteUserForm from "@/components/invitations/InviteUserForm";
-import InvitationsList from "@/components/invitations/InvitationsList";
-import { Invitation, UserRole } from "@/types";
-import { currentUser, mockTeams } from "@/lib/mock-data";
-import { toast } from "sonner";
-
-// Mock invitations data
-const mockSentInvitations: Invitation[] = [
+const mockInvitations: Invitation[] = [
   {
     id: '1',
-    email: 'newplayer@example.com',
-    role: 'player',
-    team_id: '1',
-    invitedBy: '1',
-    status: 'pending',
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    email: 'coach1@example.com',
+    team_id: 'team-1', // Add this required field
+    role: 'coach',
+    status: 'accepted',
+    created_at: '2023-01-01T00:00:00Z',
+    invitedBy: 'John Smith' 
   },
   {
     id: '2',
-    email: 'newcoach@example.com',
-    role: 'coach',
-    invitedBy: '1',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-  }
-];
-
-const mockReceivedInvitations: Invitation[] = [
+    email: 'player2@example.com',
+    team_id: 'team-2', // Add this required field
+    role: 'player',
+    status: 'pending',
+    created_at: '2023-02-15T00:00:00Z',
+    invitedBy: 'Alice Johnson'
+  },
   {
     id: '3',
-    email: currentUser.email,
-    role: 'admin',
-    team_id: '2',
-    invitedBy: '6',
+    email: 'parent3@example.com',
+    team_id: 'team-1', // Add this required field
+    role: 'parent',
     status: 'pending',
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-  }
+    created_at: '2023-03-20T00:00:00Z',
+    invitedBy: 'Bob Williams'
+  },
 ];
 
-export default function Invitations() {
-  const [sentInvitations, setSentInvitations] = useState<Invitation[]>(mockSentInvitations);
-  const [receivedInvitations, setReceivedInvitations] = useState<Invitation[]>(mockReceivedInvitations);
-  const [activeTab, setActiveTab] = useState("received");
-  
-  // Get teams accessible to the current user
-  const userTeams = mockTeams;
-
-  const handleAcceptInvitation = (id: string) => {
-    setReceivedInvitations(invitations =>
-      invitations.map(inv => 
-        inv.id === id ? { ...inv, status: 'accepted' } : inv
-      )
-    );
-    toast.success("Invitation accepted", {
-      description: "You have been added to the team",
-    });
-  };
-
-  const handleDeclineInvitation = (id: string) => {
-    setReceivedInvitations(invitations =>
-      invitations.map(inv => 
-        inv.id === id ? { ...inv, status: 'declined' } : inv
-      )
-    );
-    toast.info("Invitation declined");
-  };
-
-  const handleCancelInvitation = (id: string) => {
-    setSentInvitations(invitations => invitations.filter(inv => inv.id !== id));
-    toast.info("Invitation canceled");
-  };
-
-  const handleResendInvitation = (id: string) => {
-    toast.success("Invitation resent", {
-      description: "The invitation has been sent again",
-    });
-  };
-
-  const handleInvite = (invitation: Partial<Invitation>) => {
-    const newInvitation: Invitation = {
-      id: Date.now().toString(),
-      email: invitation.email || "",
-      role: invitation.role || "player",
-      team_id: invitation.team_id,
-      invitedBy: currentUser.id,
-      status: "pending",
-      created_at: new Date().toISOString(),
-    };
-    
-    setSentInvitations([newInvitation, ...sentInvitations]);
-  };
-
+const Invitations = () => {
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Invitations</h1>
-          <p className="text-muted-foreground">
-            Manage invitations to your teams
-          </p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 w-full max-w-md">
-            <TabsTrigger value="received">Received</TabsTrigger>
-            <TabsTrigger value="sent">Sent</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="received" className="mt-4 space-y-4">
-            <h2 className="text-xl font-semibold">Invitations Received</h2>
-            <InvitationsList 
-              invitations={receivedInvitations}
-              onAccept={handleAcceptInvitation}
-              onDecline={handleDeclineInvitation}
-            />
-          </TabsContent>
-
-          <TabsContent value="sent" className="mt-4 space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Send New Invitation</h2>
-                <InviteUserForm 
-                  teams={userTeams}
-                  onInvite={handleInvite}
-                />
-              </div>
-              
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Sent Invitations</h2>
-                <InvitationsList 
-                  invitations={sentInvitations}
-                  onResend={handleResendInvitation}
-                  onCancel={handleCancelInvitation}
-                  showActions={true}
-                />
+    <div className="container mx-auto py-10">
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Invitations</CardTitle>
+          <CardContent>
+            Manage your team invitations here.
+          </CardContent>
+        </CardHeader>
+        <CardContent>
+          {mockInvitations.map((invitation) => (
+            <div key={invitation.id} className="mb-4 p-4 border rounded-md">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-lg font-semibold">{invitation.email}</p>
+                  <p className="text-sm text-gray-500">
+                    Invited by: {invitation.invitedBy}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Date: {new Date(invitation.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  {invitation.status === 'pending' && (
+                    <Badge variant="secondary" className="gap-1.5">
+                      <MailWarning className="h-4 w-4" />
+                      Pending
+                    </Badge>
+                  )}
+                  {invitation.status === 'accepted' && (
+                    <Badge variant="outline" className="gap-1.5">
+                      <CheckCheck className="h-4 w-4" />
+                      Accepted
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </MainLayout>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
-}
+};
+
+export default Invitations;

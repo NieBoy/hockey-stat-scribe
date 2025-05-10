@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -159,7 +158,7 @@ export default function PlayerDetail() {
                 </TabsContent>
                 
                 <TabsContent value="parents" className="space-y-4">
-                  <PlayerParents player={player} />
+                  <PlayerParents playerId={player.id} />
                 </TabsContent>
               </Tabs>
             )}

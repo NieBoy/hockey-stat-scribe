@@ -9,10 +9,11 @@ export interface PlayerStat {
   value: number;
   games_played: number;
   playerName?: string;
-  // Add alias properties to accommodate both naming conventions
+  // Alias properties to accommodate both naming conventions
   statType?: string;
   playerId?: string;
   gamesPlayed?: number;
+  details?: string | any; // Add details field
 }
 
 /**
@@ -54,7 +55,7 @@ export interface TeamBasic {
 }
 
 /**
- * Player type
+ * Player type - structuring to match User type better
  */
 export interface Player {
   id: string;
@@ -62,7 +63,7 @@ export interface Player {
   email?: string;
   team_id?: string;
   user_id?: string;
-  role: string | Role[];
+  role: Role | Role[] | string; // Allow string to support conversion functions
   position?: Position;
   number?: string;
   avatar_url?: string | null;
@@ -79,8 +80,9 @@ export interface Team {
   players?: (User | Player)[];
   coaches?: User[];
   parents?: User[];
-  organization_id: string;
+  organization_id?: string; // Making it optional to fix errors
   lines?: Lines;
+  created_at?: string; // Add created_at for compatibility
 }
 
 /**
@@ -102,12 +104,13 @@ export interface Game {
   date: string;
   location?: string;
   home_team_id: string;
-  away_team_id: string;
+  away_team_id?: string; // Making optional to match some data patterns
   periods?: number;
   current_period?: number;
   is_active?: boolean;
   isActive?: boolean;
   opponent_name?: string;
+  opponent_id?: string;
   homeTeam: TeamDetails;
   awayTeam: TeamDetails;
   statTrackers?: { user: any; statTypes: string[] }[]; // Add nested structure for statTrackers
@@ -153,14 +156,31 @@ export interface GameStat {
   game_id: string;
   player_id: string;
   player_name?: string;
-  stat_type: StatType;
+  stat_type: string;
   period: number;
   value: number;
   timestamp: string;
+  details?: string | any; // Add details field
   // Add alias properties to accommodate both naming conventions
   gameId?: string;
   playerId?: string;
   statType?: string;
+}
+
+/**
+ * Game event type
+ */
+export interface GameEvent {
+  id: string;
+  game_id: string;
+  period: number;
+  time_in_period?: any;
+  timestamp: string;
+  created_by?: string;
+  created_at: string;
+  details?: any;
+  event_type: string;
+  team_type: string;
 }
 
 /**
@@ -199,5 +219,5 @@ export interface Lines {
   forwards: ForwardLine[];
   defense: DefensePair[];
   goalies: (User | null)[];
-  specialTeams?: any; // Adding this for RosterContainer.tsx
+  specialTeams?: Record<string, User> | any; // Adding this for RosterContainer.tsx
 }

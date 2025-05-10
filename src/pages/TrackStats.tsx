@@ -1,101 +1,102 @@
-import { useParams, Link } from "react-router-dom";
-import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft } from "lucide-react";
-import StatTracker from "@/components/stats/StatTracker";
-import { useAuth } from "@/hooks/useAuth";
-import { getGameById } from "@/services/games";
-import { useQuery } from "@tanstack/react-query";
-import LoadingSpinner from "@/components/ui/loading-spinner";
-import GameStatsList from "@/components/stats/GameStatsList";
-import { useGameStats } from "@/hooks/useGameStats";
-import GameStats from "@/components/stats/GameStats";
-import { StatType } from "@/types"; // Add this import
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getGameById } from '@/services/games';
+import { Game, StatType, GameStat } from '@/types';
+import StatTracker from '@/components/stats/StatTracker';
+import GameStatsList from '@/components/stats/GameStatsList';
+import LoadingSpinner from '@/components/ui/loading-spinner';
+import { useToast } from "@/hooks/use-toast";
+import { useGameStats } from '@/hooks/useGameStats';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { ensureGameCompatibility } from '@/utils/typeConversions';
+
+const statTypes: StatType[] = [
+  'goals',
+  'assists',
+  'shots',
+  'saves',
+  'penalties',
+  'faceoffs',
+  'blocks',
+  'turnovers',
+  'plusMinus'
+];
 
 export default function TrackStats() {
-  const { id = '' } = useParams<{ id: string }>();
-  const { user } = useAuth();
-  
-  const { data: game, isLoading: isGameLoading } = useQuery({
-    queryKey: ['games', id],
-    queryFn: () => getGameById(id),
-    enabled: !!id
+  const { gameId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [game, setGame] = useState<Game | null>(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['games', gameId],
+    queryFn: () => getGameById(gameId)
   });
-  
-  const { gameStats, handleStatRecorded, handleStatDeleted } = useGameStats(id);
-  
-  const userAssignment = user && game ? game.statTrackers.find(
-    tracker => tracker.user.id === user.id
-  ) : undefined;
-  
-  const assignedStatTypes = userAssignment?.statTypes || [];
 
-  // Convert string array to StatType array
-  const typedStatTypes = assignedStatTypes as StatType[];
+  useEffect(() => {
+    if (data) {
+      // Ensure the game data has the required properties
+      const gameData = {
+        ...data,
+        home_team_id: data.home_team_id || data.homeTeam?.id,
+        away_team_id: data.away_team_id || data.awayTeam?.id,
+      };
+      setGame(gameData);
+    }
+  }, [data]);
 
-  if (isGameLoading) {
-    return (
-      <MainLayout>
-        <LoadingSpinner />
-      </MainLayout>
-    );
+  const { gameStats, handleStatRecorded, handleStatDeleted } = useGameStats(gameId || '');
+
+  const handleStatRecordedWrapper = async (stat: Omit<GameStat, 'id' | 'timestamp'>) => {
+    if (!gameId) {
+      toast({
+        title: "Error",
+        description: "Game ID is missing.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    handleStatRecorded(stat);
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <p>Error: {error.message}</p>;
   }
 
   if (!game) {
-    return (
-      <MainLayout>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">Game not found</h2>
-          <Button asChild className="mt-4">
-            <Link to="/games">Return to Games</Link>
-          </Button>
-        </div>
-      </MainLayout>
-    );
+    return <p>Game not found</p>;
   }
 
   return (
-    <MainLayout>
-      <div className="mb-6">
-        <Button variant="ghost" className="gap-1 mb-4" asChild>
-          <Link to={`/games/${id}`}>
-            <ChevronLeft className="h-4 w-4" /> Back to Game
-          </Link>
-        </Button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Game Stats</h1>
-            <p className="text-muted-foreground">
-              {game.homeTeam.name} vs {game.awayTeam.name}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="container mx-auto py-8">
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+      
+      {game && (
+        <StatTracker
+          game={game}
+          statTypes={statTypes}
+          onStatRecorded={handleStatRecordedWrapper}
+          existingStats={gameStats}
+        />
+      )}
 
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <GameStats gameId={id} />
-          </CardContent>
-        </Card>
-
-        {assignedStatTypes.length > 0 && (
-          <>
-            <StatTracker 
-              game={game}
-              statTypes={typedStatTypes}
-              onStatRecorded={handleStatRecorded}
-              existingStats={gameStats}
-            />
-            <GameStatsList 
-              gameStats={gameStats}
-              game={game}
-              onDelete={handleStatDeleted}
-            />
-          </>
-        )}
-      </div>
-    </MainLayout>
+      {game && (
+        <GameStatsList
+          gameStats={gameStats}
+          game={game}
+          onDelete={handleStatDeleted}
+        />
+      )}
+    </div>
   );
 }

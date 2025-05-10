@@ -4,6 +4,7 @@ import { GameStat } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { fetchGameStats, insertGameStat, deleteGameStat } from "@/services/stats/gameStatsService";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeGameStat } from "@/utils/statNormalizer";
 
 export function useGameStats(gameId: string) {
   const [gameStats, setGameStats] = useState<GameStat[]>([]);
@@ -41,7 +42,7 @@ export function useGameStats(gameId: string) {
         (payload) => {
           switch(payload.eventType) {
             case 'INSERT':
-              const newStat: GameStat = {
+              const newStat: GameStat = normalizeGameStat({
                 id: payload.new.id,
                 game_id: payload.new.game_id,
                 player_id: payload.new.player_id,
@@ -49,12 +50,8 @@ export function useGameStats(gameId: string) {
                 period: payload.new.period,
                 timestamp: payload.new.timestamp,
                 value: payload.new.value,
-                details: payload.new.details || '',
-                // Add alias properties
-                gameId: payload.new.game_id,
-                playerId: payload.new.player_id,
-                statType: payload.new.stat_type
-              };
+                details: payload.new.details || ''
+              });
               setGameStats(prev => [...prev, newStat]);
               break;
             case 'DELETE':

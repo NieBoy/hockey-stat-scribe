@@ -53,7 +53,7 @@ export default function PlayerParents({ playerId }: PlayerParentsProps) {
             // Find parent role
             const parentRole = rolesData?.find(role => role.user_id === item.parent_id)?.role || 'parent';
             
-            // Create a properly typed User object
+            // Use the correct property access - item.parent is an object, not an array
             const parent: User = {
               id: item.parent?.id || '',
               name: item.parent?.name || '',

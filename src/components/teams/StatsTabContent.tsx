@@ -1,111 +1,85 @@
-
-import React, { useEffect } from "react";
-import { Team } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import LoadingSpinner from "@/components/ui/loading-spinner";
-import TeamStatsHeader from "./stats/TeamStatsHeader";
-import TeamStatsDebug from "./stats/TeamStatsDebug";
-import TeamStatsSettings from "./stats/TeamStatsSettings";
-import { useTeamStats } from "@/hooks/teams/useTeamStats";
-import { useTransformedTeamStats } from "@/hooks/teams/useTransformedTeamStats";
-import { TeamStatsTable } from "./stats/TeamStatsTable";
+import { useState, useEffect } from 'react';
+import { Team, PlayerStat, StatType } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { Card, CardContent } from '@/components/ui/card';
+import { normalizePlayerStats } from '@/utils/statNormalizer';
 
 interface StatsTabContentProps {
   team: Team;
 }
 
-const StatsTabContent = ({ team }: StatsTabContentProps) => {
-  const [debugMode, setDebugMode] = React.useState(false);
-  
-  const {
-    stats,
-    isLoading,
-    error,
-    isRefreshing,
-    refetch
-  } = useTeamStats(team.id);
+export default function StatsTabContent({ team }: StatsTabContentProps) {
+  const [stats, setStats] = useState<PlayerStat[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { transformedStats, statTypes } = useTransformedTeamStats(stats || [], team.players);
-
-  // Debug logging to check what data we're working with
   useEffect(() => {
-    if (stats) {
-      console.log("Raw team stats:", stats);
-      // Log specific plusMinus stats
-      const plusMinusStats = stats.filter(s => s.statType === 'plusMinus');
-      console.log("PlusMinus stats:", plusMinusStats);
-    }
+    const fetchStats = async () => {
+      if (!team?.id) return;
+      
+      setLoading(true);
+      
+      try {
+        const { data, error } = await supabase
+          .from('player_stats')
+          .select('id, player_id, stat_type, value, games_played')
+          .eq('team_id', team.id);
+          
+        if (error) throw error;
+        
+        // Process the stats with player names
+        const playerStats = await Promise.all((data || []).map(async (stat) => {
+          // Get player name
+          const { data: playerData } = await supabase
+            .from('team_members')
+            .select('name')
+            .eq('id', stat.player_id)
+            .single();
+            
+          return {
+            id: stat.id,
+            player_id: stat.player_id,
+            playerId: stat.player_id,
+            stat_type: stat.stat_type,
+            statType: stat.stat_type,
+            value: stat.value,
+            games_played: stat.games_played,
+            gamesPlayed: stat.games_played,
+            playerName: playerData?.name || 'Unknown Player'
+          } as PlayerStat;
+        }));
+        
+        setStats(normalizePlayerStats(playerStats));
+      } catch (error) {
+        console.error('Error fetching player stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (transformedStats) {
-      console.log("Transformed stats:", transformedStats);
-    }
-  }, [stats, transformedStats]);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-500">
-        <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-        <h3 className="font-semibold mb-1">Error loading team stats</h3>
-        <p>{error.message}</p>
-      </div>
-    );
-  }
-
-  const handleRefreshStats = async () => {
-    console.log("Manually refreshing team stats");
-    await refetch();
-  };
-
+    fetchStats();
+  }, [team.id]);
+  
   return (
-    <div className="space-y-6">
-      <TeamStatsHeader 
-        onToggleDebug={() => setDebugMode(!debugMode)}
-        debugMode={debugMode}
-        isRefreshing={isRefreshing}
-      />
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Team Statistics</CardTitle>
-          <Button variant="outline" onClick={handleRefreshStats} disabled={isRefreshing}>
-            {isRefreshing ? "Refreshing..." : "Refresh Stats"}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {team.players.length > 0 ? (
-            <TeamStatsTable 
-              stats={transformedStats}
-              statTypes={statTypes}
-            />
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <p>No players available for this team.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {debugMode && (
-        <TeamStatsDebug
-          team={team}
-          refreshStatus={{}}
-          onReprocessAllStats={async (): Promise<void> => {}}
-          isReprocessing={false}
-        />
-      )}
-
-      <TeamStatsSettings
-        onAutoRefreshChange={() => {}}
-        onPrecisionChange={() => {}}
-      />
-    </div>
+    <Card>
+      <CardContent>
+        {loading ? (
+          <p>Loading stats...</p>
+        ) : (
+          <div>
+            {stats.length > 0 ? (
+              <ul>
+                {stats.map((stat) => (
+                  <li key={stat.id}>
+                    {stat.playerName}: {stat.statType} - {stat.value}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No stats available for this team.</p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
-
-export default StatsTabContent;

@@ -10,6 +10,9 @@ export function useGoalFlow(game: Game, period: number, onComplete: () => void) 
   const [homeTeamLoadAttempted, setHomeTeamLoadAttempted] = useState(false);
   
   const {
+    players,
+    loading,
+    error,
     hasLoadedLineups,
     isLoadingLineups,
     loadLineupData,

@@ -1,6 +1,6 @@
 // Import the necessary components and hooks
 import { useState } from 'react';
-import { User } from '@/types';
+import { User, Team } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Define props interface for TeamMembersTable
 interface TeamMembersTableProps {
-  players: User[];
-  coaches: User[];
-  parents: User[];
-  loading: boolean;
-  error: string;
+  team: Team;
+  players?: User[];
+  coaches?: User[];
+  parents?: User[];
+  loading?: boolean;
+  error?: string;
   selectedMembers?: string[];
   memberToDelete?: string | null;
   allMembers?: User[];
@@ -25,14 +26,20 @@ interface TeamMembersTableProps {
   handleDelete?: (memberId: string) => void;
   setMemberToDelete?: (memberId: string | null) => void;
   onEdit?: (member: User) => void;
+  onSendInvitations?: (memberIds: string[]) => void;
+  onRemoveMember?: (member: User) => void;
+  isSendingInvitations?: boolean;
+  lastInvitationSent?: Date | null;
+  invitationLinks?: string[];
 }
 
 export default function TeamMembersTable({
-  players,
-  coaches,
-  parents,
-  loading,
-  error,
+  team,
+  players = [],
+  coaches = [],
+  parents = [],
+  loading = false,
+  error = '',
   selectedMembers = [],
   memberToDelete = null,
   allMembers = [],
@@ -41,10 +48,25 @@ export default function TeamMembersTable({
   handleDeleteConfirm = () => {},
   handleDelete = () => {},
   setMemberToDelete = () => {},
-  onEdit
+  onEdit,
+  onSendInvitations,
+  onRemoveMember,
+  isSendingInvitations = false,
+  lastInvitationSent = null,
+  invitationLinks = []
 }: TeamMembersTableProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'players' | 'coaches' | 'parents'>('all');
   
+  // If team is provided but players/coaches/parents aren't, use team properties
+  const actualPlayers = players.length > 0 ? players : (team?.players as User[] || []);
+  const actualCoaches = coaches.length > 0 ? coaches : (team?.coaches || []);
+  const actualParents = parents.length > 0 ? parents : (team?.parents || []);
+  const actualAllMembers = allMembers.length > 0 ? allMembers : [
+    ...actualPlayers,
+    ...actualCoaches,
+    ...actualParents
+  ];
+
   const renderMemberRow = (member: User) => (
     <TableRow key={member.id}>
       <TableCell className="w-10">
@@ -84,13 +106,13 @@ export default function TeamMembersTable({
   const getMembersToDisplay = () => {
     switch (activeTab) {
       case 'players':
-        return players;
+        return actualPlayers;
       case 'coaches':
-        return coaches;
+        return actualCoaches;
       case 'parents':
-        return parents;
+        return actualParents;
       default:
-        return allMembers;
+        return actualAllMembers;
     }
   };
 
@@ -123,25 +145,25 @@ export default function TeamMembersTable({
           variant={activeTab === 'all' ? 'default' : 'outline'}
           onClick={() => setActiveTab('all')}
         >
-          All ({allMembers.length})
+          All ({actualAllMembers.length})
         </Button>
         <Button
           variant={activeTab === 'players' ? 'default' : 'outline'}
           onClick={() => setActiveTab('players')}
         >
-          Players ({players.length})
+          Players ({actualPlayers.length})
         </Button>
         <Button
           variant={activeTab === 'coaches' ? 'default' : 'outline'}
           onClick={() => setActiveTab('coaches')}
         >
-          Coaches ({coaches.length})
+          Coaches ({actualCoaches.length})
         </Button>
         <Button
           variant={activeTab === 'parents' ? 'default' : 'outline'}
           onClick={() => setActiveTab('parents')}
         >
-          Parents ({parents.length})
+          Parents ({actualParents.length})
         </Button>
       </div>
 

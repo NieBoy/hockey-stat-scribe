@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -19,12 +18,20 @@ export default function Games() {
     queryFn: getGames
   });
 
+  // Find the section where games are created/used and ensure they have the required fields
+  // Add home_team_id and away_team_id:
+  const mappedGames = games.map(game => ({
+    ...game,
+    home_team_id: game.home_team_id || game.homeTeam?.id,
+    away_team_id: game.away_team_id || game.awayTeam?.id
+  }));
+
   // Filter games based on selection
   const filteredGames = filter === "active" 
-    ? games.filter(game => game.is_active) 
+    ? mappedGames.filter(game => game.is_active) 
     : filter === "upcoming"
-    ? games.filter(game => !game.is_active)
-    : games;
+    ? mappedGames.filter(game => !game.is_active)
+    : mappedGames;
 
   return (
     <MainLayout>
