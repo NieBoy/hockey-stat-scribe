@@ -28,16 +28,23 @@ const TeamMembersTable = ({
   lastInvitationSent = null,
   invitationLinks = []
 }: TeamMembersTableProps) => {
-  const {
-    selectedMembers,
+  // Initialize useTeamMembers with the correct callback
+  const teamMembers = useTeamMembers(team, onRemoveMember);
+  
+  // Get values from teamMembers return
+  const { 
+    players, 
+    coaches, 
+    parents, 
+    selectedMembers = [], 
+    allMembers = [],
     memberToDelete,
-    allMembers,
     handleSelectMember,
     handleSelectAll,
     handleDeleteConfirm,
     handleDelete,
-    setMemberToDelete
-  } = useTeamMembers(team, () => onRemoveMember?.(memberToDelete!));
+    setMemberToDelete 
+  } = teamMembers;
   
   // Find selected members that have no email
   const selectedMemberObjects = useMemo(() => 

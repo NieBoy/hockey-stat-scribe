@@ -1,14 +1,21 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { User, Team } from '@/types';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-export function useTeamMembers(team: Team) {
+export function useTeamMembers(team: Team, onRemoveMember?: (member: User) => void) {
   const [players, setPlayers] = useState<User[]>([]);
   const [coaches, setCoaches] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [parents, setParents] = useState<User[]>([]); // Add parents state
-
+  
+  // Add state for team member management
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
+  const [allMembers, setAllMembers] = useState<User[]>([]);
+  
   useEffect(() => {
     const fetchTeamMembers = async () => {
       setLoading(true);
@@ -81,6 +88,9 @@ export function useTeamMembers(team: Team) {
           }));
           setParents(parentList);
         }
+        
+        // Combine all members for the team members table
+        setAllMembers([...playerList, ...coachList, ...parentList]);
 
       } catch (error) {
         console.error("Error in fetchTeamMembers:", error);
@@ -93,5 +103,61 @@ export function useTeamMembers(team: Team) {
     fetchTeamMembers();
   }, [team]);
 
-  return { players, coaches, parents, loading, error };
+  // Member selection handler
+  const handleSelectMember = useCallback((memberId: string, selected: boolean) => {
+    setSelectedMembers(prev => {
+      if (selected) {
+        return [...prev, memberId];
+      } else {
+        return prev.filter(id => id !== memberId);
+      }
+    });
+  }, []);
+
+  // Select all members handler
+  const handleSelectAll = useCallback((selected: boolean) => {
+    if (selected) {
+      setSelectedMembers(allMembers.map(member => member.id));
+    } else {
+      setSelectedMembers([]);
+    }
+  }, [allMembers]);
+
+  // Delete confirmation handler
+  const handleDeleteConfirm = useCallback((member: User) => {
+    setMemberToDelete(member);
+  }, []);
+
+  // Delete handler
+  const handleDelete = useCallback(async () => {
+    if (!memberToDelete) return;
+    
+    try {
+      // Call the provided onRemoveMember callback
+      if (onRemoveMember) {
+        onRemoveMember(memberToDelete);
+      }
+    } catch (err) {
+      console.error('Error removing member:', err);
+      toast.error('Failed to remove member');
+    } finally {
+      setMemberToDelete(null);
+    }
+  }, [memberToDelete, onRemoveMember]);
+
+  return { 
+    players, 
+    coaches, 
+    parents, 
+    loading, 
+    error, 
+    selectedMembers,
+    memberToDelete,
+    allMembers,
+    handleSelectMember,
+    handleSelectAll,
+    handleDeleteConfirm,
+    handleDelete,
+    setMemberToDelete
+  };
 }

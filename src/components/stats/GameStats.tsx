@@ -9,6 +9,7 @@ import { refreshPlayerStats } from "@/services/stats";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { Game } from "@/types";
 
 interface GameStatsProps {
   gameId: string;
@@ -68,6 +69,9 @@ export default function GameStats({ gameId }: GameStatsProps) {
     );
   }
 
+  // Need to cast game data to ensure it has all the required properties
+  const gameData = game as Game;
+
   // Render advanced stats view with the game data and refresh button
   return (
     <>
@@ -83,7 +87,7 @@ export default function GameStats({ gameId }: GameStatsProps) {
           {isRefreshing ? "Refreshing Stats..." : "Refresh All Stats"}
         </Button>
       </div>
-      <AdvancedStatsView game={game} />
+      <AdvancedStatsView game={gameData} />
     </>
   );
 }

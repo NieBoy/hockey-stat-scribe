@@ -58,7 +58,7 @@ export function useProfileData(user: User | null) {
                 name: team.name,
                 players: [],
                 coaches: [],
-                parents: []
+                parents: [] // Add parents property
               }]
             };
             playersFromTeams.push(playerWithTeam);

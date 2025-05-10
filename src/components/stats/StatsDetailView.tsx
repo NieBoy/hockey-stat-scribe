@@ -1,5 +1,5 @@
 import React from "react";
-import { PlayerStat } from "@/types";
+import { PlayerStat, StatType } from "@/types";
 import {
   Table,
   TableBody,
@@ -17,11 +17,11 @@ interface StatsDetailViewProps {
 const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
   // Group stats by category using only valid StatTypes
   const offensiveStats = stats.filter(s => 
-    ['goals', 'assists'].includes(s.statType)
+    ['goals', 'assists'].includes(s.statType || s.stat_type)
   );
   
   const defensiveStats = stats.filter(s => 
-    ['plusMinus', 'hits'].includes(s.statType)
+    ['plusMinus', 'hits'].includes(s.statType || s.stat_type)
   );
   
   // Filter for special teams - we'll keep this simpler for now
@@ -30,12 +30,12 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
   
   // Filter for faceoffs
   const faceoffStats = stats.filter(s => 
-    ['faceoffs'].includes(s.statType)
+    ['faceoffs'].includes(s.statType || s.stat_type)
   );
 
   // Add other stats that don't fit in the categories above
   const otherStats = stats.filter(s =>
-    ['penalties', 'saves'].includes(s.statType)
+    ['penalties', 'saves'].includes(s.statType || s.stat_type)
   );
 
   const formatStatType = (type: string): string => {
@@ -151,26 +151,28 @@ const StatCategoryCard: React.FC<StatCategoryCardProps> = ({
           </TableHeader>
           <TableBody>
             {stats.map(stat => {
-              const perGame = stat.gamesPlayed > 0 
-                ? (stat.value / stat.gamesPlayed) 
+              const statType = stat.statType || stat.stat_type;
+              const gamesPlayed = stat.gamesPlayed || stat.games_played;
+              const perGame = gamesPlayed > 0 
+                ? (stat.value / gamesPlayed) 
                 : 0;
                 
               // For plus/minus, we want to show the sign for the per-game value too
-              const formattedPerGame = stat.statType === 'plusMinus' && perGame !== 0
+              const formattedPerGame = statType === 'plusMinus' && perGame !== 0
                 ? (perGame > 0 ? `+${perGame.toFixed(2)}` : perGame.toFixed(2))
                 : perGame.toFixed(2);
               
               return (
-                <TableRow key={stat.statType}>
-                  <TableCell>{formatStatType(stat.statType)}</TableCell>
+                <TableRow key={statType}>
+                  <TableCell>{formatStatType(statType)}</TableCell>
                   <TableCell 
-                    className={`text-right ${stat.statType === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}
+                    className={`text-right ${statType === 'plusMinus' ? (stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : '') : ''}`}
                   >
-                    {formatStatValue(stat.statType, stat.value)}
+                    {formatStatValue(statType, stat.value)}
                   </TableCell>
-                  <TableCell className="text-right">{stat.gamesPlayed}</TableCell>
+                  <TableCell className="text-right">{gamesPlayed}</TableCell>
                   <TableCell 
-                    className={`text-right ${stat.statType === 'plusMinus' ? (perGame > 0 ? 'text-green-600' : perGame < 0 ? 'text-red-600' : '') : ''}`}
+                    className={`text-right ${statType === 'plusMinus' ? (perGame > 0 ? 'text-green-600' : perGame < 0 ? 'text-red-600' : '') : ''}`}
                   >
                     {formattedPerGame}
                   </TableCell>

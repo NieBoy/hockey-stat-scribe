@@ -1,7 +1,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/lib/supabase";
-import { User, Position, UserRole, TeamBasic } from "@/types";
+import { User, Position, UserRole, Team } from "@/types";
+
+// Define TeamBasic interface if it's missing in the types
+interface TeamBasic {
+  id: string;
+  name: string;
+}
 
 export function usePlayerDetails(playerId: string | undefined) {
   const [player, setPlayer] = useState<User | null>(null);

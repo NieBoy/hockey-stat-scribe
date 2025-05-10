@@ -55,9 +55,9 @@ export default function PlayerParents({ playerId }: PlayerParentsProps) {
             
             // Create a properly typed User object
             const parent: User = {
-              id: item.parent.id,
-              name: item.parent.name,
-              email: item.parent.email,
+              id: item.parent?.id || '',
+              name: item.parent?.name || '',
+              email: item.parent?.email || '',
               role: parentRole as Role,
               avatar_url: null
             };

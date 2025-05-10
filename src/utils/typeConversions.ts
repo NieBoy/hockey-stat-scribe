@@ -32,4 +32,3 @@ export function convertPlayerToUser(player: Player): User {
 export function convertPlayersToUsers(players: Player[]): User[] {
   return players.map(convertPlayerToUser);
 }
-
