@@ -13,7 +13,7 @@ export interface PlayerStat {
   statType?: string;
   playerId?: string;
   gamesPlayed?: number;
-  details?: string | any; // Add details field
+  details?: string | any;
 }
 
 /**
@@ -35,15 +35,15 @@ export type UserRole = Role;
 export interface User {
   id: string;
   name: string;
-  email?: string; // Making email optional to accommodate Player interface
-  avatar_url?: string | null; // Making avatar_url optional
+  email: string;
+  avatar_url?: string | null;
   role: Role | Role[];
   position?: Position;
   number?: string;
   lineNumber?: number;
   teams?: TeamBasic[];
   children?: User[];
-  isAdmin?: boolean; // Adding isAdmin property for NavLinks and UserMenu
+  isAdmin?: boolean;
 }
 
 /**
@@ -63,12 +63,12 @@ export interface Player {
   email?: string;
   team_id?: string;
   user_id?: string;
-  role: Role | Role[] | string; // Allow string to support conversion functions
+  role: Role | Role[]; // Changed from string | Role[] to match User type
   position?: Position;
   number?: string;
   avatar_url?: string | null;
   lineNumber?: number;
-  teams?: TeamBasic[]; // Adding teams property for compatibility
+  teams?: TeamBasic[];
 }
 
 /**
@@ -80,9 +80,9 @@ export interface Team {
   players?: (User | Player)[];
   coaches?: User[];
   parents?: User[];
-  organization_id?: string; // Making it optional to fix errors
+  organization_id?: string;
   lines?: Lines;
-  created_at?: string; // Add created_at for compatibility
+  created_at?: string;
 }
 
 /**
@@ -104,7 +104,7 @@ export interface Game {
   date: string;
   location?: string;
   home_team_id: string;
-  away_team_id?: string; // Making optional to match some data patterns
+  away_team_id?: string;
   periods?: number;
   current_period?: number;
   is_active?: boolean;
@@ -113,7 +113,7 @@ export interface Game {
   opponent_id?: string;
   homeTeam: TeamDetails;
   awayTeam: TeamDetails;
-  statTrackers?: { user: any; statTypes: string[] }[]; // Add nested structure for statTrackers
+  statTrackers?: { user: any; statTypes: string[] }[];
 }
 
 /**
@@ -126,8 +126,8 @@ export interface GameFormState {
   periods: number;
   team_id: string;
   opponent_name: string;
-  homeTeam?: string; // Adding for compatibility with useNewGameForm.ts
-  opponentName?: string; // Adding for compatibility
+  homeTeam?: string;
+  opponentName?: string;
   opponent_id?: string;
   is_home: boolean;
   tracker_ids: string[];
@@ -144,8 +144,8 @@ export interface Invitation {
   status: 'pending' | 'accepted' | 'declined';
   created_at: string;
   team?: Team;
-  invitedBy?: string; // Adding for Invitations.tsx
-  expires_at?: string; // Adding for InviteUserForm.tsx
+  invitedBy?: string;
+  expires_at?: string;
 }
 
 /**
@@ -160,8 +160,8 @@ export interface GameStat {
   period: number;
   value: number;
   timestamp: string;
-  details?: string | any; // Add details field
-  // Add alias properties to accommodate both naming conventions
+  details?: string | any;
+  // Alias properties to accommodate both naming conventions
   gameId?: string;
   playerId?: string;
   statType?: string;
@@ -219,5 +219,5 @@ export interface Lines {
   forwards: ForwardLine[];
   defense: DefensePair[];
   goalies: (User | null)[];
-  specialTeams?: Record<string, User> | any; // Adding this for RosterContainer.tsx
+  specialTeams?: Record<string, User> | any;
 }

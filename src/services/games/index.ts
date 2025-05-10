@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import { Game } from '@/types';
+import { ensureGameCompatibility } from '@/utils/typeConversions';
 import { queries } from './queries';
 
 export interface GameCreateParams {
@@ -104,13 +106,15 @@ const extractTeamData = (teamData: any) => {
 };
 
 // Add this helper function to ensure compatibility with the Game interface
-export const ensureGameCompatibility = (game: any): Game => {
-  if (!game) return game;
+export const ensureGameCompatibility = (gameData: any): Game => {
+  if (!gameData) return null;
   
   return {
-    ...game,
-    home_team_id: game.home_team_id || game.homeTeam?.id || '',
-    away_team_id: game.away_team_id || game.awayTeam?.id || '',
+    ...gameData,
+    home_team_id: gameData.home_team_id || (gameData.homeTeam?.id || ''),
+    away_team_id: gameData.away_team_id || (gameData.awayTeam?.id || ''),
+    homeTeam: gameData.homeTeam || { id: '', name: '', players: [] },
+    awayTeam: gameData.awayTeam || { id: '', name: '', players: [] },
   };
 };
 

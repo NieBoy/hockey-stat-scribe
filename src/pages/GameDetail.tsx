@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGameById } from "@/services/games";
@@ -25,6 +25,7 @@ import GameStatusControls from "@/components/games/GameStatusControls";
 import GameScoreDisplay from "@/components/games/GameScoreDisplay";
 import { useGameScore } from "@/hooks/useGameScore";
 import AdvancedStatsView from "@/components/stats/advanced-stats/AdvancedStatsView";
+import { ensureGameCompatibility } from "@/utils/typeConversions";
 
 export default function GameDetail() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -46,12 +47,6 @@ export default function GameDetail() {
   const { isActive, toggleGameStatus } = useGameStatus(gameId || "", data?.is_active);
   const { homeScore, awayScore } = useGameScore(gameId || "");
 
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load game details");
-    }
-  }, [error]);
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -70,13 +65,7 @@ export default function GameDetail() {
   }
 
   // Ensure the game data has all required fields
-  const gameData: Game = {
-    ...data,
-    home_team_id: data.home_team_id || data.homeTeam?.id,
-    away_team_id: data.away_team_id || data.awayTeam?.id,
-    homeTeam: data.homeTeam,
-    awayTeam: data.awayTeam
-  };
+  const gameData: Game = ensureGameCompatibility(data);
 
   const handleGoBack = () => {
     navigate("/games");
@@ -106,25 +95,25 @@ export default function GameDetail() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {data.homeTeam.name} vs {data.awayTeam.name || data.opponent_name}
+              {gameData.homeTeam.name} vs {gameData.awayTeam.name || gameData.opponent_name}
             </h1>
             <div className="flex items-center gap-4 text-muted-foreground mt-1">
               <div className="flex items-center">
                 <Calendar className="mr-1 h-4 w-4" />
                 {formattedDate}
               </div>
-              {data.location && (
+              {gameData.location && (
                 <div className="flex items-center">
                   <MapPin className="mr-1 h-4 w-4" />
-                  {data.location}
+                  {gameData.location}
                 </div>
               )}
             </div>
           </div>
 
           <GameScoreDisplay
-            homeTeam={data.homeTeam.name}
-            awayTeam={data.awayTeam.name || data.opponent_name || "Opponent"}
+            homeTeam={gameData.homeTeam.name}
+            awayTeam={gameData.awayTeam.name || gameData.opponent_name || "Opponent"}
             homeScore={homeScore}
             awayScore={awayScore}
           />
@@ -133,7 +122,7 @@ export default function GameDetail() {
         <GameStatusControls
           isActive={isActive}
           currentPeriod={currentPeriod}
-          totalPeriods={data.periods || 3}
+          totalPeriods={gameData.periods || 3}
           onPeriodChange={handlePeriodChange}
           onToggleStatus={handleToggleGameStatus}
         />
@@ -152,24 +141,24 @@ export default function GameDetail() {
             <CardHeader>
               <CardTitle>Game Overview</CardTitle>
               <CardDescription>
-                {data.homeTeam.name} vs {data.awayTeam.name || data.opponent_name}
+                {gameData.homeTeam.name} vs {gameData.awayTeam.name || gameData.opponent_name}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-medium mb-2">Home Team</h3>
-                  <p>{data.homeTeam.name}</p>
+                  <p>{gameData.homeTeam.name}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {data.homeTeam.players?.length || 0} players
+                    {gameData.homeTeam.players?.length || 0} players
                   </p>
                 </div>
                 <div>
                   <h3 className="font-medium mb-2">Away Team</h3>
-                  <p>{data.awayTeam.name || data.opponent_name || "Unknown Opponent"}</p>
-                  {data.awayTeam.players && (
+                  <p>{gameData.awayTeam.name || gameData.opponent_name || "Unknown Opponent"}</p>
+                  {gameData.awayTeam.players && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {data.awayTeam.players?.length || 0} players
+                      {gameData.awayTeam.players?.length || 0} players
                     </p>
                   )}
                 </div>

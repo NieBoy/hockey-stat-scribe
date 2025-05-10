@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Team, PlayerStat, StatType } from '@/types';
 import { supabase } from '@/lib/supabase';

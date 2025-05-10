@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { getGames } from "@/services/games";
 import { useAuth } from "@/hooks/useAuth";
+import { ensureGameCompatibility } from "@/utils/typeConversions";
 
 export default function Games() {
   const [filter, setFilter] = useState("all");
@@ -18,13 +19,8 @@ export default function Games() {
     queryFn: getGames
   });
 
-  // Find the section where games are created/used and ensure they have the required fields
-  // Add home_team_id and away_team_id:
-  const mappedGames = games.map(game => ({
-    ...game,
-    home_team_id: game.home_team_id || game.homeTeam?.id,
-    away_team_id: game.away_team_id || game.awayTeam?.id
-  }));
+  // Ensure all games have the required fields
+  const mappedGames = games.map(game => ensureGameCompatibility(game));
 
   // Filter games based on selection
   const filteredGames = filter === "active" 

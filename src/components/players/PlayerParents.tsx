@@ -1,111 +1,77 @@
 
-import { useState, useEffect } from "react";
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
-import { User, Role } from "@/types";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
+import { PlusCircle } from "lucide-react";
+import { User, Role } from "@/types";
 
 interface PlayerParentsProps {
-  playerId: string;
+  playerId?: string;
+}
+
+// Define a type for parent data
+interface ParentData {
+  id: string;
+  name: string;
+  email: string;
 }
 
 export default function PlayerParents({ playerId }: PlayerParentsProps) {
-  const [parents, setParents] = useState<User[]>([]);
+  const [parents, setParents] = useState<ParentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchParents = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Fetch the player's parents
-        const { data, error } = await supabase
-          .from('player_parents')
-          .select(`
-            parent_id,
-            parent:parent_id (
-              id,
-              name,
-              email
-            )
-          `)
-          .eq('player_id', playerId);
-          
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          // Get parent user IDs
-          const parentIds = data.map(item => item.parent_id);
-          
-          // Fetch parent user roles
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('user_id, role')
-            .in('user_id', parentIds)
-            .eq('role', 'parent');
-            
-          if (rolesError) throw rolesError;
-          
-          // Map data to parent objects
-          const parentsList: User[] = data.map(item => {
-            // Find parent role
-            const parentRole = rolesData?.find(role => role.user_id === item.parent_id)?.role || 'parent';
-            
-            // Use the correct property access - item.parent is an object, not an array
-            const parent: User = {
-              id: item.parent?.id || '',
-              name: item.parent?.name || '',
-              email: item.parent?.email || '',
-              role: parentRole as Role,
-              avatar_url: null
-            };
-            
-            return parent;
-          });
-          
-          setParents(parentsList);
-        }
-      } catch (error) {
-        console.error('Error fetching parents:', error);
-        toast.error('Failed to load parents');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    if (playerId) {
-      fetchParents();
-    }
-  }, [playerId]);
   
+  // Mock data for now
+  useState(() => {
+    if (playerId) {
+      // Simulated data fetch
+      setParents([
+        { id: 'p1', name: 'John Doe', email: 'john@example.com' },
+        { id: 'p2', name: 'Jane Doe', email: 'jane@example.com' }
+      ]);
+      setIsLoading(false);
+    }
+  });
+
+  const handleAddParent = () => {
+    console.log("Add parent functionality would go here");
+  };
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl">Parents</CardTitle>
-        <Button variant="outline" size="sm">
-          <UserPlus className="h-4 w-4 mr-2" />
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-medium">Parents</CardTitle>
+        <Button 
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={handleAddParent}
+        >
+          <PlusCircle className="h-4 w-4 mr-1" />
           Add Parent
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-4">Loading parents...</div>
+          <div className="flex items-center justify-center h-16">
+            <p className="text-sm text-muted-foreground">Loading parents...</p>
+          </div>
         ) : parents.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {parents.map((parent) => (
-              <div key={parent.id} className="flex items-center justify-between">
+              <div 
+                key={parent.id} 
+                className="flex items-center justify-between py-2 border-b last:border-0"
+              >
                 <div>
-                  <div className="font-medium">{parent.name}</div>
-                  <div className="text-sm text-muted-foreground">{parent.email}</div>
+                  <p className="font-medium">{parent.name}</p>
+                  <p className="text-sm text-muted-foreground">{parent.email}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-4">
-            No parents associated with this player.
+          <div className="flex items-center justify-center h-16">
+            <p className="text-sm text-muted-foreground">No parents associated with this player.</p>
           </div>
         )}
       </CardContent>

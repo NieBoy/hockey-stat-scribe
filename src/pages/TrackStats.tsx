@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -38,11 +39,7 @@ export default function TrackStats() {
   useEffect(() => {
     if (data) {
       // Ensure the game data has the required properties
-      const gameData = {
-        ...data,
-        home_team_id: data.home_team_id || data.homeTeam?.id,
-        away_team_id: data.away_team_id || data.awayTeam?.id,
-      };
+      const gameData = ensureGameCompatibility(data);
       setGame(gameData);
     }
   }, [data]);

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { GameEvent, GameStat } from "@/types";
 import { createGameStat } from "../utils/statsDbUtils";
@@ -28,11 +29,23 @@ export const processGoalEvent = async (event: GameEvent): Promise<boolean> => {
       // Create stats based on player roles
       if (role === 'scorer') {
         console.log(`Recording goal for player ${playerId}`);
-        statsCreated = await createGameStat({ game_id: event.game_id, player_id: playerId, stat_type: "goals", period: event.period, value: String(1) }) || statsCreated;
+        statsCreated = await createGameStat({ 
+          game_id: event.game_id, 
+          player_id: playerId, 
+          stat_type: "goals", 
+          period: event.period, 
+          value: "1" 
+        }) || statsCreated;
       } 
       else if (role === 'assist') {
         console.log(`Recording assist for player ${playerId}`);
-        statsCreated = await createGameStat({ game_id: event.game_id, player_id: playerId, stat_type: "assists", period: event.period, value: String(1) }) || statsCreated;
+        statsCreated = await createGameStat({ 
+          game_id: event.game_id, 
+          player_id: playerId, 
+          stat_type: "assists", 
+          period: event.period, 
+          value: "1" 
+        }) || statsCreated;
       }
       else if (role === 'on-ice' || role === 'on_ice') {
         // For players on ice, record plus/minus
@@ -93,7 +106,7 @@ const createRawPlusMinus = async (
       p_player_id: playerId,
       p_stat_type: 'plusMinus',
       p_period: period,
-      p_value: value // Use the actual +1/-1 value
+      p_value: value.toString() // Convert to string as expected by the RPC function
     });
     
     if (error) {

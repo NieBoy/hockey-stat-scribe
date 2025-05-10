@@ -6,14 +6,21 @@ import { User, Player, Team, Role, TeamDetails } from '@/types';
  */
 export function playerToUser(player: Player): User {
   // Convert string role to Role type when needed
-  const roleValue: Role | Role[] = typeof player.role === 'string' 
-    ? player.role as Role 
-    : (player.role as Role[]);
+  let roleValue: Role | Role[];
+  
+  if (typeof player.role === 'string') {
+    roleValue = player.role as Role;
+  } else if (Array.isArray(player.role)) {
+    roleValue = player.role as Role[];
+  } else {
+    // Default fallback if role is somehow undefined or invalid
+    roleValue = 'player' as Role;
+  }
     
   return {
     id: player.id,
     name: player.name,
-    email: player.email,
+    email: player.email || '',
     avatar_url: player.avatar_url,
     role: roleValue,
     position: player.position,
@@ -27,6 +34,7 @@ export function playerToUser(player: Player): User {
  * Converts an array of Player objects to User objects
  */
 export function convertPlayersToUsers(players: Player[]): User[] {
+  if (!players) return [];
   return players.map(playerToUser);
 }
 
@@ -70,6 +78,7 @@ export function ensureTeamDetailsCompatibility(teamData: any): TeamDetails {
 export function ensureGameCompatibility(gameData: any): any {
   if (!gameData) return null;
   
+  // Add both camelCase and snake_case properties to ensure compatibility
   return {
     ...gameData,
     home_team_id: gameData.home_team_id || (gameData.homeTeam?.id || ''),
