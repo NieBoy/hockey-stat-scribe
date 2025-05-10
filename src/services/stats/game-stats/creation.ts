@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { GameStat } from "@/types";
 import { validateMultiplePlayers, validatePlayerId } from "@/services/events/shared/validatePlayer";
+import { createGameStat } from "../core/utils/statsDbUtils";
 
 /**
  * Inserts a new game stat
@@ -20,18 +21,35 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>): 
     const playerId = stat.playerId || stat.player_id;
     const statType = stat.statType || stat.stat_type;
     
-    // Use RPC call to record_game_stat function for better error handling
-    const { data, error } = await supabase.rpc('record_game_stat', {
-      p_game_id: gameId,
-      p_player_id: playerId,
-      p_stat_type: statType,
-      p_period: stat.period,
-      p_value: stat.value
+    // Convert value to number if it's a string
+    const value = typeof stat.value === 'string' ? Number(stat.value) : stat.value;
+    
+    // Use the standardized createGameStat function
+    const success = await createGameStat({
+      game_id: gameId,
+      player_id: playerId,
+      stat_type: statType,
+      period: stat.period,
+      value: value,
+      details: stat.details || ''
     });
     
-    if (error) throw error;
+    if (!success) return null;
     
-    return data as GameStat;
+    // Return a mock object with the data provided
+    return {
+      id: 'temp-id', // Will be replaced by database
+      game_id: gameId,
+      player_id: playerId,
+      stat_type: statType,
+      period: stat.period,
+      value: value,
+      timestamp: new Date().toISOString(),
+      details: stat.details || '',
+      gameId,
+      playerId,
+      statType
+    };
   } catch (error) {
     console.error("Error inserting game stat:", error);
     return null;
@@ -67,7 +85,7 @@ export const recordPlusMinusStats = async (
     
     // Create plus/minus stats for each player
     const promises = playerIds.map(playerId => 
-      insertGameStat({
+      createGameStat({
         game_id: gameId,
         player_id: playerId,
         stat_type: 'plusMinus',

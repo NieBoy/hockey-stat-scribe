@@ -1,48 +1,43 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { GameEvent } from '@/types';
+import { toast } from 'sonner';
 
 export function useGameEvents(gameId: string) {
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchEvents = useCallback(async () => {
-    if (!gameId) {
-      setEvents([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('game_events')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-      
-      setEvents(data || []);
-    } catch (err) {
-      console.error('Error fetching game events:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error fetching game events'));
-    } finally {
-      setLoading(false);
-    }
-  }, [gameId]);
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      if (!gameId) {
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Fetch events for this game
+        const { data, error } = await supabase.rpc('get_game_events', {
+          p_game_id: gameId
+        });
+
+        if (error) throw error;
+        
+        setEvents(data || []);
+      } catch (error) {
+        console.error('Error fetching game events:', error);
+        toast.error('Failed to load game events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEvents();
-  }, [fetchEvents]);
 
-  // Setup realtime subscription
-  useEffect(() => {
-    if (!gameId) return;
-
+    // Setup subscription for real-time updates
     const channel = supabase
       .channel(`game_events_${gameId}`)
       .on(
@@ -51,21 +46,11 @@ export function useGameEvents(gameId: string) {
           event: '*', 
           schema: 'public', 
           table: 'game_events',
-          filter: `game_id=eq.${gameId}`
+          filter: `game_id=eq.${gameId}` 
         },
-        (payload) => {
-          // Handle different event types
-          if (payload.eventType === 'INSERT') {
-            setEvents(prev => [payload.new as GameEvent, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setEvents(prev => prev.filter(event => event.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setEvents(prev => 
-              prev.map(event => 
-                event.id === payload.new.id ? payload.new as GameEvent : event
-              )
-            );
-          }
+        () => {
+          // Refetch events when something changes
+          fetchEvents();
         }
       )
       .subscribe();
@@ -76,33 +61,52 @@ export function useGameEvents(gameId: string) {
   }, [gameId]);
 
   const addEvent = async (eventData: Partial<GameEvent>) => {
-    if (!gameId) return null;
-
     try {
-      const { data, error } = await supabase
-        .from('game_events')
-        .insert({
-          ...eventData,
-          game_id: gameId,
-          timestamp: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      if (!gameId) {
+        toast.error('Game ID is missing');
+        return null;
+      }
+
+      const { data, error } = await supabase.rpc('create_game_event', {
+        p_game_id: gameId,
+        p_event_type: eventData.event_type,
+        p_period: eventData.period,
+        p_team_type: eventData.team_type,
+        p_details: eventData.details
+      });
 
       if (error) throw error;
       
+      toast.success('Event recorded successfully');
       return data;
-    } catch (err) {
-      console.error('Error adding game event:', err);
+    } catch (error) {
+      console.error('Error adding event:', error);
+      toast.error('Failed to record event');
       return null;
+    }
+  };
+
+  const deleteEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase.rpc('delete_game_event', {
+        p_event_id: eventId
+      });
+
+      if (error) throw error;
+      
+      toast.success('Event deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+      return false;
     }
   };
 
   return {
     events,
     loading,
-    error,
-    refetchEvents: fetchEvents,
-    addEvent
+    addEvent,
+    deleteEvent
   };
 }

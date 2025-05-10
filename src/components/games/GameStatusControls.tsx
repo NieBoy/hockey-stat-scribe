@@ -1,75 +1,83 @@
 
 import { Button } from "@/components/ui/button";
-import { PlayCircle, PauseCircle, Clock } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { PlayCircle, StopCircle, ListEnd } from "lucide-react";
+import { GameStatus } from "@/types/game-control";
 
 interface GameStatusControlsProps {
-  isActive: boolean;
-  currentPeriod: number;
-  totalPeriods: number;
-  onPeriodChange: (period: number) => void;
-  onToggleStatus: () => void;
+  status: GameStatus;
+  period: number;
+  onStartGame: () => Promise<void>;
+  onStopGame: () => Promise<void>;
+  onEndPeriod: () => Promise<void>;
 }
 
 export default function GameStatusControls({
-  isActive,
-  currentPeriod,
-  totalPeriods,
-  onPeriodChange,
-  onToggleStatus
+  status,
+  period,
+  onStartGame,
+  onStopGame,
+  onEndPeriod
 }: GameStatusControlsProps) {
-  const periods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
-
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Period:</span>
+    <Card className="mb-4">
+      <CardContent className="pt-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium">Game Status:</span>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${
+              status === 'in-progress' ? 'bg-green-100 text-green-800' :
+              status === 'stopped' ? 'bg-amber-100 text-amber-800' :
+              'bg-slate-100 text-slate-800'
+            }`}>
+              {status === 'in-progress' ? 'In Progress' : 
+              status === 'stopped' ? 'Stopped' : 'Not Started'}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium">Current Period:</span>
+            <span className="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">
+              Period {period}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {(status !== 'in-progress') && (
+              <Button 
+                variant="default" 
+                className="flex items-center gap-2"
+                onClick={onStartGame}
+              >
+                <PlayCircle className="h-4 w-4" />
+                {status === 'not-started' ? 'Start Game' : 'Resume Game'}
+              </Button>
+            )}
+            
+            {status === 'in-progress' && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={onStopGame}
+              >
+                <StopCircle className="h-4 w-4" />
+                Stop Game
+              </Button>
+            )}
+            
+            {status === 'in-progress' && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 sm:col-span-2"
+                onClick={onEndPeriod}
+              >
+                <ListEnd className="h-4 w-4" />
+                End Period {period}
+              </Button>
+            )}
+          </div>
         </div>
-        
-        <Select 
-          value={String(currentPeriod)} 
-          onValueChange={(value) => onPeriodChange(parseInt(value))}
-        >
-          <SelectTrigger className="w-[100px]">
-            <SelectValue placeholder="Select Period" />
-          </SelectTrigger>
-          <SelectContent>
-            {periods.map((period) => (
-              <SelectItem key={period} value={String(period)}>
-                Period {period}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div>
-        <Button
-          variant={isActive ? "destructive" : "default"}
-          className="gap-2"
-          onClick={onToggleStatus}
-        >
-          {isActive ? (
-            <>
-              <PauseCircle className="h-4 w-4" />
-              Pause Game
-            </>
-          ) : (
-            <>
-              <PlayCircle className="h-4 w-4" />
-              Resume Game
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

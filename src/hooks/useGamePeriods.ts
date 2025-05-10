@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Game } from '@/types';
-import { useToast } from '@/hooks/use-toast'; 
+import { useToast } from '@/hooks/use-toast';
 
 export function useGamePeriods(game: Game | null) {
   const [currentPeriod, setCurrentPeriod] = useState<number>(game?.current_period || 0);

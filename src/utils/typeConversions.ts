@@ -1,5 +1,5 @@
 
-import { User, Player, Team, Role, TeamDetails } from '@/types';
+import { User, Player, Team, Role, TeamDetails, Game } from '@/types';
 
 /**
  * Converts a Player object to a User object
@@ -73,9 +73,9 @@ export function ensureTeamDetailsCompatibility(teamData: any): TeamDetails {
 }
 
 /**
- * Ensures a Game object has the required properties
+ * Ensures a Game object has the required properties, including both camelCase and snake_case
  */
-export function ensureGameCompatibility(gameData: any): any {
+export function ensureGameCompatibility(gameData: any): Game {
   if (!gameData) return null;
   
   // Add both camelCase and snake_case properties to ensure compatibility

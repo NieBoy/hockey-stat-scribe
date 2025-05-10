@@ -1,93 +1,70 @@
 
 import { supabase } from "@/lib/supabase";
-import { validatePlayerId } from "@/services/events/shared/validatePlayer";
+
+interface GameStatParams {
+  game_id: string;
+  player_id: string;
+  stat_type: string;
+  period: number;
+  value: number | string;
+  details?: string | any;
+}
 
 /**
- * Creates a game stat record in the database
+ * Creates a game stat with consistent parameter handling
+ * Supports both object parameter style and individual parameters
  */
 export const createGameStat = async (
-  gameId: string,
-  playerId: string,
-  statType: string,
-  period: number,
-  details: string = ''
+  gameIdOrParams: string | GameStatParams,
+  playerId?: string,
+  statType?: string, 
+  period?: number,
+  value?: number | string,
+  details?: string | any
 ): Promise<boolean> => {
   try {
-    console.log(`Creating game stat: ${statType} for player ${playerId} in period ${period}, game ${gameId}`);
+    let params: GameStatParams;
     
-    // Validate that player ID exists in team_members
-    const isValid = await validatePlayerId(playerId);
-    if (!isValid) {
-      console.error(`Cannot create stat: Player ID ${playerId} not found in team_members table`);
+    // Check if first parameter is an object (object style) or a string (individual params style)
+    if (typeof gameIdOrParams === 'object') {
+      params = gameIdOrParams;
+    } else {
+      // Using individual parameters
+      params = {
+        game_id: gameIdOrParams,
+        player_id: playerId,
+        stat_type: statType,
+        period: period,
+        value: value,
+        details: details
+      };
+    }
+    
+    // Ensure value is always a number for consistency
+    // This is especially important for plus/minus calculations
+    const numericValue = typeof params.value === 'string' 
+      ? Number(params.value)
+      : params.value;
+    
+    console.log(`Recording stat: ${params.stat_type} with value ${numericValue} (original: ${params.value}) for player ${params.player_id}`);
+    
+    const { error } = await supabase.rpc('record_game_stat', {
+      p_game_id: params.game_id,
+      p_player_id: params.player_id,
+      p_stat_type: params.stat_type,
+      p_period: params.period,
+      p_value: numericValue,
+      p_details: params.details || ''
+    });
+    
+    if (error) {
+      console.error('Error creating game stat:', error);
       return false;
     }
     
-    // First check if stat already exists
-    const { data: existingStat } = await supabase
-      .from('game_stats')
-      .select('id')
-      .eq('game_id', gameId)
-      .eq('player_id', playerId)
-      .eq('stat_type', statType)
-      .eq('period', period)
-      .maybeSingle();
-      
-    if (existingStat) {
-      console.log(`Stat already exists for ${statType} in period ${period}`);
-      return true;
-    }
-    
-    // Determine value based on the stat type and details
-    let value = 1; // Default value
-    if (statType === 'plusMinus') {
-      // For plus/minus, set value based on plus or minus
-      value = details === 'plus' ? 1 : -1;
-    }
-    
-    // Create new stat using RPC function for maximum compatibility
-    try {
-      const { data, error } = await supabase.rpc('record_game_stat', {
-        p_game_id: gameId,
-        p_player_id: playerId,
-        p_stat_type: statType,
-        p_period: period,
-        p_value: value,
-        p_details: details
-      });
-      
-      if (error) {
-        console.error(`Error creating ${statType} stat using RPC:`, error);
-        throw error;
-      }
-      
-      console.log(`Successfully created ${statType} stat for player ${playerId} using RPC`);
-      return true;
-    } catch (rpcError) {
-      console.error(`RPC failed, trying direct insert:`, rpcError);
-      
-      // Fallback to direct insert if RPC fails
-      const { error } = await supabase
-        .from('game_stats')
-        .insert({
-          game_id: gameId,
-          player_id: playerId,
-          stat_type: statType,
-          period: period,
-          value: value,
-          details: details,
-          timestamp: new Date().toISOString()
-        });
-        
-      if (error) {
-        console.error(`Error creating ${statType} stat:`, error);
-        return false;
-      }
-      
-      console.log(`Successfully created ${statType} stat for player ${playerId}`);
-      return true;
-    }
+    return true;
   } catch (error) {
-    console.error(`Error in createGameStat:`, error);
+    console.error('Exception in createGameStat:', error);
     return false;
   }
 };

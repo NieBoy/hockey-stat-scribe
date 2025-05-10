@@ -34,7 +34,7 @@ export const processGoalEvent = async (event: GameEvent): Promise<boolean> => {
           player_id: playerId, 
           stat_type: "goals", 
           period: event.period, 
-          value: "1" 
+          value: 1 // Using number instead of string
         }) || statsCreated;
       } 
       else if (role === 'assist') {
@@ -44,7 +44,7 @@ export const processGoalEvent = async (event: GameEvent): Promise<boolean> => {
           player_id: playerId, 
           stat_type: "assists", 
           period: event.period, 
-          value: "1" 
+          value: 1 // Using number instead of string
         }) || statsCreated;
       }
       else if (role === 'on-ice' || role === 'on_ice') {
@@ -101,20 +101,13 @@ const createRawPlusMinus = async (
   try {
     console.log(`Recording plusMinus: ${value} for player ${playerId}`);
     
-    const { error } = await supabase.rpc('record_game_stat', {
-      p_game_id: gameId,
-      p_player_id: playerId,
-      p_stat_type: 'plusMinus',
-      p_period: period,
-      p_value: value.toString() // Convert to string as expected by the RPC function
+    return createGameStat({
+      game_id: gameId,
+      player_id: playerId,
+      stat_type: 'plusMinus',
+      period: period,
+      value: value // Using number directly
     });
-    
-    if (error) {
-      console.error('Error recording plus/minus stat:', error);
-      return false;
-    }
-    
-    return true;
   } catch (error) {
     console.error('Error in createRawPlusMinus:', error);
     return false;

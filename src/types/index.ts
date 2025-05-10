@@ -1,18 +1,16 @@
-
 /**
  * Player stat
  */
 export interface PlayerStat {
   id: string;
   player_id: string;
+  playerId?: string; // Alias for player_id
   stat_type: string;
+  statType?: string; // Alias for stat_type
   value: number;
   games_played: number;
+  gamesPlayed?: number; // Alias for games_played
   playerName?: string;
-  // Alias properties to accommodate both naming conventions
-  statType?: string;
-  playerId?: string;
-  gamesPlayed?: number;
   details?: string | any;
 }
 
@@ -35,7 +33,7 @@ export type UserRole = Role;
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string; // Made email optional to match Player interface
   avatar_url?: string | null;
   role: Role | Role[];
   position?: Position;
@@ -63,7 +61,7 @@ export interface Player {
   email?: string;
   team_id?: string;
   user_id?: string;
-  role: Role | Role[]; // Changed from string | Role[] to match User type
+  role: Role | Role[]; // Made role type consistent with User
   position?: Position;
   number?: string;
   avatar_url?: string | null;
