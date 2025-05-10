@@ -110,8 +110,8 @@ export function useProfileData(user: User | null) {
       }
       
       // Parent can see teams their children play in
-      if (isParent) {
-        const isParentInTeam = team.parents?.some(parent => parent.id === user.id);
+      if (isParent && team.parents) {
+        const isParentInTeam = team.parents.some(parent => parent.id === user.id);
         console.log("Is parent in this team:", isParentInTeam);
         if (isParentInTeam) return true;
       }

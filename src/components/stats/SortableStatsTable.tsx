@@ -17,7 +17,7 @@ type SortDirection = "asc" | "desc" | null;
 type SortField = "name" | "value" | "gamesPlayed" | "average" | "statType";
 
 // Helper function to make stat types more readable
-const formatStatType = (statType: StatType): string => {
+const formatStatType = (statType: string): string => {
   switch(statType) {
     case 'goals': return 'Goals';
     case 'assists': return 'Assists';
@@ -31,7 +31,7 @@ const formatStatType = (statType: StatType): string => {
 };
 
 // Helper to get stat color based on the statType
-const getStatTypeColor = (statType: StatType): string => {
+const getStatTypeColor = (statType: string): string => {
   switch(statType) {
     case 'goals': return 'bg-red-100 text-red-800';
     case 'assists': return 'bg-blue-100 text-blue-800';

@@ -77,7 +77,9 @@ export function usePlayerDetails(playerId: string | undefined) {
             children = playersData.map(p => ({
               id: p.id,
               name: p.name || 'Unknown Player',
-              role: [p.role as UserRole || 'player']
+              role: [p.role as UserRole || 'player'],
+              email: '',
+              avatar_url: null
             }));
           }
         }
@@ -86,11 +88,12 @@ export function usePlayerDetails(playerId: string | undefined) {
       const memberDetails: User = {
         id: memberData.id,
         name: memberData.name || 'Unknown Member',
-        email: memberData.email || undefined,
+        email: memberData.email || '',
         role: [memberData.role as UserRole || 'player'],
         position: memberData.position as Position,
-        lineNumber: memberData.line_number,
+        avatar_url: null,
         number: memberData.line_number ? String(memberData.line_number) : undefined,
+        lineNumber: memberData.line_number,
         teams: teamName ? [{ 
           id: memberData.team_id, 
           name: teamName

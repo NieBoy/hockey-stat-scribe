@@ -1,6 +1,5 @@
-
 import React from "react";
-import { PlayerStat, StatType } from "@/types";
+import { PlayerStat } from "@/types";
 import {
   Table,
   TableBody,
@@ -39,7 +38,7 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
     ['penalties', 'saves'].includes(s.statType)
   );
 
-  const formatStatType = (type: StatType): string => {
+  const formatStatType = (type: string): string => {
     switch(type) {
       case 'goals': return 'Goals';
       case 'assists': return 'Assists';
@@ -53,7 +52,7 @@ const StatsDetailView: React.FC<StatsDetailViewProps> = ({ stats }) => {
   };
 
   // Format the value for display, specifically for plus/minus
-  const formatStatValue = (type: StatType, value: number): string => {
+  const formatStatValue = (type: string, value: number): string => {
     if (type === 'plusMinus') {
       return value > 0 ? `+${value}` : `${value}`;
     }
@@ -119,8 +118,8 @@ interface StatCategoryCardProps {
   title: string;
   description: string;
   stats: PlayerStat[];
-  formatStatType: (type: StatType) => string;
-  formatStatValue: (type: StatType, value: number) => string;
+  formatStatType: (type: string) => string;
+  formatStatValue: (type: string, value: number) => string;
 }
 
 const StatCategoryCard: React.FC<StatCategoryCardProps> = ({ 

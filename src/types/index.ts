@@ -1,7 +1,7 @@
 
 export type Role = "admin" | "user" | "coach" | "player" | "parent";
 export type Theme = "light" | "dark" | "system";
-export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus" | "faceoffs" | "hits";
+export type StatType = "goals" | "assists" | "shots" | "saves" | "penalties" | "plusMinus" | "faceoffs" | "hits" | string;
 export type TeamType = "home" | "away";
 export type UserRole = "admin" | "user" | "coach" | "player" | "parent";
 
@@ -17,8 +17,18 @@ export interface User {
   // Added fields needed by components
   position?: string;
   number?: string;
+  lineNumber?: number;
   teams?: Team[];
   isAdmin?: boolean;
+  children?: User[];
+}
+
+/**
+ * Basic Team data
+ */
+export interface TeamBasic {
+  id: string;
+  name: string;
 }
 
 /**
@@ -42,6 +52,7 @@ export interface Team {
   lines?: Lines;
   coaches?: User[];
   specialTeams?: SpecialTeams;
+  parents?: User[];  // Add parents property
 }
 
 /**
