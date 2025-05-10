@@ -25,20 +25,24 @@ export type Position = 'LW' | 'C' | 'RW' | 'LD' | 'RD' | 'G' | string;
  */
 export type Role = 'admin' | 'coach' | 'player' | 'parent' | 'user';
 
+// Adding UserRole for backwards compatibility with existing imports
+export type UserRole = Role;
+
 /**
  * User type
  */
 export interface User {
   id: string;
   name: string;
-  email: string;
-  avatar_url: string | null;
+  email?: string; // Making email optional to accommodate Player interface
+  avatar_url?: string | null; // Making avatar_url optional
   role: Role | Role[];
   position?: Position;
   number?: string;
   lineNumber?: number;
   teams?: TeamBasic[];
   children?: User[];
+  isAdmin?: boolean; // Adding isAdmin property for NavLinks and UserMenu
 }
 
 /**
@@ -63,6 +67,7 @@ export interface Player {
   number?: string;
   avatar_url?: string | null;
   lineNumber?: number;
+  teams?: TeamBasic[]; // Adding teams property for compatibility
 }
 
 /**
@@ -105,7 +110,7 @@ export interface Game {
   opponent_name?: string;
   homeTeam: TeamDetails;
   awayTeam: TeamDetails;
-  statTrackers?: User[];
+  statTrackers?: { user: any; statTypes: string[] }[]; // Add nested structure for statTrackers
 }
 
 /**
@@ -118,6 +123,8 @@ export interface GameFormState {
   periods: number;
   team_id: string;
   opponent_name: string;
+  homeTeam?: string; // Adding for compatibility with useNewGameForm.ts
+  opponentName?: string; // Adding for compatibility
   opponent_id?: string;
   is_home: boolean;
   tracker_ids: string[];
@@ -134,6 +141,8 @@ export interface Invitation {
   status: 'pending' | 'accepted' | 'declined';
   created_at: string;
   team?: Team;
+  invitedBy?: string; // Adding for Invitations.tsx
+  expires_at?: string; // Adding for InviteUserForm.tsx
 }
 
 /**
@@ -148,12 +157,16 @@ export interface GameStat {
   period: number;
   value: number;
   timestamp: string;
+  // Add alias properties to accommodate both naming conventions
+  gameId?: string;
+  playerId?: string;
+  statType?: string;
 }
 
 /**
  * Stat type enum
  */
-export type StatType = string | 'goals' | 'assists' | 'points' | 'plus_minus' | 'shots' | 'hits' | 'blocks' | 'takeaways' | 'giveaways' | 'faceoffs_won' | 'faceoffs_taken' | 'faceoff_pct';
+export type StatType = string;
 
 /**
  * Forward line type
@@ -175,10 +188,16 @@ export interface DefensePair {
 }
 
 /**
+ * Defense line alias for backward compatibility
+ */
+export type DefenseLine = DefensePair;
+
+/**
  * Lines type
  */
 export interface Lines {
   forwards: ForwardLine[];
   defense: DefensePair[];
   goalies: (User | null)[];
+  specialTeams?: any; // Adding this for RosterContainer.tsx
 }

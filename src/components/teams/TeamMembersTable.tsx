@@ -1,194 +1,201 @@
+// Import the necessary components and hooks
+import { useState } from 'react';
+import { User } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Edit, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { User, Team } from "@/types";
-import { useTeamMembers } from "@/hooks/teams/useTeamMembers";
-import { TableHeader } from "./members/TableHeader";
-import { MembersTableContent } from "./members/MembersTableContent";
-import { DeleteMemberDialog } from "./members/DeleteMemberDialog";
-import { toast } from "sonner";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "../ui/button";
-import { Copy, Link2 } from "lucide-react";
-
+// Define props interface for TeamMembersTable
 interface TeamMembersTableProps {
-  team: Team;
-  onSendInvitations?: (memberIds: string[]) => void;
-  onEditMember?: (member: User) => void;
-  onRemoveMember?: (member: User) => void;
-  isSendingInvitations?: boolean;
-  lastInvitationSent?: Date | null;
-  invitationLinks?: string[];
+  players: User[];
+  coaches: User[];
+  parents: User[];
+  loading: boolean;
+  error: string;
+  selectedMembers?: string[];
+  memberToDelete?: string | null;
+  allMembers?: User[];
+  handleSelectMember?: (memberId: string, selected: boolean) => void;
+  handleSelectAll?: () => void;
+  handleDeleteConfirm?: () => void;
+  handleDelete?: (memberId: string) => void;
+  setMemberToDelete?: (memberId: string | null) => void;
+  onEdit?: (member: User) => void;
 }
 
-const TeamMembersTable = ({ 
-  team,
-  onSendInvitations,
-  onEditMember,
-  onRemoveMember,
-  isSendingInvitations = false,
-  lastInvitationSent = null,
-  invitationLinks = []
-}: TeamMembersTableProps) => {
-  // Initialize useTeamMembers with the correct callback
-  const teamMembers = useTeamMembers(team, onRemoveMember);
+export default function TeamMembersTable({
+  players,
+  coaches,
+  parents,
+  loading,
+  error,
+  selectedMembers = [],
+  memberToDelete = null,
+  allMembers = [],
+  handleSelectMember = () => {},
+  handleSelectAll = () => {},
+  handleDeleteConfirm = () => {},
+  handleDelete = () => {},
+  setMemberToDelete = () => {},
+  onEdit
+}: TeamMembersTableProps) {
+  const [activeTab, setActiveTab] = useState<'all' | 'players' | 'coaches' | 'parents'>('all');
   
-  // Get values from teamMembers return
-  const { 
-    players, 
-    coaches, 
-    parents, 
-    selectedMembers = [], 
-    allMembers = [],
-    memberToDelete,
-    handleSelectMember,
-    handleSelectAll,
-    handleDeleteConfirm,
-    handleDelete,
-    setMemberToDelete 
-  } = teamMembers;
-  
-  // Find selected members that have no email
-  const selectedMemberObjects = useMemo(() => 
-    allMembers.filter(m => selectedMembers.includes(m.id)), 
-    [allMembers, selectedMembers]
-  );
-  
-  const hasMembersWithoutEmail = useMemo(() => 
-    selectedMemberObjects.some(m => !m.email),
-    [selectedMemberObjects]
-  );
-  
-  // Track last invitation time locally too as a backup
-  const [localLastSent, setLocalLastSent] = useState<Date | null>(lastInvitationSent);
-  
-  // Store the last generated links locally to show in the UI
-  const [lastLinks, setLastLinks] = useState<string[]>([]);
-
-  // Update local state when props change
-  useEffect(() => {
-    if (lastInvitationSent) {
-      setLocalLastSent(lastInvitationSent);
-    }
-    
-    // Always update links when they change
-    if (invitationLinks && invitationLinks.length > 0) {
-      console.log("Updating invitation links in TeamMembersTable:", invitationLinks);
-      setLastLinks(invitationLinks);
-    }
-  }, [lastInvitationSent, invitationLinks]);
-  
-  const handleSendInvitations = useCallback(() => {
-    if (selectedMembers.length === 0) {
-      toast.warning("Please select members to invite", {
-        duration: 8000
-      });
-      return;
-    }
-    
-    if (onSendInvitations) {
-      const membersWithoutEmail = selectedMemberObjects.filter(m => !m.email);
-      
-      if (membersWithoutEmail.length > 0) {
-        const names = membersWithoutEmail.map(m => m.name).join(", ");
-        toast.warning(`Some members don't have email addresses: ${names}`, {
-          description: "Please add email addresses before sending invitations.",
-          duration: 10000
-        });
-        
-        // If all selected members are missing emails, don't proceed
-        if (membersWithoutEmail.length === selectedMembers.length) {
-          return;
-        }
-      }
-      
-      setLocalLastSent(new Date());
-      onSendInvitations(selectedMembers);
-    }
-  }, [selectedMembers, selectedMemberObjects, onSendInvitations]);
-  
-  // Use the prop value if provided, otherwise use local state
-  const effectiveLastSent = lastInvitationSent || localLastSent;
-  
-  // Calculate which links to display
-  const linksToDisplay = invitationLinks?.length ? invitationLinks : lastLinks;
-
-  // Function to display links in the UI for manual copying
-  const showInvitationLinks = () => {
-    if (!linksToDisplay || linksToDisplay.length === 0) return null;
-    
-    return (
-      <div className="mt-4 p-4 border rounded-md bg-muted/20">
-        <h3 className="font-medium mb-2 flex items-center gap-2">
-          <Link2 className="h-4 w-4" /> 
-          Invitation Links
-        </h3>
-        <div className="space-y-2">
-          {linksToDisplay.map((link, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-sm">
-              <div className="truncate flex-1 bg-background p-2 rounded border text-xs">
-                {link}
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(link);
-                  toast.success("Link copied to clipboard");
-                }}
-              >
-                <Copy className="h-3 w-3 mr-1" /> Copy
-              </Button>
-            </div>
-          ))}
+  const renderMemberRow = (member: User) => (
+    <TableRow key={member.id}>
+      <TableCell className="w-10">
+        <Checkbox
+          checked={selectedMembers.includes(member.id)}
+          onCheckedChange={(checked) => handleSelectMember(member.id, !!checked)}
+        />
+      </TableCell>
+      <TableCell>{member.name}</TableCell>
+      <TableCell>{member.email}</TableCell>
+      <TableCell>
+        <Badge variant="outline" className="capitalize">
+          {Array.isArray(member.role) ? member.role[0] : member.role}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          {onEdit && (
+            <Button variant="ghost" size="icon" onClick={() => onEdit(member)}>
+              <Edit className="h-4 w-4" />
+              <span className="sr-only">Edit</span>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMemberToDelete(member.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete</span>
+          </Button>
         </div>
-      </div>
-    );
+      </TableCell>
+    </TableRow>
+  );
+
+  const getMembersToDisplay = () => {
+    switch (activeTab) {
+      case 'players':
+        return players;
+      case 'coaches':
+        return coaches;
+      case 'parents':
+        return parents;
+      default:
+        return allMembers;
+    }
   };
-  
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-red-500">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <TableHeader 
-        selectedCount={selectedMembers.length}
-        onSendInvitations={handleSendInvitations}
-        hasMembersWithoutEmail={hasMembersWithoutEmail}
-        isLoading={isSendingInvitations}
-        lastSent={effectiveLastSent}
-      />
-      
-      <MembersTableContent 
-        members={allMembers}
-        selectedMembers={selectedMembers}
-        onSelectMember={handleSelectMember}
-        onSelectAll={handleSelectAll}
-        onEdit={onEditMember}
-        onDelete={handleDeleteConfirm}
-      />
+    <div>
+      <div className="flex space-x-2 mb-4">
+        <Button
+          variant={activeTab === 'all' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('all')}
+        >
+          All ({allMembers.length})
+        </Button>
+        <Button
+          variant={activeTab === 'players' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('players')}
+        >
+          Players ({players.length})
+        </Button>
+        <Button
+          variant={activeTab === 'coaches' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('coaches')}
+        >
+          Coaches ({coaches.length})
+        </Button>
+        <Button
+          variant={activeTab === 'parents' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('parents')}
+        >
+          Parents ({parents.length})
+        </Button>
+      </div>
 
-      <DeleteMemberDialog
-        member={memberToDelete}
-        onClose={() => setMemberToDelete(null)}
-        onConfirm={handleDelete}
-      />
-      
-      {effectiveLastSent && (
-        <div className="text-sm text-muted-foreground">
-          Last invitation attempt: {effectiveLastSent.toLocaleTimeString()}
-        </div>
-      )}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    getMembersToDisplay().length > 0 &&
+                    getMembersToDisplay().every(member => 
+                      selectedMembers.includes(member.id)
+                    )
+                  }
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {getMembersToDisplay().length > 0 ? (
+              getMembersToDisplay().map(renderMemberRow)
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6">
+                  No team members found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {/* Always show invitation links if available */}
-      {showInvitationLinks()}
-
-      {/* Instruction for users */}
-      {!linksToDisplay?.length && (
-        <div className="mt-2 text-sm text-muted-foreground">
-          <p>
-            Select team members and click "Send Invitations" to generate invitation links.
-            The invitation links will appear here after sending.
-          </p>
-        </div>
-      )}
+      <AlertDialog open={!!memberToDelete} onOpenChange={() => setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the team member.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-
-export default TeamMembersTable;

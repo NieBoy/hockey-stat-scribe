@@ -1,6 +1,7 @@
 
 import { useState, useMemo } from "react";
 import { Game, GameStat, StatType } from "@/types";
+import { normalizeGameStat } from "@/utils/statNormalizer";
 
 export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
   // Filter state
@@ -9,40 +10,44 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
   const [teamFilter, setTeamFilter] = useState<"all" | "home" | "away">("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   
-  const filteredStats = useMemo(() => {
+  const normalizedStats = useMemo(() => {
     if (!stats) return [];
+    return stats.map(normalizeGameStat);
+  }, [stats]);
 
-    return stats.filter(stat => {
+  const filteredStats = useMemo(() => {
+    if (!normalizedStats) return [];
+
+    return normalizedStats.filter(stat => {
       const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-        p => p.id === stat.playerId || p.id === stat.player_id
+        p => p.id === stat.player_id
       );
       
       const playerName = player?.name || "";
       const matchesSearch = playerName.toLowerCase().includes(search.toLowerCase());
-      const statType = stat.statType || stat.stat_type;
-      const matchesStatType = statTypeFilter === "all" || statType === statTypeFilter;
+      const matchesStatType = statTypeFilter === "all" || stat.stat_type === statTypeFilter;
       const matchesPeriod = periodFilter === "all" || stat.period.toString() === periodFilter;
       
-      const isHomeTeam = game.homeTeam.players.some(p => p.id === (stat.playerId || stat.player_id));
+      const isHomeTeam = game.homeTeam.players.some(p => p.id === stat.player_id);
       const matchesTeam = teamFilter === "all" || 
         (teamFilter === "home" && isHomeTeam) || 
         (teamFilter === "away" && !isHomeTeam);
 
       return matchesSearch && matchesStatType && matchesPeriod && matchesTeam;
     });
-  }, [stats, search, statTypeFilter, periodFilter, teamFilter, game]);
+  }, [normalizedStats, search, statTypeFilter, periodFilter, teamFilter, game]);
 
   const aggregatedStats = useMemo(() => {
     const playerStats = new Map();
 
     filteredStats.forEach(stat => {
       const player = [...game.homeTeam.players, ...game.awayTeam.players].find(
-        p => p.id === (stat.playerId || stat.player_id)
+        p => p.id === stat.player_id
       );
       
       if (!player) return;
 
-      const isHomeTeam = game.homeTeam.players.some(p => p.id === (stat.playerId || stat.player_id));
+      const isHomeTeam = game.homeTeam.players.some(p => p.id === stat.player_id);
       const key = player.id;
 
       if (!playerStats.has(key)) {
@@ -56,14 +61,13 @@ export function useStatsFiltering(stats: GameStat[] | undefined, game: Game) {
       }
 
       const playerStat = playerStats.get(key);
-      const statType = stat.statType || stat.stat_type;
       const value = Number(stat.value);
 
-      if (statType === "goals") {
+      if (stat.stat_type === "goals") {
         playerStat.goals += value;
-      } else if (statType === "assists") {
+      } else if (stat.stat_type === "assists") {
         playerStat.assists += value;
-      } else if (statType === "plusMinus") {
+      } else if (stat.stat_type === "plusMinus") {
         // Add the numeric value directly (can be positive or negative)
         playerStat.plusMinus += value;
         console.log(`[Filter] Player ${player.name} plusMinus update: ${value} (total: ${playerStat.plusMinus})`);

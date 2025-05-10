@@ -44,15 +44,16 @@ export function useGameStats(gameId: string) {
               const newStat: GameStat = {
                 id: payload.new.id,
                 game_id: payload.new.game_id,
-                gameId: payload.new.game_id,
                 player_id: payload.new.player_id,
-                playerId: payload.new.player_id,
                 stat_type: payload.new.stat_type,
-                statType: payload.new.stat_type,
                 period: payload.new.period,
                 timestamp: payload.new.timestamp,
                 value: payload.new.value,
-                details: payload.new.details || ''
+                details: payload.new.details || '',
+                // Add alias properties
+                gameId: payload.new.game_id,
+                playerId: payload.new.player_id,
+                statType: payload.new.stat_type
               };
               setGameStats(prev => [...prev, newStat]);
               break;

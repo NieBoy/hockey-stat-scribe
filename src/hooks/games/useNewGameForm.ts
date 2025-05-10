@@ -61,10 +61,16 @@ export function useNewGameForm(onSubmit: (data: GameFormState) => void) {
     if (validateForm()) {
       const formData: GameFormState = {
         date: date!,
-        homeTeam,
-        opponentName,
+        time: '', // This will be filled later if needed
+        team_id: homeTeam,
+        opponent_name: opponentName,
         location,
         periods,
+        is_home: true,
+        tracker_ids: [],
+        // Add these for backwards compatibility
+        homeTeam,
+        opponentName,
       };
       onSubmit(formData);
     }

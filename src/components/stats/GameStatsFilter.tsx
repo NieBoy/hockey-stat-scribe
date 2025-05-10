@@ -2,6 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GameStat, StatType, User } from "@/types";
+import { normalizeGameStat } from "@/utils/statNormalizer";
 
 interface GameStatsFilterProps {
   stats: GameStat[];
@@ -41,7 +42,8 @@ export default function GameStatsFilter({
 }: GameStatsFilterProps) {
   
   // Make sure we have unique stat types for the filter
-  const statTypes = [...new Set(stats.map(stat => stat.statType))];
+  const normalizedStats = stats.map(normalizeGameStat);
+  const statTypes = [...new Set(normalizedStats.map(stat => stat.stat_type))];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-4">

@@ -42,16 +42,16 @@ export default function NewGameForm({ teams = [], onSubmit, isLoading = false }:
         teams={teams}
         value={homeTeam}
         onChange={setHomeTeam}
-        error={errors.homeTeam}
+        error={errors.homeTeam || errors.team_id}
       />
 
       <OpponentSelect 
         value={opponentName}
         onChange={setOpponentName}
       />
-      {errors.opponentName && (
-        <p className="text-sm text-red-500">{errors.opponentName}</p>
-      )}
+      {errors.opponentName || errors.opponent_name ? (
+        <p className="text-sm text-red-500">{errors.opponentName || errors.opponent_name}</p>
+      ) : null}
 
       <LocationInput
         value={location}
