@@ -1,5 +1,5 @@
 
-import { GameEvent } from '@/types';
+import { Game, GameEvent } from '@/types';
 import { formatRelative } from 'date-fns';
 import { 
   Target, 
@@ -12,10 +12,11 @@ import {
 
 interface GameEventsTimelineProps {
   events: GameEvent[];
+  game?: Game;
   isLoading?: boolean;
 }
 
-export default function GameEventsTimeline({ events, isLoading = false }: GameEventsTimelineProps) {
+export default function GameEventsTimeline({ events, game, isLoading = false }: GameEventsTimelineProps) {
   if (isLoading) {
     return (
       <div className="py-4 text-center">

@@ -34,11 +34,12 @@ export function normalizePlayerStat(stat: Partial<PlayerStat>): PlayerStat {
     value = Number(value);
   }
   
+  // Ensure both naming conventions exist in the returned object
   return {
     id: stat.id || '',
     player_id: stat.player_id || stat.playerId || '',
     stat_type: stat.stat_type || stat.statType || '',
-    value: value, // Use normalized numeric value
+    value: value || 0, // Use normalized numeric value
     games_played: stat.games_played || stat.gamesPlayed || 0,
     playerId: stat.playerId || stat.player_id || '',
     statType: stat.statType || stat.stat_type || '',

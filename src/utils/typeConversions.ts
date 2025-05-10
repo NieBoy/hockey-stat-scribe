@@ -47,12 +47,24 @@ export function ensureTeamCompatibility(teamData: any): Team {
   // Make sure players exists and is an array
   const players = Array.isArray(teamData.players) ? teamData.players : [];
   
+  // Make sure players have the required role property
+  const playersWithRole = players.map(player => {
+    if (!player.role) {
+      return { ...player, role: 'player' as Role };
+    }
+    return player;
+  });
+  
   return {
     id: teamData.id || '',
     name: teamData.name || '',
-    players: players,
-    coaches: Array.isArray(teamData.coaches) ? teamData.coaches : [],
-    parents: Array.isArray(teamData.parents) ? teamData.parents : [],
+    players: playersWithRole,
+    coaches: Array.isArray(teamData.coaches) ? teamData.coaches.map(coach => 
+      coach.role ? coach : { ...coach, role: 'coach' as Role }
+    ) : [],
+    parents: Array.isArray(teamData.parents) ? teamData.parents.map(parent => 
+      parent.role ? parent : { ...parent, role: 'parent' as Role }
+    ) : [],
     organization_id: teamData.organization_id || ''
   };
 }
@@ -63,11 +75,21 @@ export function ensureTeamCompatibility(teamData: any): Team {
 export function ensureTeamDetailsCompatibility(teamData: any): TeamDetails {
   if (!teamData) return null;
   
+  // Make sure players have the required role property
+  const players = Array.isArray(teamData.players) ? teamData.players.map(player => {
+    if (!player.role) {
+      return { ...player, role: 'player' as Role };
+    }
+    return player;
+  }) : [];
+  
   return {
     id: teamData.id || '',
     name: teamData.name || '',
-    players: Array.isArray(teamData.players) ? teamData.players : [],
-    coaches: Array.isArray(teamData.coaches) ? teamData.coaches : [],
+    players: players,
+    coaches: Array.isArray(teamData.coaches) ? teamData.coaches.map(coach => 
+      coach.role ? coach : { ...coach, role: 'coach' as Role }
+    ) : [],
     organization_id: teamData.organization_id || ''
   };
 }

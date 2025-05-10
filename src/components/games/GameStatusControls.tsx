@@ -7,18 +7,32 @@ import { GameStatus } from "@/types/game-control";
 interface GameStatusControlsProps {
   status: GameStatus;
   period: number;
+  isActive?: boolean;
+  currentPeriod?: number;
+  totalPeriods?: number;
   onStartGame: () => Promise<void>;
   onStopGame: () => Promise<void>;
   onEndPeriod: () => Promise<void>;
+  onPeriodChange?: (period: number) => void;
+  onToggleStatus?: () => Promise<void>;
 }
 
 export default function GameStatusControls({
   status,
   period,
+  isActive,
+  currentPeriod,
+  totalPeriods = 3,
   onStartGame,
   onStopGame,
-  onEndPeriod
+  onEndPeriod,
+  onPeriodChange,
+  onToggleStatus
 }: GameStatusControlsProps) {
+  // Use either the direct props or the legacy props
+  const handleToggle = onToggleStatus || (isActive ? onStopGame : onStartGame);
+  const displayPeriod = currentPeriod !== undefined ? currentPeriod : period;
+  
   return (
     <Card className="mb-4">
       <CardContent className="pt-6">
@@ -38,7 +52,7 @@ export default function GameStatusControls({
           <div className="flex items-center justify-between mb-4">
             <span className="font-medium">Current Period:</span>
             <span className="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">
-              Period {period}
+              Period {displayPeriod}
             </span>
           </div>
           
@@ -72,7 +86,7 @@ export default function GameStatusControls({
                 onClick={onEndPeriod}
               >
                 <ListEnd className="h-4 w-4" />
-                End Period {period}
+                End Period {displayPeriod}
               </Button>
             )}
           </div>
