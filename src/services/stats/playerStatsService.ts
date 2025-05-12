@@ -1,9 +1,12 @@
+
 import { supabase } from "@/lib/supabase";
 import { PlayerStat } from "@/types";
 
 // Function to fetch player stats by player ID
 export async function getPlayerStats(playerId: string): Promise<PlayerStat[]> {
   try {
+    console.log(`Fetching stats for player_id (team_member.id): ${playerId}`);
+    
     const { data, error } = await supabase
       .from('player_stats')
       .select('*')
@@ -14,14 +17,16 @@ export async function getPlayerStats(playerId: string): Promise<PlayerStat[]> {
       throw error;
     }
 
+    console.log(`Found ${data?.length || 0} stats for player ${playerId}`);
+
     // Normalize stats to match our type definition
-    return data.map(stat => ({
+    return (data || []).map(stat => ({
       id: stat.id,
       player_id: stat.player_id,
       playerId: stat.player_id,
       stat_type: stat.stat_type,
       statType: stat.stat_type,
-      value: stat.value,
+      value: Number(stat.value), // Ensure numerical values
       games_played: stat.games_played,
       gamesPlayed: stat.games_played,
       playerName: stat.playerName || '',
@@ -36,8 +41,11 @@ export async function getPlayerStats(playerId: string): Promise<PlayerStat[]> {
 // Function to refresh player stats by aggregating raw game stats
 export async function refreshPlayerStats(playerId: string): Promise<any> {
   try {
+    console.log(`Refreshing aggregated stats from database...`);
+    console.log(`Fetching stats for player_id (team_member.id): ${playerId}`);
+    
     const { data, error } = await supabase.rpc('refresh_player_stats', {
-      target_player_id: playerId,
+      player_id: playerId,
     });
 
     if (error) {
@@ -45,6 +53,7 @@ export async function refreshPlayerStats(playerId: string): Promise<any> {
       throw error;
     }
 
+    console.log(`Stats refresh completed successfully`);
     return data;
   } catch (error) {
     console.error('Error in refreshPlayerStats:', error);

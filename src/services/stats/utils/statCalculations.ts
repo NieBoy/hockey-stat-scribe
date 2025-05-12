@@ -3,6 +3,8 @@ import { PlayerStat, StatType } from "@/types";
 
 export const calculateStatsSummary = (gameStats: any[]) => {
   const statsSummary = new Map<string, { value: number, games: Set<string> }>();
+  
+  console.log(`Calculating stats summary from ${gameStats.length} game stats`);
     
   gameStats.forEach(stat => {
     const statType = stat.stat_type;
@@ -13,17 +15,29 @@ export const calculateStatsSummary = (gameStats: any[]) => {
     
     const currentStat = statsSummary.get(statType) || { value: 0, games: new Set() };
     
-    // Simply add the numeric value for all stats including plusMinus
+    // Ensure we're working with a numeric value
     const numericValue = Number(stat.value);
+    
+    if (isNaN(numericValue)) {
+      console.warn(`Invalid numeric value for stat ${statType}:`, stat.value);
+      return;
+    }
+    
     currentStat.value += numericValue;
     
     if (statType === 'plusMinus') {
-      console.log(`Adding ${numericValue} to plusMinus total (now ${currentStat.value})`);
+      console.log(`Adding ${numericValue} to plusMinus total (now ${currentStat.value}) from game ${stat.game_id}`);
     }
     
     currentStat.games.add(stat.game_id);
     
     statsSummary.set(statType, currentStat);
+  });
+
+  // Log the final summary for debugging
+  console.log("Final stats summary:");
+  statsSummary.forEach((value, key) => {
+    console.log(`${key}: ${value.value} (${value.games.size} games)`);
   });
 
   return statsSummary;
@@ -61,6 +75,11 @@ export const calculateAggregateValue = (gameStats: any[], statType: string): num
     
     // Ensure we're working with a numeric value
     const numericValue = Number(stat.value);
+    
+    if (isNaN(numericValue)) {
+      console.warn(`Invalid numeric value for ${statType}:`, stat.value);
+      return;
+    }
     
     // Add the numeric value directly
     total += numericValue;

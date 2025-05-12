@@ -26,6 +26,7 @@ export function useTeamStatsData(team: Team) {
         
         console.log("Player IDs:", playerIds);
         
+        // FIXED: Changed the query to select from player_stats directly by player_id
         const { data, error } = await supabase
           .from('player_stats')
           .select('*')
