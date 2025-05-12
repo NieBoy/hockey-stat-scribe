@@ -169,6 +169,9 @@ export const getGameById = async (gameId: string) => {
         current_period, 
         is_active,
         opponent_name,
+        home_team_id,
+        away_team_id,
+        opponent_id,
         home_team:teams!home_team_id (id, name)
       `)
       .eq('id', gameId)
@@ -190,13 +193,20 @@ export const getGameById = async (gameId: string) => {
       current_period: data.current_period,
       is_active: data.is_active,
       isActive: data.is_active, // Add isActive alias for compatibility
+      home_team_id: data.home_team_id,
+      away_team_id: data.away_team_id,
+      opponent_id: data.opponent_id,
       opponent_name: data.opponent_name,
       homeTeam: {
         id: homeTeamData.id,
         name: homeTeamData.name,
         players: []
       },
-      awayTeam: data.opponent_name ? { id: 'opponent', name: data.opponent_name, players: [] } : null,
+      awayTeam: data.opponent_name ? { 
+        id: data.away_team_id || 'opponent', 
+        name: data.opponent_name, 
+        players: [] 
+      } : null,
       statTrackers: []
     };
   } catch (error) {
