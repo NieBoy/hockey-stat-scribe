@@ -5,61 +5,98 @@ import { useQuery } from "@tanstack/react-query";
 import { getGameById } from "@/services/games";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { useGameStats } from "@/hooks/useGameStats";
+import { useGameTrackers } from "@/hooks/useGameTrackers";
+import { useGameEvents } from "@/hooks/useGameEvents";
+import { useGamePeriods } from "@/hooks/useGamePeriods";
+import { useGameStatus } from "@/hooks/useGameStatus";
+import { useGameScore } from "@/hooks/useGameScore";
+import { ensureGameCompatibility } from "@/utils/typeConversions";
+import { Game, GameStat, GameEvent } from "@/types";
 
 export function useGameDetail() {
-  const { id } = useParams<{ id: string }>();
-  const [isStatTracker, setIsStatTracker] = useState(false);
-  const [assignedStatTypes, setAssignedStatTypes] = useState<string[]>([]);
+  const { gameId } = useParams<{ gameId: string }>();
+  const navigate = (path: string) => window.location.href = path;
   const { user } = useAuth();
-  const isCoach = user?.role.includes('coach');
+  const [activeTab, setActiveTab] = useState("overview");
+  const [statType, setStatType] = useState<"basic" | "advanced">("basic");
 
-  const { data: game, isLoading, error } = useQuery({
-    queryKey: ['game', id],
-    queryFn: () => id ? getGameById(id) : null,
-    enabled: !!id,
-    retry: 1, // Reduce retries for non-existent games
-    // Add proper error handling for games that don't exist
-    meta: {
-      onError: (error: any) => {
-        console.error('Error fetching game:', error);
-      }
-    }
+  // Fetch game data
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["games", gameId],
+    queryFn: () => getGameById(gameId || ""),
+    enabled: !!gameId,
   });
 
-  useEffect(() => {
-    const checkStatTrackerStatus = async () => {
-      if (!id || !user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('stat_trackers')
-          .select('stat_type')
-          .eq('game_id', id)
-          .eq('user_id', user.id);
-          
-        if (error) {
-          console.error('Error checking stat tracker status:', error);
-          return;
-        }
-        
-        const statTypes = data?.map(item => item.stat_type) || [];
-        setIsStatTracker(statTypes.length > 0);
-        setAssignedStatTypes(statTypes);
-      } catch (error) {
-        console.error('Error in checkStatTrackerStatus:', error);
-      }
-    };
-    
-    checkStatTrackerStatus();
-  }, [id, user]);
+  // Get game-related hooks
+  const { gameStats, handleStatRecorded, handleStatDeleted } = useGameStats(gameId || "");
+  const { isTracker, statTypes } = useGameTrackers(gameId || "", user?.id);
+  const { events, addEvent } = useGameEvents(gameId || "");
+  const { currentPeriod, setCurrentPeriod } = useGamePeriods(data);
+  const { isActive, toggleGameStatus, gameStatus } = useGameStatus(gameId || "", data?.is_active);
+  const { homeScore, awayScore } = useGameScore(gameId || "");
+
+  // Handler functions
+  const handleGoBack = () => {
+    navigate("/games");
+  };
+
+  const handlePeriodChange = (period: number) => {
+    setCurrentPeriod(period);
+  };
+
+  const handleToggleGameStatus = async () => {
+    const success = await toggleGameStatus();
+    if (success) {
+      refetch();
+    }
+  };
+
+  const handleStartGame = async () => {
+    const success = await toggleGameStatus();
+    if (success) refetch();
+  };
+
+  const handleStopGame = async () => {
+    const success = await toggleGameStatus();
+    if (success) refetch();
+  };
+
+  const handleEndPeriod = async () => {
+    // This would need actual implementation
+    console.log("End period requested");
+  };
+
+  // Ensure game data has all required fields
+  const gameData = data ? ensureGameCompatibility(data as Game) : null;
 
   return {
-    game,
+    gameId,
+    gameData,
     isLoading,
     error,
-    isStatTracker,
-    assignedStatTypes,
-    isCoach,
-    id
+    currentPeriod,
+    isActive,
+    gameStatus,
+    activeTab,
+    statType,
+    isTracker,
+    statTypes,
+    events,
+    gameStats,
+    homeScore,
+    awayScore,
+    handleGoBack,
+    handlePeriodChange,
+    handleToggleGameStatus,
+    handleStartGame,
+    handleStopGame,
+    handleEndPeriod,
+    setActiveTab,
+    setStatType,
+    addEvent,
+    handleStatRecorded,
+    handleStatDeleted,
+    refetch
   };
 }
