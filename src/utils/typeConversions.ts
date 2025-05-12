@@ -1,4 +1,3 @@
-
 import { User, Player, Team, Role, TeamDetails, Game } from '@/types';
 
 /**
@@ -100,12 +99,37 @@ export function ensureTeamDetailsCompatibility(teamData: any): TeamDetails {
 export function ensureGameCompatibility(gameData: any): Game {
   if (!gameData) return null;
   
-  // Add both camelCase and snake_case properties to ensure compatibility
+  // Make sure all required properties from the Game interface are present
   return {
-    ...gameData,
-    home_team_id: gameData.home_team_id || (gameData.homeTeam?.id || ''),
-    away_team_id: gameData.away_team_id || (gameData.awayTeam?.id || ''),
-    homeTeam: ensureTeamDetailsCompatibility(gameData.homeTeam),
-    awayTeam: ensureTeamDetailsCompatibility(gameData.awayTeam)
+    id: gameData.id || '',
+    date: gameData.date || new Date().toISOString(),
+    location: gameData.location || '',
+    
+    // Required home_team_id and away_team_id properties
+    home_team_id: gameData.home_team_id || gameData.homeTeam?.id || '',
+    away_team_id: gameData.away_team_id || gameData.awayTeam?.id || '',
+    
+    // Other properties
+    periods: gameData.periods || 3,
+    current_period: gameData.current_period || 0,
+    is_active: gameData.is_active !== undefined ? gameData.is_active : (gameData.isActive || false),
+    isActive: gameData.is_active !== undefined ? gameData.is_active : (gameData.isActive || false),
+    opponent_name: gameData.opponent_name || '',
+    opponent_id: gameData.opponent_id || '',
+    
+    // Team objects
+    homeTeam: ensureTeamDetailsCompatibility(gameData.homeTeam) || {
+      id: gameData.home_team_id || '',
+      name: '',
+      players: []
+    },
+    awayTeam: ensureTeamDetailsCompatibility(gameData.awayTeam) || {
+      id: gameData.away_team_id || '',
+      name: gameData.opponent_name || '',
+      players: []
+    },
+    
+    // Optional props
+    statTrackers: gameData.statTrackers || []
   };
 }
