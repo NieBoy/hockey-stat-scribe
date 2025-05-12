@@ -1,6 +1,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { PlayerStat } from "@/types";
+import { normalizePlayerStat } from "@/utils/statNormalizer";
 
 /**
  * Fetches player stats for a specific player
@@ -26,13 +27,14 @@ export const fetchPlayerStats = async (playerId: string): Promise<PlayerStat[]> 
       
     if (error) throw error;
     
-    return (data || []).map(stat => ({
+    // Normalize the stats to include both snake_case and camelCase properties
+    return (data || []).map(stat => normalizePlayerStat({
       id: stat.id,
-      playerId: stat.player_id,
+      player_id: stat.player_id,
       playerName: playerData.name,
-      statType: stat.stat_type,
+      stat_type: stat.stat_type,
       value: stat.value,
-      gamesPlayed: stat.games_played
+      games_played: stat.games_played
     }));
   } catch (error) {
     console.error(`Error fetching player stats:`, error);
@@ -60,13 +62,14 @@ export const fetchAllPlayerStats = async (): Promise<PlayerStat[]> => {
       
     if (error) throw error;
     
-    return (data || []).map(stat => ({
+    // Normalize stats to include both snake_case and camelCase properties
+    return (data || []).map(stat => normalizePlayerStat({
       id: stat.id,
-      playerId: stat.player_id,
+      player_id: stat.player_id,
       playerName: stat.team_members?.name,
-      statType: stat.stat_type,
+      stat_type: stat.stat_type,
       value: stat.value,
-      gamesPlayed: stat.games_played
+      games_played: stat.games_played
     }));
   } catch (error) {
     console.error(`Error fetching all player stats:`, error);

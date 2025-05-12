@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { PlayerStat } from "@/types";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
+import { normalizePlayerStat } from "@/utils/statNormalizer";
 
 /**
  * Refreshes stats for a player by processing game events and updating database
@@ -50,14 +51,14 @@ export const refreshPlayerStats = async (playerId: string): Promise<PlayerStat[]
       throw statsError;
     }
     
-    // Format the stats for return
-    return playerStats.map(stat => ({
+    // Format and normalize the stats for return
+    return playerStats.map(stat => normalizePlayerStat({
       id: stat.id,
-      playerId: stat.player_id,
+      player_id: stat.player_id,
       playerName: playerData.name,
-      statType: stat.stat_type,
+      stat_type: stat.stat_type,
       value: stat.value,
-      gamesPlayed: stat.games_played
+      games_played: stat.games_played
     }));
   } catch (error) {
     console.error("Error in refreshPlayerStats:", error);

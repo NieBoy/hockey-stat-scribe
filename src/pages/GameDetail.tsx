@@ -44,7 +44,7 @@ export default function GameDetail() {
   const { isTracker, statTypes } = useGameTrackers(gameId || "", user?.id);
   const { events, addEvent } = useGameEvents(gameId || "");
   const { currentPeriod, setCurrentPeriod } = useGamePeriods(data);
-  const { isActive, toggleGameStatus } = useGameStatus(gameId || "", data?.is_active);
+  const { isActive, toggleGameStatus, gameStatus } = useGameStatus(gameId || "", data?.is_active);
   const { homeScore, awayScore } = useGameScore(gameId || "");
 
   if (isLoading) {
@@ -65,7 +65,7 @@ export default function GameDetail() {
   }
 
   // Ensure the game data has all required fields
-  const gameData: Game = ensureGameCompatibility(data);
+  const gameData = ensureGameCompatibility(data);
 
   const handleGoBack = () => {
     navigate("/games");
@@ -82,6 +82,21 @@ export default function GameDetail() {
     }
   };
 
+  const handleStartGame = async () => {
+    const success = await toggleGameStatus();
+    if (success) refetch();
+  };
+
+  const handleStopGame = async () => {
+    const success = await toggleGameStatus();
+    if (success) refetch();
+  };
+
+  const handleEndPeriod = async () => {
+    // This would need actual implementation
+    console.log("End period requested");
+  };
+
   const formattedDate = data.date ? format(new Date(data.date), "MMMM d, yyyy") : "Unknown date";
 
   return (
@@ -95,7 +110,7 @@ export default function GameDetail() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {gameData.homeTeam.name} vs {gameData.awayTeam.name || gameData.opponent_name}
+              {gameData.homeTeam?.name} vs {gameData.awayTeam?.name || gameData.opponent_name}
             </h1>
             <div className="flex items-center gap-4 text-muted-foreground mt-1">
               <div className="flex items-center">
@@ -112,19 +127,22 @@ export default function GameDetail() {
           </div>
 
           <GameScoreDisplay
-            homeTeam={gameData.homeTeam.name}
-            awayTeam={gameData.awayTeam.name || gameData.opponent_name || "Opponent"}
-            homeScore={homeScore}
-            awayScore={awayScore}
+            gameId={gameId}
+            game={gameData}
           />
         </div>
 
         <GameStatusControls
+          status={gameStatus || 'not-started'}
+          period={currentPeriod || 1}
           isActive={isActive}
           currentPeriod={currentPeriod}
           totalPeriods={gameData.periods || 3}
           onPeriodChange={handlePeriodChange}
           onToggleStatus={handleToggleGameStatus}
+          onStartGame={handleStartGame}
+          onStopGame={handleStopGame}
+          onEndPeriod={handleEndPeriod}
         />
       </div>
 

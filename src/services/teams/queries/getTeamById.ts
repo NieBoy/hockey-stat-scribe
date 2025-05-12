@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { Team, User } from "@/types";
+import { Team, User, Role } from "@/types";
 
 export const getTeamById = async (id: string): Promise<Team | null> => {
   try {
@@ -42,7 +42,8 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         name: player.name || 'Unknown Player',
         position: player.position,
         lineNumber: player.line_number,
-        email: player.email
+        email: player.email,
+        role: 'player' as Role  // Explicitly add the required role property
       }));
     
     const coaches = teamMembers
@@ -50,7 +51,8 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
       .map(coach => ({
         id: coach.id,
         name: coach.name || 'Unknown Coach',
-        email: coach.email
+        email: coach.email,
+        role: 'coach' as Role  // Explicitly add the required role property
       }));
       
     const fullTeam: Team = {

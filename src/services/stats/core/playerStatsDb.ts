@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { PlayerStat } from "@/types";
 import { validatePlayerId } from "@/services/events/shared/validatePlayer";
+import { normalizePlayerStat } from "@/utils/statNormalizer";
 
 /**
  * Updates or inserts a player stat record
@@ -23,13 +24,17 @@ export const updateOrInsertStat = async (
     
     console.log(`Upserting stat for player ${playerId}:`, stat);
     
+    // Ensure value is numeric
+    const numericValue = typeof stat.value === 'string' ? Number(stat.value) : stat.value || 0;
+    const gamesPlayed = typeof stat.gamesPlayed === 'string' ? Number(stat.gamesPlayed) : stat.gamesPlayed || 0;
+    
     const { data, error } = await supabase
       .from('player_stats')
       .upsert({
         player_id: playerId,  // Using team_member.id consistently
-        stat_type: stat.statType,
-        value: stat.value || 0,
-        games_played: stat.gamesPlayed || 0
+        stat_type: stat.statType || stat.stat_type,
+        value: numericValue,
+        games_played: gamesPlayed
       }, {
         onConflict: 'player_id,stat_type'
       });
@@ -70,13 +75,13 @@ export const getPlayerStats = async (playerId: string): Promise<PlayerStat[]> =>
       return [];
     }
     
-    // Normalize the data format
-    return data?.map(stat => ({
+    // Normalize the data format to include both snake_case and camelCase properties
+    return data?.map(stat => normalizePlayerStat({
       id: stat.id,
-      playerId: stat.player_id,
-      statType: stat.stat_type,
+      player_id: stat.player_id,
+      stat_type: stat.stat_type,
       value: stat.value,
-      gamesPlayed: stat.games_played,
+      games_played: stat.games_played,
       details: stat.details || ''
     })) || [];
   } catch (error) {
