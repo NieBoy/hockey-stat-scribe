@@ -13,6 +13,7 @@ import { useGameStatus } from "@/hooks/useGameStatus";
 import { useGameScore } from "@/hooks/useGameScore";
 import { ensureGameCompatibility } from "@/utils/typeConversions";
 import { Game, GameStat, GameEvent } from "@/types";
+import { GameStatus } from "@/types/game-control";
 
 export function useGameDetail() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -77,7 +78,7 @@ export function useGameDetail() {
     error,
     currentPeriod,
     isActive,
-    gameStatus,
+    gameStatus: gameStatus as GameStatus, // Explicitly cast to GameStatus
     activeTab,
     statType,
     isTracker,

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { Game } from "@/types";
+import { GameStatus } from "@/types/game-control";
 import GameScoreDisplay from "@/components/games/GameScoreDisplay";
 import GameStatusControls from "@/components/games/GameStatusControls";
 
@@ -10,7 +11,7 @@ interface GameDetailHeaderProps {
   gameData: Game;
   currentPeriod: number;
   isActive: boolean;
-  gameStatus: string;
+  gameStatus: GameStatus; // Changed from string to GameStatus
   gameId?: string;
   handleGoBack: () => void;
   handlePeriodChange: (period: number) => void;
@@ -68,7 +69,7 @@ export default function GameDetailHeader({
       </div>
 
       <GameStatusControls
-        status={gameStatus || 'not-started'}
+        status={gameStatus}
         period={currentPeriod || 1}
         isActive={isActive}
         currentPeriod={currentPeriod}
