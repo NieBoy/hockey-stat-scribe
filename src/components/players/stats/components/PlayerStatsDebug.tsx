@@ -1,89 +1,117 @@
 
-import StatsSystemDebug from "@/components/stats/debug/StatsSystemDebug";
-import StatsProcessingStatus from "@/components/stats/debug/StatsProcessingStatus";
-import StatsDebugPanel from "@/components/stats/debug/StatsDebugPanel";
-import { useStatsDebugData } from "@/hooks/stats/useStatsDebugData";
-import { useState } from "react";
-import { toast } from "sonner";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
+import { resetPlayerPlusMinusStats } from "@/services/stats/core/gameEventProcessor";
+import { toast } from "sonner";
+import { refreshPlayerStats } from "@/services/stats/playerStatsService";
 
 interface PlayerStatsDebugProps {
   playerId: string;
   stats: any[];
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-export default function PlayerStatsDebug({ playerId, stats, onRefresh }: PlayerStatsDebugProps) {
-  const { debugData, refetchAll: refetchDebugData, errors } = useStatsDebugData(playerId);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [statusMessages, setStatusMessages] = useState<string[]>([]);
-  const [processingErrors, setProcessingErrors] = useState<string | null>(null);
-
-  const handleProcessingComplete = async () => {
-    console.log("Stats processing complete, refreshing data");
+const PlayerStatsDebug = ({ playerId, stats, onRefresh }: PlayerStatsDebugProps) => {
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  
+  // Find the plus/minus stat if it exists
+  const plusMinusStat = stats.find(stat => stat.statType === 'plusMinus' || stat.stat_type === 'plusMinus');
+  
+  const handleResetPlusMinus = async () => {
+    if (!playerId) return;
+    
+    setIsResetting(true);
+    setResetMessage("Resetting plus/minus data...");
+    
     try {
-      await onRefresh();
-      await refetchDebugData();
-      toast.success("Stats processing and refresh completed");
-    } catch (error: any) {
-      const errorMessage = error?.message || "Unknown error during refresh";
-      console.error("Error during refresh:", error);
-      toast.error("Error refreshing stats after processing");
-      setProcessingErrors(errorMessage);
+      // Reset the plus/minus stats
+      const success = await resetPlayerPlusMinusStats(playerId);
+      
+      if (success) {
+        setResetMessage("Plus/minus data has been reset successfully.");
+        toast.success("Plus/minus stats have been reset");
+        
+        // Refresh the player stats
+        await refreshPlayerStats(playerId);
+        
+        // Trigger parent refresh if provided
+        if (onRefresh) {
+          onRefresh();
+        }
+      } else {
+        setResetMessage("Failed to reset plus/minus data.");
+        toast.error("Failed to reset plus/minus stats");
+      }
+    } catch (error) {
+      console.error("Error resetting plus/minus stats:", error);
+      setResetMessage("Error resetting plus/minus data.");
+      toast.error("Error resetting plus/minus stats");
+    } finally {
+      setIsResetting(false);
     }
   };
-
-  const addStatusMessage = (message: string) => {
-    console.log("Debug status:", message);
-    setStatusMessages(prev => [...prev, message]);
-  };
-
-  // Handle SQL errors from the debug data
-  const sqlErrors = errors?.playerStatsError || errors?.rawGameStatsError;
   
   return (
-    <div className="space-y-6 mt-8 border-t pt-6">
-      {sqlErrors && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Database Error:</strong> {sqlErrors.message}
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {processingErrors && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Processing Error:</strong> {processingErrors}
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <StatsProcessingStatus 
-        playerId={playerId} 
-        onRefresh={onRefresh}
-        statusMessages={statusMessages} 
-        error={processingErrors}
-        isProcessing={isProcessing}
-        finishedProcessing={false}
-      />
-      
-      <StatsSystemDebug
-        playerId={playerId}
-        onProcessingComplete={handleProcessingComplete}
-        onStatusUpdate={addStatusMessage}
-        setIsProcessing={setIsProcessing}
-      />
-      
-      <StatsDebugPanel 
-        debugData={debugData} 
-        stats={stats}
-        playerId={playerId}
-        onRefresh={refetchDebugData}
-      />
-    </div>
+    <Card className="mt-4">
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm font-medium">Plus/Minus Debug Tools</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="bg-muted p-3 rounded">
+          <div className="text-xs font-semibold mb-1">Current Plus/Minus Status:</div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs">Current Value:</span>
+            <span className={`font-medium ${
+              plusMinusStat && plusMinusStat.value > 0 ? 'text-green-500' : 
+              plusMinusStat && plusMinusStat.value < 0 ? 'text-red-500' : ''
+            }`}>
+              {plusMinusStat ? 
+                (plusMinusStat.value > 0 ? `+${plusMinusStat.value}` : plusMinusStat.value) : 
+                'No data'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs">Games Tracked:</span>
+            <span className="font-medium">
+              {plusMinusStat ? plusMinusStat.gamesPlayed || plusMinusStat.games_played || 0 : 0}
+            </span>
+          </div>
+        </div>
+        
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={isResetting}
+          className="w-full gap-2"
+          onClick={handleResetPlusMinus}
+        >
+          {isResetting ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4" />
+              Reset Plus/Minus Data
+            </>
+          )}
+        </Button>
+        
+        {resetMessage && (
+          <Alert variant={resetMessage.includes("successfully") ? "default" : "destructive"}>
+            <AlertDescription className="text-xs">
+              {resetMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default PlayerStatsDebug;
