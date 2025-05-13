@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
@@ -124,7 +125,8 @@ export function useGameStatus(gameId?: string) {
                   console.log(`Processing events for player: ${player.name} (${player.id})`);
                   
                   try {
-                    const success = await processEventsToStats(player.id, events);
+                    // Fix: Only pass the player.id parameter to processEventsToStats
+                    const success = await processEventsToStats(player.id);
                     if (success) {
                       console.log(`Successfully processed events for player ${player.name}`);
                       successCount++;

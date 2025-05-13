@@ -100,7 +100,8 @@ export const reprocessAllStats = async (): Promise<boolean> => {
         
         // Process events for this player
         console.log(`Processing ${allEvents.length} events for player ${player.id}`);
-        await createGameStatsFromEvents(player.id, allEvents);
+        // Fix: Pass only one parameter to createGameStatsFromEvents
+        await createGameStatsFromEvents(player.id);
         
         // Refresh aggregated stats
         await supabase.rpc('refresh_player_stats', { player_id: player.id });
