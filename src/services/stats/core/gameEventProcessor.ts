@@ -1,5 +1,7 @@
+
 import { supabase } from '@/lib/supabase';
 import { createGameStat } from './utils/statsDbUtils';
+import { GameEvent } from '@/types/game-events';
 
 /**
  * Resets a player's plus/minus stats by deleting all their plusMinus entries
@@ -75,7 +77,7 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
     
     // Process each event
     for (const eventPlayer of eventsData) {
-      const event = eventPlayer.game_events;
+      const event = eventPlayer.game_events as GameEvent;
       if (!event) continue;
       
       // Determine what type of event it is and create appropriate game stats
@@ -93,6 +95,24 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
     return true;
   } catch (error) {
     console.error('Error in createGameStatsFromEvents:', error);
+    return false;
+  }
+};
+
+/**
+ * Process all events for a player and update their stats
+ */
+export const processEventsToStats = async (playerId: string): Promise<boolean> => {
+  try {
+    console.log(`Processing all events for player ${playerId}`);
+    const success = await createGameStatsFromEvents(playerId);
+    if (!success) {
+      console.error('Failed to process events to stats');
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error in processEventsToStats:', error);
     return false;
   }
 };
