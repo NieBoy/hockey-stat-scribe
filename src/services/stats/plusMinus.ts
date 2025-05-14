@@ -3,37 +3,41 @@ import { supabase } from '@/lib/supabase';
 
 export const calculatePlusMinus = async (gameId: string, playerId: string, teamType: string): Promise<boolean> => {
   try {
-    console.log(`calculatePlusMinus - Inputs: gameId=${gameId}, playerId=${playerId}, teamType=${teamType}`);
+    console.log(`calculatePlusMinus - Detailed debugging - gameId=${gameId}, playerId=${playerId}, teamType=${teamType}`);
     
     // Get player's team info
-    const { data: playerTeam } = await supabase
+    const { data: playerTeam, error: playerError } = await supabase
       .from('team_members')
       .select('team_id')
       .eq('id', playerId)
       .single();
       
-    if (!playerTeam) {
-      console.error(`Could not find team for player ${playerId}`);
+    if (playerError || !playerTeam) {
+      console.error(`Could not find team for player ${playerId}:`, playerError);
       return false;
     }
     
     // Get game info to determine if it's a plus or minus
-    const { data: game } = await supabase
+    const { data: game, error: gameError } = await supabase
       .from('games')
       .select('home_team_id, away_team_id')
       .eq('id', gameId)
       .single();
       
-    if (!game) {
-      console.error(`Could not find game ${gameId}`);
+    if (gameError || !game) {
+      console.error(`Could not find game ${gameId}:`, gameError);
       return false;
     }
     
     const isHomeTeam = playerTeam.team_id === game.home_team_id;
     const isHomeTeamGoal = teamType === 'home';
     
-    console.log(`calculatePlusMinus - Player team: ${isHomeTeam ? 'home' : 'away'}, Goal by: ${teamType}`);
-    console.log(`Home team ID: ${game.home_team_id}, Player team ID: ${playerTeam.team_id}`);
+    console.log(`calculatePlusMinus - Detailed info:`);
+    console.log(`- Player team ID: ${playerTeam.team_id}`);
+    console.log(`- Home team ID: ${game.home_team_id}`);
+    console.log(`- Away team ID: ${game.away_team_id}`);
+    console.log(`- Is player on home team? ${isHomeTeam}`);
+    console.log(`- Is the goal by home team? ${isHomeTeamGoal}`);
     
     // Returns true for plus (player's team scored), false for minus (opponent team scored)
     const isPlusEvent = isHomeTeam === isHomeTeamGoal;

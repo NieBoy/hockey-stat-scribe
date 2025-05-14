@@ -17,6 +17,7 @@ interface PlayerStatsDebugProps {
 const PlayerStatsDebug = ({ playerId, stats, onRefresh }: PlayerStatsDebugProps) => {
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<boolean>(false);
   
   // Find the plus/minus stat if it exists
   const plusMinusStat = stats.find(stat => stat.statType === 'plusMinus' || stat.stat_type === 'plusMinus');
@@ -26,14 +27,18 @@ const PlayerStatsDebug = ({ playerId, stats, onRefresh }: PlayerStatsDebugProps)
     
     setIsResetting(true);
     setResetMessage("Resetting plus/minus data...");
+    setResetError(false);
     
     try {
+      console.log(`Starting plus/minus reset for player ${playerId}`);
+      
       // Reset the plus/minus stats
       const success = await resetPlayerPlusMinusStats(playerId);
       
       if (success) {
         setResetMessage("Plus/minus data has been reset successfully.");
         toast.success("Plus/minus stats have been reset");
+        console.log("Plus/minus reset successful");
         
         // Refresh the player stats
         await refreshPlayerStats(playerId);
@@ -44,11 +49,14 @@ const PlayerStatsDebug = ({ playerId, stats, onRefresh }: PlayerStatsDebugProps)
         }
       } else {
         setResetMessage("Failed to reset plus/minus data.");
+        setResetError(true);
         toast.error("Failed to reset plus/minus stats");
+        console.error("Reset operation returned false");
       }
     } catch (error) {
       console.error("Error resetting plus/minus stats:", error);
-      setResetMessage("Error resetting plus/minus data.");
+      setResetMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setResetError(true);
       toast.error("Error resetting plus/minus stats");
     } finally {
       setIsResetting(false);
@@ -103,7 +111,7 @@ const PlayerStatsDebug = ({ playerId, stats, onRefresh }: PlayerStatsDebugProps)
         </Button>
         
         {resetMessage && (
-          <Alert variant={resetMessage.includes("successfully") ? "default" : "destructive"}>
+          <Alert variant={resetError ? "destructive" : "default"}>
             <AlertDescription className="text-xs">
               {resetMessage}
             </AlertDescription>
