@@ -27,6 +27,17 @@ const StatsDebugPanel = ({ debugData, stats, playerId, onRefresh }: StatsDebugPa
     if (onRefresh) onRefresh();
   };
 
+  // Format plus/minus values for better display
+  const formatPlusMinus = (value: number): string => {
+    return value > 0 ? `+${value}` : `${value}`;
+  };
+
+  // Group stats by type for better organization
+  const getPlusMinusStats = () => {
+    if (!stats) return [];
+    return stats.filter(s => s.statType === 'plusMinus' || s.stat_type === 'plusMinus');
+  };
+
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between py-3">
@@ -81,7 +92,35 @@ const StatsDebugPanel = ({ debugData, stats, playerId, onRefresh }: StatsDebugPa
           
           <TabsContent value="plusminus">
             <div className="space-y-1 mt-2">
-              <p className="text-muted-foreground mb-1">Plus/Minus Stats ({debugData.plusMinusStats?.length || 0})</p>
+              <p className="text-muted-foreground mb-1">Plus/Minus Stats Summary</p>
+              
+              <div className="bg-muted p-2 rounded overflow-auto max-h-32">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="text-left">Type</th>
+                      <th className="text-right">Value</th>
+                      <th className="text-right">Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getPlusMinusStats().map((stat, i) => (
+                      <tr key={i} className={stat.value > 0 ? 'text-green-600' : stat.value < 0 ? 'text-red-600' : ''}>
+                        <td>plusMinus</td>
+                        <td className="text-right">{formatPlusMinus(stat.value)}</td>
+                        <td className="text-right">{stat.gamesPlayed || stat.games_played || 1}</td>
+                      </tr>
+                    ))}
+                    {getPlusMinusStats().length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="text-center py-2">No plus/minus data found</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <p className="text-muted-foreground mt-2 mb-1">Plus/Minus Raw Events ({debugData.plusMinusStats?.length || 0})</p>
               <pre className="bg-muted p-2 rounded overflow-auto max-h-64">
                 {JSON.stringify(debugData.plusMinusStats, null, 2)}
               </pre>

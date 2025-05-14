@@ -1,6 +1,8 @@
+
 import { supabase } from '@/lib/supabase';
 import { createGameStat } from './utils/statsDbUtils';
-import { GameEvent } from '@/types/game-events';
+import type { GameEvent } from '@/types/game-events';
+import { processGoalEvent } from './processors/goalProcessor';
 
 /**
  * Resets a player's plus/minus stats by deleting all their plusMinus entries
@@ -26,7 +28,14 @@ export const resetPlayerPlusMinusStats = async (playerId: string): Promise<boole
     
     console.log(`Successfully deleted plus/minus entries for player ${playerId}`);
     
-    // Step 2: Call refresh_player_stats to update the aggregated stats
+    // Step 2: Process all events to recreate plus/minus stats
+    const success = await processEventsToStats(playerId);
+    if (!success) {
+      console.error(`Failed to reprocess events for player ${playerId}`);
+      return false;
+    }
+    
+    // Step 3: Call refresh_player_stats to update the aggregated stats
     const { error: refreshError } = await supabase.rpc(
       'refresh_player_stats',
       { player_id: playerId }
@@ -58,7 +67,7 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
       .from('event_players')
       .select(`
         event_id,
-        game_events(id, game_id, event_type, period, team_type, details)
+        game_events(id, game_id, event_type, period, team_type, details, timestamp, created_at)
       `)
       .eq('player_id', playerId);
     
@@ -75,9 +84,9 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
     console.log(`Found ${eventsData.length} events for player ${playerId}`);
     
     // Process each event
+    let processedEvents = 0;
     for (const eventPlayer of eventsData) {
-      // Fix this line: game_events is not a GameEvent but an object or array
-      // We need to properly access the game_events data
+      // Get the event data properly
       const eventData = eventPlayer.game_events as any;
       if (!eventData) continue;
       
@@ -93,18 +102,26 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
         created_at: eventData.created_at || new Date().toISOString()
       };
       
-      // Determine what type of event it is and create appropriate game stats
+      // Process event based on type
+      let processed = false;
       switch (event.event_type) {
         case 'goal':
-          // Goal events handled elsewhere
+          processed = await processGoalEvent(event);
           break;
         
+        // Add more event type processors as needed
+        
         default:
-          // Other event types handled elsewhere
+          // No processor for this event type
           break;
+      }
+      
+      if (processed) {
+        processedEvents++;
       }
     }
     
+    console.log(`Successfully processed ${processedEvents} events for player ${playerId}`);
     return true;
   } catch (error) {
     console.error('Error in createGameStatsFromEvents:', error);
