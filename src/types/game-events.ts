@@ -24,3 +24,6 @@ export interface GameEventDetails {
   winnerId?: string;
   loserId?: string;
 }
+
+// Re-export the GameEvent type
+export { GameEvent };
