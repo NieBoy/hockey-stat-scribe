@@ -1,2 +1,2 @@
 
-export { createGameStatsFromEvents } from '../core/gameEventProcessor';
+export { createGameStatsFromEvents, processEventsToStats } from '../core/gameEventProcessor';

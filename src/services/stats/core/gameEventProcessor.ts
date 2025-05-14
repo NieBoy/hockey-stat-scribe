@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { createGameStat } from './utils/statsDbUtils';
 import { GameEvent } from '@/types/game-events';
@@ -77,8 +76,22 @@ export const createGameStatsFromEvents = async (playerId: string): Promise<boole
     
     // Process each event
     for (const eventPlayer of eventsData) {
-      const event = eventPlayer.game_events as GameEvent;
-      if (!event) continue;
+      // Fix this line: game_events is not a GameEvent but an object or array
+      // We need to properly access the game_events data
+      const eventData = eventPlayer.game_events as any;
+      if (!eventData) continue;
+      
+      // Convert the data to a GameEvent type safely
+      const event: GameEvent = {
+        id: eventData.id,
+        game_id: eventData.game_id,
+        event_type: eventData.event_type,
+        period: eventData.period,
+        team_type: eventData.team_type,
+        details: eventData.details,
+        timestamp: eventData.timestamp || new Date().toISOString(),
+        created_at: eventData.created_at || new Date().toISOString()
+      };
       
       // Determine what type of event it is and create appropriate game stats
       switch (event.event_type) {

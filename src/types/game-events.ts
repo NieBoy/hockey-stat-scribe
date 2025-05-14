@@ -25,5 +25,5 @@ export interface GameEventDetails {
   loserId?: string;
 }
 
-// Re-export the GameEvent type
-export { GameEvent };
+// Re-export the GameEvent type with the proper syntax for isolatedModules
+export type { GameEvent };
