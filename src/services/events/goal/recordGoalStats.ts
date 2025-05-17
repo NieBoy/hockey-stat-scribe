@@ -1,7 +1,8 @@
 
 import { supabase } from '@/lib/supabase';
-import { recordPlusMinusStats } from '@/services/stats/gameStatsService';
+import { calculatePlusMinus } from '@/services/stats/gameStatsService';
 import { refreshPlayerStats } from '@/services/stats';
+import { User } from '@/types';
 
 /**
  * Data structure for recording goal stats
@@ -71,13 +72,17 @@ export async function recordGoalStats({
   if (playersOnIce.length > 0) {
     console.log("Recording plus/minus for players (team_member.ids):", playersOnIce);
     try {
-      // Record plus/minus stats with the correct sign (+1 or -1)
-      await recordPlusMinusStats(
-        gameId,
-        playersOnIce,
-        period,
-        isHomeScoringTeam // This determines if it's a plus or minus
-      );
+      // Process each player for plus/minus individually
+      const teamType = isHomeScoringTeam ? 'home' : 'away';
+      
+      for (const playerId of playersOnIce) {
+        // Calculate and record plus/minus for each player
+        try {
+          await calculatePlusMinus(gameId, playerId, teamType);
+        } catch (playerError) {
+          console.error(`Error calculating plus/minus for player ${playerId}:`, playerError);
+        }
+      }
     } catch (plusMinusError) {
       console.error("Error recording plus/minus stats:", plusMinusError);
     }
