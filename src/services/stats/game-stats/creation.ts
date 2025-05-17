@@ -44,7 +44,7 @@ export const insertGameStat = async (stat: Omit<GameStat, 'id' | 'timestamp'>): 
 export const recordPlusMinusStats = async (
   gameId: string,
   players: User[], 
-  scoringTeamType: string,
+  scoringTeamType: 'home' | 'away',
   period: number
 ): Promise<boolean> => {
   try {
@@ -54,7 +54,7 @@ export const recordPlusMinusStats = async (
     for (const player of players) {
       try {
         // Use the standardized function to calculate and record plus/minus
-        const success = await calculatePlusMinus(gameId, player.id, scoringTeamType);
+        const success = await calculatePlusMinus(gameId, player.id, scoringTeamType, period);
         if (!success) {
           console.error(`Failed to record plus/minus for player ${player.name} (${player.id})`);
           allSuccess = false;
