@@ -2,7 +2,8 @@
 import { supabase } from "@/lib/supabase";
 import { GameEvent, GameStat } from "@/types";
 import { createGameStat } from "../utils/statsDbUtils";
-import { calculatePlusMinusValue, recordPlusMinus } from "../utils/plusMinusUtils";
+import { calculateAndRecordPlusMinus } from "../utils/plusMinusCalculator";
+import { calculatePlusMinusValue, PLUS_EVENT_VALUE, MINUS_EVENT_VALUE } from "../../utils/plusMinusCalculator";
 
 /**
  * Process a goal event to create relevant game stats
@@ -49,11 +50,14 @@ export const processGoalEvent = async (event: GameEvent): Promise<boolean> => {
         }) || statsCreated;
       }
       else if (role === 'on-ice' || role === 'on_ice') {
-        // For players on ice, calculate and record the plus/minus value directly
-        const plusMinusValue = await calculatePlusMinusValue(event.game_id, playerId, event.team_type as 'home' | 'away');
-        console.log(`Recording plus/minus (${plusMinusValue}) for player ${playerId}`);
-        
-        statsCreated = await recordPlusMinus(event.game_id, playerId, event.period, plusMinusValue) || statsCreated;
+        // Process plus/minus for on-ice players
+        console.log(`Recording plus/minus for player ${playerId} on scoring team`);
+        statsCreated = await calculateAndRecordPlusMinus(
+          event.game_id, 
+          playerId, 
+          event.team_type as 'home' | 'away',
+          event.period
+        ) || statsCreated;
       }
     }
     
@@ -69,11 +73,13 @@ export const processGoalEvent = async (event: GameEvent): Promise<boolean> => {
       const oppositeTeamType = event.team_type === 'home' ? 'away' : 'home';
       
       for (const { player_id: playerId } of oppositePlayers) {
-        // Calculate the plus/minus for opponents - should be the opposite
-        const plusMinusValue = await calculatePlusMinusValue(event.game_id, playerId, oppositeTeamType as 'home' | 'away');
-        console.log(`Recording plus/minus (${plusMinusValue}) for opponent player ${playerId}`);
-        
-        statsCreated = await recordPlusMinus(event.game_id, playerId, event.period, plusMinusValue) || statsCreated;
+        console.log(`Recording plus/minus for opponent player ${playerId}`);
+        statsCreated = await calculateAndRecordPlusMinus(
+          event.game_id,
+          playerId,
+          oppositeTeamType as 'home' | 'away',
+          event.period
+        ) || statsCreated;
       }
     }
     

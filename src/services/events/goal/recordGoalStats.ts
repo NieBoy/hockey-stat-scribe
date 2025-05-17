@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { calculatePlusMinus } from '@/services/stats/gameStatsService';
 import { refreshPlayerStats } from '@/services/stats';
@@ -78,7 +77,7 @@ export async function recordGoalStats({
       for (const playerId of playersOnIce) {
         // Calculate and record plus/minus for each player
         try {
-          await calculatePlusMinus(gameId, playerId, teamType);
+          await calculatePlusMinus(gameId, playerId, teamType, period);
         } catch (playerError) {
           console.error(`Error calculating plus/minus for player ${playerId}:`, playerError);
         }

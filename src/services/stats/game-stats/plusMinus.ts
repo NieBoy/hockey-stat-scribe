@@ -1,19 +1,26 @@
 
-import { calculatePlusMinusValue, recordPlusMinus } from '../core/utils/plusMinusUtils';
+import { calculateAndRecordPlusMinus } from '../utils/plusMinusCalculator';
 
 /**
  * Calculate and record plus/minus for a player
  * This is the main entry point for plus/minus recording from game events
+ * 
+ * @param gameId The game ID
+ * @param playerId The player's team_member.id
+ * @param teamType The team type that scored ('home' or 'away')
+ * @param period Optional period, defaults to 1 if not provided
+ * @returns Promise<boolean> Success status
  */
-export const calculatePlusMinus = async (gameId: string, playerId: string, teamType: string): Promise<boolean> => {
+export const calculatePlusMinus = async (
+  gameId: string, 
+  playerId: string, 
+  teamType: 'home' | 'away',
+  period: number = 1
+): Promise<boolean> => {
   try {
-    // Calculate the plus/minus value (+1 or -1)
-    const plusMinusValue = await calculatePlusMinusValue(gameId, playerId, teamType as 'home' | 'away');
-    
-    // Record the plus/minus stat with the calculated value
-    return await recordPlusMinus(gameId, playerId, 1, plusMinusValue);
+    return await calculateAndRecordPlusMinus(gameId, playerId, teamType, period);
   } catch (error) {
-    console.error("Error calculating plus/minus:", error);
+    console.error(`Error in calculatePlusMinus for player ${playerId}:`, error);
     throw error;
   }
 };

@@ -80,27 +80,23 @@ export const reprocessAllStats = async (): Promise<boolean> => {
       try {
         refreshStatus[player.id] = "Processing";
         
-        // Get all events where this player was involved (team_id will help filter relevant games)
-        const { data: games, error: gamesError } = await supabase
-          .from('games')
-          .select('id')
-          .or(`home_team_id.eq.${player.team_id},away_team_id.eq.${player.team_id}`);
-          
-        if (gamesError) throw gamesError;
+        // Process events for this player
+        console.log(`Reprocessing events for player ${player.id}`);
         
-        // For each game, get all events
-        const allEvents: any[] = [];
-        for (const game of games) {
-          const { data: events, error: eventsError } = await supabase
-            .rpc('get_game_events', { p_game_id: game.id });
-            
-          if (eventsError) throw eventsError;
-          if (events) allEvents.push(...events);
+        // First, clear existing plus/minus stats to prevent duplication
+        const { error: deleteError } = await supabase
+          .from('game_stats')
+          .delete()
+          .eq('player_id', player.id)
+          .eq('stat_type', 'plusMinus');
+          
+        if (deleteError) {
+          console.error(`Error deleting plus/minus stats for player ${player.id}:`, deleteError);
+        } else {
+          console.log(`Successfully cleared existing plus/minus stats for player ${player.id}`);
         }
         
-        // Process events for this player
-        console.log(`Processing ${allEvents.length} events for player ${player.id}`);
-        // Fix: Pass only one parameter to createGameStatsFromEvents
+        // Process all events to recreate stats
         await createGameStatsFromEvents(player.id);
         
         // Refresh aggregated stats
